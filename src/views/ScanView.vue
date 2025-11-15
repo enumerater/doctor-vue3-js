@@ -1,335 +1,194 @@
 <template>
-    <van-nav-bar fixed title="识别" left-arrow @click-left="$router.back()" />
-    <div class="chat-container">
-        <!-- 对话列表 -->
-        <div class="message-list" ref="messageList">
-            <div v-for="item in messages" :key="item.id" :class="['message-item', item.type]">
-                <img :src="item.avatar" class="avatar" v-if="item.showAvatar" />
-                <div class="bubble" :class="item.type">
-                    <van-image v-if="item.isImage" :src="item.content" fit="cover" class="message-image"
-                        :lazy-load="true" />
-                    <span v-else>{{ item.content }}</span>
-                    <!-- 加载状态指示器 -->
-                    <van-loading v-if="item.loading" size="16" class="loading-indicator" />
-                </div>
-            </div>
+    <div class="disease-detection-page">
+        <!-- 顶部导航栏 -->
+        <van-nav-bar title="病虫害识别" left-arrow @click-left="$router.back()" />
+
+        <!-- 上传区域 -->
+        <div class="upload-section">
+            <h2 class="section-title">上传作物图片</h2>
+            <van-uploader v-model="fileList" multiple accept="image/*" :max-count="1" :before-read="beforeRead"
+                preview-image @delete="handleDelete" :after-read="afterRead" />
+
+            <!-- 识别按钮 -->
+            <van-button type="primary" class="detect-btn" @click="handleDetect" :loading="isLoading"
+                :disabled="fileList.length === 0">
+                {{ isLoading ? '识别中...' : '开始病虫害识别' }}
+            </van-button>
         </div>
 
-        <!-- 底部操作栏 -->
-        <div class="bottom-bar">
-            <van-uploader class="upload-btn" :after-read="handleImageUpload" accept="image/*" :show-file-list="false"
-                :before-read="beforeImageUpload">
-                <van-icon name="photo" size="20" />
-            </van-uploader>
-            <van-field ref="messageInput" v-model="inputValue" placeholder="请输入消息..." class="input-field"
-                @keyup.enter="sendMessage" />
-            <van-button @click="sendMessage" type="primary" size="small" class="send-btn"
-                :disabled="!inputValue.trim()">
-                发送
-            </van-button>
+        <!-- 识别结果区域（优化后） -->
+        <div class="result-section" v-if="message">
+            <h3 class="result-title">识别结果</h3>
+            <Markdown :source="message" class="result-content" />
+        </div>
+
+        <!-- 功能说明 -->
+        <div class="info-section">
+            <p>请上传作物叶片、果实等部位的清晰图片，系统将为您识别病虫害类型并提供防治建议。</p>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, nextTick, onBeforeUnmount } from 'vue';
-import { showToast } from 'vant';
+import { ref } from 'vue'
+import { showToast } from 'vant'
+// 导入Markdown解析组件
+import Markdown from 'vue3-markdown-it'
+import { upload } from '@/axios/common'
 
-// 生成唯一ID
-const generateId = () => Date.now() + Math.floor(Math.random() * 1000);
-
-// 存储图片对象URL用于清理
-const imageObjectUrls = ref([]);
-
-// 消息列表
-const messages = ref([
+// 响应式变量
+const imageUrl = ref('https://enumerate-oss.oss-cn-qingdao.aliyuncs.com/77f5e9d8-bab3-4026-ae21-726a3d513701.jpg')
+const fileList = ref([
     {
-        id: generateId(),
-        type: 'ai',
-        content: '你好！我是你的智能助手，请问有什么可以帮助你的吗？',
-        avatar: 'https://img.yzcdn.cn/vant/logo.png',
-        showAvatar: true,
-        isImage: false,
-        loading: false,
-    },
-]);
+        name: 'file',
+        url: imageUrl.value,
+    }
+])
+const isLoading = ref(false) // 识别加载状态
+const message = ref("") // 识别结果
 
-const inputValue = ref('');
-const messageList = ref(null);
-const messageInput = ref(null);
 
-// 自动滚动到底部
-const scrollToBottom = () => {
-    nextTick(() => {
-        if (messageList.value) {
-            messageList.value.scrollTop = messageList.value.scrollHeight;
+// 读取图片前的校验
+const beforeRead = (file) => {
+    const isImage = file.type.includes('image')
+    if (!isImage) {
+        showToast('请选择图片文件')
+        return false
+    }
+
+    // 限制图片大小（可选，根据需求调整）
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+        showToast('图片大小不能超过5MB')
+        return false
+    }
+    return true
+}
+
+const afterRead = async (file) => {
+    try {
+        const formData = new FormData()
+        formData.append('file', file.file)
+        const res = await upload(formData)
+        if (res.code === 1) {
+            console.log(res.data)
+            imageUrl.value = res.data
         }
-    });
-};
-
-// 发送文本消息
-const sendMessage = () => {
-    const content = inputValue.value.trim();
-    if (!content) {
-        showToast('请输入消息内容');
-        return;
+    } catch (error) {
+        console.error('上传失败：', error)
+        showToast('图片不符合，请重试') // 给用户明确反馈
     }
+}
 
-    // 新增用户消息
-    messages.value.push({
-        id: generateId(),
-        type: 'user',
-        content,
-        avatar: 'https://img.yzcdn.cn/user-upload/12345.png',
-        showAvatar: true,
-        isImage: false,
-        loading: false,
-    });
+// 处理文件删除（清空结果）
+const handleDelete = () => {
+    message.value = ""
+}
 
-    // 清空输入框并聚焦
-    inputValue.value = '';
-    messageInput.value?.focus();
+// 触发病虫害识别
+const handleDetect = async () => {
+    isLoading.value = true;
+    try {
+        // 构建带查询参数的URL（参数名必须与后端一致：image_url）
+        const url = 'http://localhost:8888/scan' + '?image_url=' + imageUrl.value; // 用localhost而非0.0.0.0（浏览器不识别0.0.0.0）
 
-    // 滚动到底部
-    scrollToBottom();
+        // 发送GET请求
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
 
-    // 模拟AI回复
-    simulateAiReply();
-};
+        // 5. 处理响应
+        if (!response.ok) {
+            throw new Error(`请求失败：${response.statusText}`)
+        }
 
-// 图片上传前检查
-const beforeImageUpload = (file) => {
-    // 简单的大小检查
-    if (file.size > 10 * 1024 * 1024) {
-        showToast('图片大小不能超过10MB');
-        return false;
+        const result = await response.json()
+        console.log('识别结果：', result)
+
+        // 6. 存储结果（假设后端返回格式为{ result: "xxx**yyy**zzz" }）
+        message.value = result.result || "未识别到有效信息"
+
+    } catch (error) {
+        console.error('识别失败：', error)
+        showToast('识别失败，请重试') // 给用户明确反馈
+        message.value = "" // 清空错误结果
+    } finally {
+        isLoading.value = false
     }
-    return true;
-};
+}
 
-// 处理图片上传
-const handleImageUpload = (file) => {
-    // 显示上传中状态
-    const loadingMsgId = generateId();
-    messages.value.push({
-        id: loadingMsgId,
-        type: 'user',
-        content: '上传中...',
-        avatar: 'https://img.yzcdn.cn/user-upload/12345.png',
-        showAvatar: true,
-        isImage: false,
-        loading: true,
-    });
-    scrollToBottom();
 
-    // 模拟上传过程
-    setTimeout(() => {
-        // 移除加载消息
-        messages.value = messages.value.filter(item => item.id !== loadingMsgId);
-
-        // 创建图片URL
-        const imageUrl = URL.createObjectURL(file.file);
-        imageObjectUrls.value.push(imageUrl);
-
-        // 添加图片消息
-        messages.value.push({
-            id: generateId(),
-            type: 'user',
-            content: imageUrl,
-            avatar: 'https://img.yzcdn.cn/user-upload/12345.png',
-            showAvatar: true,
-            isImage: true,
-            loading: false,
-        });
-
-        scrollToBottom();
-        // 模拟AI对图片的回复
-        simulateImageAiReply();
-    }, 800);
-};
-
-// 模拟AI文本回复
-const simulateAiReply = () => {
-    // 添加AI加载状态
-    const aiLoadingId = generateId();
-    messages.value.push({
-        id: aiLoadingId,
-        type: 'ai',
-        content: '思考中...',
-        avatar: 'https://img.yzcdn.cn/vant/logo.png',
-        showAvatar: true,
-        isImage: false,
-        loading: true,
-    });
-    scrollToBottom();
-
-    setTimeout(() => {
-        // 移除加载状态消息
-        messages.value = messages.value.filter(item => item.id !== aiLoadingId);
-
-        // 添加实际回复
-        messages.value.push({
-            id: generateId(),
-            type: 'ai',
-            content: '你的问题很有价值，我来为你解答...',
-            avatar: 'https://img.yzcdn.cn/vant/logo.png',
-            showAvatar: true,
-            isImage: false,
-            loading: false,
-        });
-        scrollToBottom();
-    }, 1500);
-};
-
-// 模拟AI图片回复
-const simulateImageAiReply = () => {
-    // 添加AI加载状态
-    const aiLoadingId = generateId();
-    messages.value.push({
-        id: aiLoadingId,
-        type: 'ai',
-        content: '正在识别图片...',
-        avatar: 'https://img.yzcdn.cn/vant/logo.png',
-        showAvatar: true,
-        isImage: false,
-        loading: true,
-    });
-    scrollToBottom();
-
-    setTimeout(() => {
-        // 移除加载状态消息
-        messages.value = messages.value.filter(item => item.id !== aiLoadingId);
-
-        // 添加实际回复
-        messages.value.push({
-            id: generateId(),
-            type: 'ai',
-            content: '我已识别图片内容，这是分析结果...',
-            avatar: 'https://img.yzcdn.cn/vant/logo.png',
-            showAvatar: true,
-            isImage: false,
-            loading: false,
-        });
-        scrollToBottom();
-    }, 2000);
-};
-
-// 组件卸载前清理图片URL，防止内存泄漏
-onBeforeUnmount(() => {
-    imageObjectUrls.value.forEach(url => {
-        URL.revokeObjectURL(url);
-    });
-});
-
-// 初始滚动到底部
-scrollToBottom();
 </script>
 
 <style scoped>
-.chat-container {
-    display: flex;
-    flex-direction: column;
-    background-color: #f5f7fa;
+.disease-detection-page {
+    background-color: #f8faf7;
     min-height: 100vh;
-    padding-top: 46px;
-    /* 适配导航栏高度 */
-    padding-bottom: 60px;
-    /* 适配底部栏高度 */
-    box-sizing: border-box;
 }
 
-.message-list {
-    flex: 1;
-    padding: 10px;
-    overflow-y: auto;
-    height: calc(100vh - 106px);
-    /* 减去导航栏和底部栏高度 */
-}
-
-.message-item {
-    display: flex;
-    margin-bottom: 15px;
-    align-items: flex-start;
-    max-width: 100%;
-}
-
-.message-item.ai {
-    flex-direction: row;
-}
-
-.message-item.user {
-    flex-direction: row-reverse;
-    text-align: right;
-}
-
-.avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin: 0 10px;
-    flex-shrink: 0;
-    /* 防止头像被压缩 */
-}
-
-.bubble {
-    max-width: 80%;
-    /* 增加最大宽度，提升显示效果 */
-    padding: 10px 12px;
-    border-radius: 12px;
-    word-break: break-all;
-    position: relative;
-}
-
-.bubble.ai {
+.upload-section {
     background-color: #fff;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-}
-
-.bubble.user {
-    background-color: #4285f4;
-    color: #fff;
-}
-
-.message-image {
-    width: 100%;
     border-radius: 8px;
-    display: block;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
 }
 
-.loading-indicator {
-    margin-left: 8px;
-    vertical-align: middle;
+.section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 16px;
 }
 
-.bottom-bar {
-    display: flex;
-    align-items: center;
-    padding: 8px 10px;
+.detect-btn {
+    width: 100%;
+    margin-top: 12px;
+    background-color: #42b983;
+    border-color: #42b983;
+}
+
+/* 结果区域样式优化 */
+.result-section {
     background-color: #fff;
-    border-top: 1px solid #eee;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 10;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
 }
 
-.upload-btn {
-    margin-right: 8px;
-    padding: 5px;
+.result-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
 }
 
-.input-field {
-    flex: 1;
-    margin: 0 8px;
-    --van-field-input-height: 40px;
+.result-content {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
 }
 
-.send-btn {
-    width: 80px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* Markdown加粗样式优化 */
+.result-content strong {
+    color: #e53e3e;
+    /* 用醒目颜色突出加粗内容 */
+    font-weight: 700;
+}
+
+.info-section {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    color: #666;
+    font-size: 14px;
+    line-height: 1.5;
 }
 </style>

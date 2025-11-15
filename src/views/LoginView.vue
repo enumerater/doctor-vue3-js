@@ -33,7 +33,7 @@ const tabMetas = [
 ]
 
 // 记录索引值
-const tabIndex = ref(1)
+const tabIndex = ref(0)
 // 计算属性获取文字内容
 const tabMeta = computed(() => {
     return tabMetas[tabIndex.value]

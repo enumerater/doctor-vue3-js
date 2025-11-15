@@ -26,44 +26,44 @@
             <van-row>
                 <van-col span="6" class="user-col">
                     <p class="user-num">150</p>
-                    <p class="user-word">收藏</p>
+                    <p class="user-word">test</p>
                 </van-col>
                 <van-col span="6" class="user-col">
                     <p class="user-num">23</p>
-                    <p class="user-word">关注</p>
+                    <p class="user-word">test</p>
                 </van-col>
                 <van-col span="6" class="user-col">
                     <p class="user-num">270</p>
-                    <p class="user-word">积分</p>
+                    <p class="user-word">test</p>
                 </van-col>
                 <van-col span="6" class="user-col">
                     <p class="user-num">3</p>
-                    <p class="user-word">优惠券</p>
+                    <p class="user-word">test</p>
                 </van-col>
             </van-row>
         </div>
         <div class="user-page-order">
             <div class="head">
-                <h3>物品订单</h3>
-                <router-link to="/order" style="color: gray;">全部订单 <van-icon name="arrow" /></router-link>
+                <h3>主要功能</h3>
+                <router-link to="/order" style="color: gray;">返回首页 <van-icon name="arrow" /></router-link>
             </div>
 
             <van-grid>
                 <van-grid-item>
                     <img src="@/assets/icon/待付款.svg" alt="" width="32" height="32">
-                    <p>待付款</p>
+                    <p>test</p>
                 </van-grid-item>
                 <van-grid-item>
                     <img src="@/assets/icon/待发货.svg" alt="" width="32" height="32">
-                    <p>待发货</p>
+                    <p>test</p>
                 </van-grid-item>
                 <van-grid-item>
                     <img src="@/assets/icon/配送中.svg" alt="" width="32" height="32">
-                    <p>配送中</p>
+                    <p>test</p>
                 </van-grid-item>
                 <van-grid-item>
                     <img src="@/assets/icon/已完成.svg" alt="" width="32" height="32">
-                    <p>已完成</p>
+                    <p>test</p>
                 </van-grid-item>
             </van-grid>
         </div>

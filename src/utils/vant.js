@@ -17,6 +17,8 @@ import { Image as VanImage } from 'vant'
 import { Tag } from 'vant'
 import { Cell } from 'vant'
 import { Uploader } from 'vant'
+import { Loading } from 'vant'
+import { List } from 'vant'
 import 'vant/lib/index.css'
 // 导出一个注册函数，接收 app 实例（由 main.js 传递过来）
 
@@ -49,4 +51,6 @@ export function setupVant(app) {
   app.use(Tag)
   app.use(Cell)
   app.use(Uploader)
+  app.use(Loading)
+  app.use(List)
 }

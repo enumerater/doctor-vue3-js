@@ -15,6 +15,20 @@ const router = createRouter({
       meta: { title: '扫描' },
     },
     {
+      path: '/chat',
+      name: 'ChatView',
+      component: () => import('@/views/ChatView.vue'),
+      meta: { title: '聊天' },
+    },
+    {
+      // 动态路由参数:id用于传递文章ID
+      path: '/news/detail/:id',
+      name: 'NewsDetail',
+      component: () => import('@/views/NewsDetail.vue'),
+      // 可选：将路由参数作为props传递给详情页组件
+      props: true,
+    },
+    {
       path: '/',
       component: () => import('@/views/Layout/IndexLayout.vue'),
       redirect: '/home',

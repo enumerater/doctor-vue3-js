@@ -12,7 +12,7 @@
                 <p>病害识别</p>
                 <span>精准识别病害</span>
             </van-col>
-            <van-col span="8" class="van-col-item">
+            <van-col span="8" class="van-col-item" @click="chat">
                 <img src="@/assets/icon/agr/杀虫灯虫情.svg" alt="" width="64" height="64">
                 <p>防治策略</p>
                 <span>AI包治百病</span>
@@ -41,19 +41,21 @@
 
 
         <van-tabs v-model:active="active">
-            <van-tab title="关注">
+            <van-tab title="推荐">
                 <WenZhangComponent></WenZhangComponent>
             </van-tab>
-            <van-tab title="推荐">推荐</van-tab>
+            <van-tab title="病害">病害</van-tab>
             <van-tab title="种植">种植</van-tab>
             <van-tab title="作物">作物</van-tab>
         </van-tabs>
 
-
+        <!-- 引入AI助手组件 -->
+        <!-- <AiAssistant /> -->
     </div>
 </template>
 <script setup>
 import WenZhangComponent from '@/components/WenZhangComponent.vue'
+import AiAssistant from '@/components/AiAssistant.vue'  // 引入AI助手组件
 import { ref } from 'vue'
 import router from '@/router'
 
@@ -64,12 +66,18 @@ const scan = () => {
     //跳到扫描页面
     router.push({ name: 'ScanView' })
 }
+const chat = () => {
+    //跳到聊天页面
+    router.push({ name: 'ChatView' })
+}
 
 const toAgrInfo = () => {
     //滑到农业资讯页面
     document.querySelector('.van-tabs').scrollIntoView({ behavior: 'smooth' })
     active.value = 0
 }
+
+
 </script>
 
 <style lang="scss" scoped>
