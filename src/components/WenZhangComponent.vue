@@ -30,24 +30,27 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch, defineProps } from 'vue'; // 新增defineProps和watch
 import { getNewsList } from '@/axios/news';
 import { showToast } from 'vant';
-import { useRouter } from 'vue-router'; // 导入路由工具
-// 初始化路由实例
+import { useRouter } from 'vue-router';
+
 const router = useRouter();
+
+// 1. 新增：接收父组件传递的搜索关键词
+const props = defineProps({
+    searchKeyword: {
+        type: String,
+        default: '' // 默认空字符串（显示全部）
+    }
+});
 
 // 跳转详情页方法
 const goToDetail = (item) => {
-    // 通过路由跳转到详情页，并携带文章ID（item.id）
     router.push({
-        path: `/news/detail/${item.id}`, // 路径包含动态参数id
-        // 或使用name+params方式
-        // name: 'NewsDetail',
-        // params: { id: item.id }
+        path: `/news/detail/${item.id}`
     });
 };
-
 
 // 列表数据（存储从后端获取的新闻列表）
 const list = ref([]);
@@ -67,14 +70,16 @@ const formatTime = (timeStr) => {
     return timeStr.split(' ')[0];
 };
 
-// 从后端获取分页数据
+// 从后端获取分页数据（新增：携带搜索关键词）
 const fetchData = async () => {
     try {
         loading.value = true;
 
+        // 2. 新增：请求参数添加搜索关键词
         const res = await getNewsList({
             currentPage: page.value,
             pageSize: pageSize.value,
+            keyword: props.searchKeyword // 传给后端的搜索关键词参数
         });
 
         const { list: newData } = res.data;
@@ -101,6 +106,17 @@ const onLoad = () => {
     if (finished.value) return;
     fetchData();
 };
+
+// 3. 新增：监听搜索关键词变化，重置分页并重新加载
+watch(() => props.searchKeyword, (newKeyword) => {
+    // 重置分页参数
+    page.value = 1;
+    finished.value = false;
+    // 清空原有列表
+    list.value = [];
+    // 重新加载第一页（带新关键词）
+    fetchData();
+}, { immediate: false }); // 非立即执行，避免初始化重复请求
 
 // 初始化加载第一页
 onMounted(() => {

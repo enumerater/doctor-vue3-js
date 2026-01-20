@@ -19,6 +19,12 @@ import { Cell } from 'vant'
 import { Uploader } from 'vant'
 import { Loading } from 'vant'
 import { List } from 'vant'
+import { DropdownMenu, DropdownItem } from 'vant'
+import { Popup } from 'vant'
+import { Badge } from 'vant'
+import { Empty } from 'vant'
+import { Card } from 'vant'
+
 import 'vant/lib/index.css'
 // 导出一个注册函数，接收 app 实例（由 main.js 传递过来）
 
@@ -53,4 +59,10 @@ export function setupVant(app) {
   app.use(Uploader)
   app.use(Loading)
   app.use(List)
+  app.use(DropdownMenu)
+  app.use(DropdownItem)
+  app.use(Popup)
+  app.use(Badge)
+  app.use(Empty)
+  app.use(Card)
 }

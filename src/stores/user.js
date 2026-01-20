@@ -17,9 +17,9 @@ export const useUserStore = defineStore('user', () => {
     // 登录成功后，将 token 存储到 localStorage
     localStorage.setItem('token', data.token)
     // 登录成功后，将 username 存储到 localStorage
-    localStorage.setItem('username', data.user.username)
+    localStorage.setItem('username', data.username)
     // 登录成功后，将 id 存储到 localStorage
-    localStorage.setItem('id', data.user.id)
+    localStorage.setItem('id', data.id)
   }
 
   return { user, setUser }

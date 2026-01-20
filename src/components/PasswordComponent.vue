@@ -62,9 +62,9 @@ async function onSubmit() {
         password: password.value,
     })
 
-
-    store.setUser(res.data)
     console.log(res.data)
+    store.setUser(res.data)
+
     // 如果有回跳地址就进行回跳，没有跳转到个人中心
     router.push((route.query.returnUrl) || '/home')
     showToast('登录成功')

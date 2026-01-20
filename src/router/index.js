@@ -1,70 +1,30 @@
 import { createRouter, createWebHistory } from 'vue-router'
 const router = createRouter({
+  // 基于Vite的base路径（/font/），路由路径会自动拼接这个前缀
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      // 路径相对base，实际访问路径为 /font/login（base + path）
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
       meta: { title: '登录' },
     },
-    {
-      path: '/scan',
-      name: 'ScanView',
-      component: () => import('@/views/ScanView.vue'),
-      meta: { title: '扫描' },
-    },
-    {
-      path: '/chat',
-      name: 'ChatView',
-      component: () => import('@/views/ChatView.vue'),
-      meta: { title: '聊天' },
-    },
-    {
-      // 动态路由参数:id用于传递文章ID
-      path: '/news/detail/:id',
-      name: 'NewsDetail',
-      component: () => import('@/views/NewsDetail.vue'),
-      // 可选：将路由参数作为props传递给详情页组件
-      props: true,
-    },
-    {
-      path: '/',
-      component: () => import('@/views/Layout/IndexLayout.vue'),
-      redirect: '/home',
-      children: [
-        { path: '/home', component: () => import('@/views/HomeView.vue'), meta: { title: '首页' } },
-        {
-          path: '/article',
-          component: () => import('@/views/ArticleView.vue'),
-          meta: { title: '健康百科' },
-        },
-        {
-          path: '/notify',
-          component: () => import('@/views/NotifyView.vue'),
-          meta: { title: '消息通知' },
-        },
-        {
-          path: '/user',
-          component: () => import('@/views/UserView.vue'),
-          meta: { title: '个人中心' },
-        },
-      ],
-    },
-    //匹配不到会主页
+    { path: '/home', component: () => import('@/views/HomeView.vue'), meta: { title: '首页' } },
+    // 通配符路由：匹配不到时重定向到 /font/home（基于base）
     { path: '/:pathMatch(.*)*', redirect: '/home' },
   ],
 })
 
-// 访问权限控制
+// 访问权限控制（修正白名单路径）
 router.beforeEach((to) => {
-  // 处理标题
-  document.title = `优医问诊-${to.meta.title || ''}`
-  // 不需要登录的页面，白名单
-  const wihteList = ['/login']
-  // 如果没有登录且不在白名单内，去登录
-  if (!localStorage.getItem('token') && !wihteList.includes(to.path)) return '/login'
-  // 否则不做任何处理
+  document.title = `智慧农业诊断-${to.meta.title || ''}`
+  // 白名单路径基于base，实际对应 /font/login（与路由path一致）
+  const whiteList = ['/login']
+  // 判断当前路径是否在白名单内（to.path是相对base的路径，如'/login'）
+  if (!localStorage.getItem('token') && !whiteList.includes(to.path)) {
+    return '/login' // 重定向到 /font/login（基于base）
+  }
 })
 
 export default router

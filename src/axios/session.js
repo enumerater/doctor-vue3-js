@@ -1,9 +1,8 @@
 import request from '@/utils/requests'
 
-export const login = (data) => {
+export const getAllSession = () => {
   return request({
-    url: '/user/login',
+    url: '/session/page',
     method: 'get',
-    params: data,
   })
 }

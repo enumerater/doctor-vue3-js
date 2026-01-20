@@ -18,7 +18,6 @@
             <MobileComponent></MobileComponent>
         </div>
     </div>
-
 </template>
 
 <script setup>
@@ -44,7 +43,6 @@ function onSubTitleClick() {
     // 切换 0 和 1
     tabIndex.value = Math.abs(tabIndex.value - 1)
 }
-
 </script>
 
 <style lang="scss" scoped>

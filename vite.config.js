@@ -6,6 +6,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/font/',
   server: {
     // 允许访问的主机列表
     allowedHosts: [
