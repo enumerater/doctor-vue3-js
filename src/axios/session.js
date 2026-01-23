@@ -6,3 +6,21 @@ export const getAllSession = () => {
     method: 'get',
   })
 }
+
+export const createSession = (data) => {
+  return request({
+    url: '/session',
+    method: 'post',
+    data,
+  })
+}
+
+export const deleteSession = (id) => {
+  return request({
+    url: '/session',
+    method: 'delete',
+    params: {
+      id,
+    },
+  })
+}

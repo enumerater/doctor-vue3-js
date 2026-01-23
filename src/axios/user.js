@@ -7,3 +7,19 @@ export const login = (data) => {
     params: data,
   })
 }
+
+export const updateSesssionId = (data) => {
+  return request({
+    url: '/user',
+    method: 'put',
+    data,
+  })
+}
+
+export const getUser = (id) => {
+  return request({
+    url: '/user/getById',
+    method: 'get',
+    params: id,
+  })
+}

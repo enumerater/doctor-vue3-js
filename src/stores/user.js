@@ -6,6 +6,7 @@ export const useUserStore = defineStore('user', () => {
     token: '',
     username: '',
     id: '',
+    sessionId: '',
   })
   // 登录
   function setUser(data) {
@@ -13,13 +14,16 @@ export const useUserStore = defineStore('user', () => {
       token: data.token,
       username: data.username,
       id: data.id,
+      sessionId: data.sessionId,
     }
+
     // 登录成功后，将 token 存储到 localStorage
     localStorage.setItem('token', data.token)
     // 登录成功后，将 username 存储到 localStorage
     localStorage.setItem('username', data.username)
     // 登录成功后，将 id 存储到 localStorage
     localStorage.setItem('id', data.id)
+    localStorage.setItem('sessionId', data.sessionId)
   }
 
   return { user, setUser }

@@ -10,9 +10,27 @@ const router = createRouter({
       component: () => import('@/views/LoginView.vue'),
       meta: { title: '登录' },
     },
-    { path: '/home', component: () => import('@/views/HomeView.vue'), meta: { title: '首页' } },
+    {
+      path: '/home',
+      component: () => import('@/views/HomeView.vue'),
+      meta: { title: '首页' },
+
+      children: [
+        {
+          path: 'chat/:sessionId',
+          component: () => import('@/views/ChatDetail.vue'),
+          name: 'chatDetail',
+        },
+        {
+          path: 'begin',
+          component: () => import('@/views/ChatContentBeginView.vue'),
+          name: 'chatBegin',
+        },
+      ],
+    },
+
     // 通配符路由：匹配不到时重定向到 /font/home（基于base）
-    { path: '/:pathMatch(.*)*', redirect: '/home' },
+    { path: '/:pathMatch(.*)*', redirect: '/home/begin' },
   ],
 })
 

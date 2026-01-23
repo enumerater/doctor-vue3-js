@@ -1,10 +1,5 @@
 <template>
     <div class="history-list-container">
-        <!-- 组件头部 -->
-        <div class="history-header">
-            <h2 class="history-title">对话历史记录</h2>
-        </div>
-
         <!-- 历史记录列表 -->
         <div class="history-content">
             <!-- 空状态 -->
@@ -14,7 +9,7 @@
 
             <!-- 历史记录项 -->
             <div class="history-item" :class="{ active: item.id === activeItemId }" v-for="item in filteredHistory"
-                :key="item.id" @click="handleItemClick(item.id)">
+                :key="item.id" @click="handleItemClick(item.sessionId)">
                 <!-- 未读标记 -->
                 <van-badge dot v-if="item.unread" class="unread-dot" />
 
@@ -34,6 +29,15 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { deleteSession } from '@/axios/session'
+import { watch } from 'vue'
+import { defineProps } from 'vue'
+import { defineEmits } from 'vue'
+import { useRouter } from 'vue-router'
+import { useSidebarStore } from '@/stores/sidebar'
+
+const router = useRouter()
+const sidebarStore = useSidebarStore()
 
 // 搜索关键词
 const searchKeyword = ref('')
@@ -47,18 +51,51 @@ const historyList = ref([])
 const filteredHistory = computed(() => {
     if (!searchKeyword.value.trim()) return historyList.value
     return historyList.value.filter(
-        (item) => item.title.includes(searchKeyword.value) || item.desc.includes(searchKeyword.value),
+        (item) => item.sessionTitle?.includes(searchKeyword.value) // 加?.避免字段不存在报错
     )
 })
 
+// 核心修改1：修正emit事件名（和父组件一致：refreshDone）
+const emit = defineEmits(['refreshDone', 'get-message'])
 // 点击历史记录项（可跳转到对应对话）
-const handleItemClick = (id) => {
-    activeItemId.value = id
-    // 这里可以添加跳转到对应对话的逻辑，比如向父组件传递选中的记录
-    console.log('选中对话ID：', id)
-    // 示例：通过emit向父组件传递事件
-    // emit('select-history', id)
+// const handleItemClick = (id) => {
+//     activeItemId.value = id
+//     // 这里可以添加跳转到对应对话的逻辑，比如向父组件传递选中的记录
+//     console.log('选中对话ID：', id)
+//     router.push({
+//         name: 'chatDetail',
+//         params: {
+//             sessionId: id,
+//         },
+//     })
+//     // 核心修改2：触发get-message，通知父组件获取选中对话的消息
+//     emit('get-message', id)
+//     sidebarStore.closeLeft()
+// }
+
+// 引入chatStore
+import { useChatStore } from '@/stores/chat'
+
+const chatStore = useChatStore()
+
+// 点击历史记录项的逻辑修改
+const handleItemClick = (sessionId) => {
+    // 1. 更新全局状态中的当前会话ID
+    chatStore.setCurrentSessionId(sessionId)
+    // 2. 立即请求该会话的历史消息（提前加载，避免页面空白）
+    chatStore.fetchMessages(sessionId)
+
+    // 3. 路由跳转（保持原有逻辑）
+    router.push({
+        name: 'chatDetail',
+        params: {
+            sessionId: sessionId, // 路由参数也传递sessionId，做双重保障
+        },
+    })
+
+    sidebarStore.closeLeft()
 }
+
 
 // 删除单条历史记录
 const handleDelete = (id) => {
@@ -67,20 +104,55 @@ const handleDelete = (id) => {
     if (activeItemId.value === id) {
         activeItemId.value = historyList.value[0]?.id || ''
     }
+
+    deleteSession(id).then((res) => {
+        console.log('删除对话历史记录', res.data)
+    })
 }
 
 // 获取所有对话历史记录
 import { getAllSession } from '@/axios/session'
 import { onMounted } from 'vue'
 
-// 组件初始化时获取所有对话历史记录
+// 封装刷新逻辑（复用）
+const updateSession = () => {
+    console.log('开始刷新历史记录')
+    getAllSession()
+        .then((res) => {
+            console.log('刷新到的历史记录：', res.data)
+            historyList.value = res.data || []
+        })
+        .catch((err) => {
+            console.error('刷新历史记录失败：', err)
+        })
+}
+
+// 组件初始化时加载数据
 onMounted(() => {
-    console.log('获取所有对话历史记录')
-    getAllSession().then((res) => {
-        console.log('获取所有对话历史记录', res.data)
-        historyList.value = res.data || []
-    })
+    updateSession()
 })
+
+// 接收父组件的刷新信号
+const props = defineProps({
+    refreshTrigger: {
+        type: Boolean,
+        default: false,
+    },
+})
+
+// 监听刷新信号，触发刷新
+watch(
+    () => props.refreshTrigger,
+    (newVal) => {
+        if (newVal) {
+            // 只有信号为true时才刷新
+            updateSession()
+            // 核心修改3：触发refreshDone，通知父组件重置信号
+            emit('refreshDone')
+        }
+    },
+    { immediate: true },
+)
 </script>
 
 <style lang="scss" scoped>

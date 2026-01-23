@@ -1,25 +1,17 @@
 import request from '@/utils/requests'
 
-export const chat = (data) => {
+export const memoryChat = (data) => {
   return request({
-    url: '/chat',
-    method: 'post',
-    data,
+    url: '/chat/memory',
+    method: 'get',
+    params: data,
   })
 }
 
-export const UploadImage = (data) => {
+export const getMessage = (sessionId) => {
   return request({
-    url: '/upload',
-    method: 'post',
-    data,
-  })
-}
-
-export const chatVis = (data) => {
-  return request({
-    url: '/scan/chat',
-    method: 'post',
-    data,
+    url: '/message',
+    method: 'get',
+    params: sessionId,
   })
 }
