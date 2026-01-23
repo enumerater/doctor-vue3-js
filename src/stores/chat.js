@@ -27,6 +27,8 @@ export const useChatStore = defineStore('chat', {
         if (Array.isArray(res.data)) {
           this.chatMessages = res.data // 存入全局状态
         }
+
+        console.log('8451984651984651{}', res)
       } catch (err) {
         console.error('获取历史消息失败：', err)
         this.chatMessages = [{ type: 'robot', content: '获取历史记录失败，请重试' }]

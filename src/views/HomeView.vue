@@ -29,7 +29,7 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted, onMounted } from 'vue'
+import { ref } from 'vue'
 import Sidebar from '@/views/SidebarView.vue'
 
 import { updateSesssionId } from '@/axios/user'
@@ -52,13 +52,12 @@ const handleRefreshDone = () => {
     showLeft.value = false
 }
 
-const handleGetMessage = (id) => {
-    getMessage({
-        sessionId: '' + id,
-    }).then((res) => {
-        console.log(res.data)
-        messages.value.push(...res.data)
-    })
+import { useChatStore } from '@/stores/chat'
+const chatStore = useChatStore()
+
+const handleGetMessage = (sessionId) => {
+    chatStore.setCurrentSessionId(sessionId)
+    router.push({ name: 'chatDetail', params: { sessionId } })
 }
 
 const inputValue = ref('')
@@ -172,6 +171,7 @@ const resetConversation = () => {
             // 关键修改：-> 改为 =>
             console.log('用户信息请求成功：', res)
             localStorage.setItem('sessionId', res.data.sessionId)
+            chatStore.setCurrentSessionId(localStorage.getItem('sessionId'))
 
             // 2 发请求创建新session
             createSession({
@@ -199,19 +199,6 @@ const handleQuestionSelect = (question) => {
     inputValue.value = question
 }
 
-import { getMessage } from '@/axios/chat'
-onMounted(() => {
-    getMessage({
-        sessionId: '' + localStorage.getItem('id') + localStorage.getItem('sessionId'),
-    }).then((res) => {
-        console.log(res.data)
-        messages.value.push(...res.data)
-    })
-})
-// 组件卸载时清理
-onUnmounted(() => {
-    // 无需要关闭的EventSource，fetch的reader会随请求结束自动清理
-})
 </script>
 
 <style lang="scss" scoped>
