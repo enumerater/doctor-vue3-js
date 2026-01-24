@@ -3,13 +3,14 @@
         <!-- 历史记录列表 -->
         <div class="history-content">
             <!-- 空状态 -->
-            <div class="empty-history" v-if="filteredHistory.length === 0">
+            <div class="empty-history" v-if="sidebarStore.filteredHistory.length === 0">
                 <van-empty description="暂无对话历史记录" icon="clock-o" />
             </div>
 
             <!-- 历史记录项 -->
-            <div class="history-item" :class="{ active: item.id === activeItemId }" v-for="item in filteredHistory"
-                :key="item.id" @click="handleItemClick(item.sessionId)">
+            <div class="history-item" :class="{ active: item.id === sidebarStore.activeItemId }"
+                v-for="item in sidebarStore.filteredHistory" :key="item.id"
+                @click="sidebarStore.selectHistoryItem(item.sessionId)">
                 <!-- 未读标记 -->
                 <van-badge dot v-if="item.unread" class="unread-dot" />
 
@@ -19,7 +20,7 @@
                     <div class="item-footer">
                         <span class="item-time">{{ item.lastChatTime }}</span>
                         <van-button size="mini" type="text" icon="delete" class="delete-btn"
-                            @click.stop="handleDelete(item.id)" />
+                            @click.stop="sidebarStore.deleteHistoryItem(item.id)" />
                     </div>
                 </div>
             </div>
@@ -28,116 +29,15 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { deleteSession } from '@/axios/session'
-import { watch } from 'vue'
-import { defineProps } from 'vue'
-import { defineEmits } from 'vue'
-import { useRouter } from 'vue-router'
 import { useSidebarStore } from '@/stores/sidebar'
-
-const router = useRouter()
-const sidebarStore = useSidebarStore()
-
-// 搜索关键词
-const searchKeyword = ref('')
-// 当前选中的记录ID
-const activeItemId = ref(1)
-
-// 模拟农业对话历史数据（贴合Chat小农的业务场景）
-const historyList = ref([])
-
-// 根据搜索关键词过滤历史记录
-const filteredHistory = computed(() => {
-    if (!searchKeyword.value.trim()) return historyList.value
-    return historyList.value.filter(
-        (item) => item.sessionTitle?.includes(searchKeyword.value) // 加?.避免字段不存在报错
-    )
-})
-
-// 核心修改1：修正emit事件名（和父组件一致：refreshDone）
-const emit = defineEmits(['refreshDone', 'get-message'])
-
-// 引入chatStore
-import { useChatStore } from '@/stores/chat'
-
-const chatStore = useChatStore()
-
-// 点击历史记录项的逻辑修改
-const handleItemClick = (sessionId) => {
-    // 1. 更新全局状态中的当前会话ID
-    chatStore.setCurrentSessionId(sessionId)
-    // 2. 立即请求该会话的历史消息（提前加载，避免页面空白）
-    chatStore.fetchMessages(sessionId)
-
-    // 3. 路由跳转（保持原有逻辑）
-    router.push({
-        name: 'chatDetail',
-        params: {
-            sessionId: sessionId, // 路由参数也传递sessionId，做双重保障
-        },
-    })
-
-    sidebarStore.closeLeft()
-}
-
-
-// 删除单条历史记录
-const handleDelete = (id) => {
-    historyList.value = historyList.value.filter((item) => item.id !== id)
-    // 如果删除的是当前选中项，重置选中状态
-    if (activeItemId.value === id) {
-        activeItemId.value = historyList.value[0]?.id || ''
-    }
-
-    deleteSession(id).then((res) => {
-        console.log('删除对话历史记录', res.data)
-    })
-}
-
-// 获取所有对话历史记录
-import { getAllSession } from '@/axios/session'
 import { onMounted } from 'vue'
 
-// 封装刷新逻辑（复用）
-const updateSession = () => {
-    console.log('开始刷新历史记录')
-    getAllSession()
-        .then((res) => {
-            console.log('刷新到的历史记录：', res.data)
-            historyList.value = res.data || []
-        })
-        .catch((err) => {
-            console.error('刷新历史记录失败：', err)
-        })
-}
+const sidebarStore = useSidebarStore()
 
-// 组件初始化时加载数据
+// 组件初始化时加载历史记录
 onMounted(() => {
-    updateSession()
+    sidebarStore.fetchHistoryList()
 })
-
-// 接收父组件的刷新信号
-const props = defineProps({
-    refreshTrigger: {
-        type: Boolean,
-        default: false,
-    },
-})
-
-// 监听刷新信号，触发刷新
-watch(
-    () => props.refreshTrigger,
-    (newVal) => {
-        if (newVal) {
-            // 只有信号为true时才刷新
-            updateSession()
-            // 核心修改3：触发refreshDone，通知父组件重置信号
-            emit('refreshDone')
-        }
-    },
-    { immediate: true },
-)
 </script>
 
 <style lang="scss" scoped>

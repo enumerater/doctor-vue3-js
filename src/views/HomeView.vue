@@ -1,21 +1,19 @@
 <template>
     <div class="chat-page">
-        <!-- 模板部分保持不变 -->
         <div class="nav-header">
-            <van-button icon="bars" type="default" size="small" class="menu-btn" @click="showLeft = !showLeft" />
+            <van-button icon="bars" type="default" size="small" class="menu-btn" @click="sidebarStore.toggleLeft()" />
             <div class="capsule-btn"></div>
-            <van-popup v-model:show="showLeft" position="left" :style="{ width: '80%', height: '100%' }" closeable
-                round>
+            <van-popup v-model:show="sidebarStore.showLeft" position="left" :style="{ width: '80%', height: '100%' }"
+                closeable round>
                 <template #default>
-                    <Sidebar @resetConversation="resetConversation" @get-message="handleGetMessage"></Sidebar>
+                    <Sidebar />
                 </template>
             </van-popup>
         </div>
 
         <div class="main-content">
-            <!-- 二级路由 -->
-            <router-view @question-click="handleQuestionSelect" :messages="messages" :key="$route.fullPath"
-                @refreshDone="handleRefreshDone" @get-message="handleGetMessage"></router-view>
+            <router-view @question-click="handleQuestionSelect" :messages="messages"
+                :key="$route.fullPath"></router-view>
         </div>
 
         <div class="input-area">
@@ -31,103 +29,40 @@
 <script setup>
 import { ref } from 'vue'
 import Sidebar from '@/views/SidebarView.vue'
-
-import { updateSesssionId } from '@/axios/user'
-import { createSession } from '@/axios/session'
-
-import { useRouter } from 'vue-router'
-const router = useRouter()
-
-import { useSidebarStore } from '@/stores/sidebar' // 引入侧边栏Store
-
-const sidebarStore = useSidebarStore() // 获取Store实例
-
-const sessionId = ref('')
-sessionId.value = localStorage.getItem('sessionId') || ''
-// 左侧弹出菜单状态
-import { storeToRefs } from 'pinia'
-const { showLeft } = storeToRefs(sidebarStore)
-
-const handleRefreshDone = () => {
-    showLeft.value = false
-}
-
+import { useSidebarStore } from '@/stores/sidebar'
 import { useChatStore } from '@/stores/chat'
-const chatStore = useChatStore()
+import { useRouter } from 'vue-router'
 
-const handleGetMessage = (sessionId) => {
-    chatStore.setCurrentSessionId(sessionId)
-    router.push({ name: 'chatDetail', params: { sessionId } })
-}
+const sidebarStore = useSidebarStore()
+const chatStore = useChatStore()
+const router = useRouter()
 
 const inputValue = ref('')
 const messages = ref([])
-// 定义Authorization令牌（建议从本地存储/状态管理中读取，这里先硬编码）
-const TOKEN = localStorage.getItem('token') // 带Authorization的流式请求（fetch + ReadableStream方案）
+const TOKEN = localStorage.getItem('token')
 
+// 发送消息逻辑（保留原有核心）
 const sendMessage = async () => {
-    const content = inputValue.value
-    const userId = localStorage.getItem('id')
-    const currentSessionId = localStorage.getItem('sessionId') || sessionId.value
+    const content = inputValue.value.trim()
+    if (!content) return
 
-    // 调用store的核心发送逻辑
+    const userId = localStorage.getItem('id')
+    const currentSessionId = localStorage.getItem('sessionId') || ''
+
     await chatStore.sendMessage(content, userId, currentSessionId, TOKEN)
 
-    // 组件层处理：清空输入框 + 路由跳转
     inputValue.value = ''
     router.push({
         name: 'chatDetail',
-        params: { sessionId: '' + userId + sessionId.value },
+        params: { sessionId: `${userId}${currentSessionId}` },
     })
 }
 
-import { getUser } from '@/axios/user'
-
-// 重置对话
-const resetConversation = () => {
-    // 1 发请求让sessionid + 1
-    updateSesssionId({
-        userId: localStorage.getItem('id'),
-    })
-
-    // 3 从服务端获取新sessionid
-    getUser({
-        id: localStorage.getItem('id'),
-    })
-        .then((res) => {
-            // 关键修改：-> 改为 =>
-            console.log('用户信息请求成功：', res)
-            localStorage.setItem('sessionId', res.data.sessionId)
-            chatStore.setCurrentSessionId(localStorage.getItem('sessionId'))
-
-            // 2 发请求创建新session
-            createSession({
-                userId: localStorage.getItem('id'),
-                sessionTitle: '新会话',
-                sessionId: '' + localStorage.getItem('id') + localStorage.getItem('sessionId'),
-            })
-        })
-        .catch((err) => {
-            // 新增：捕获请求失败的异常
-            console.error('用户信息请求失败：', err)
-        })
-
-    localStorage.setItem('sessionId', sessionId.value)
-
-    router.push({ name: 'chatBegin' })
-
-    messages.value = []
-    inputValue.value = ''
-    showLeft.value = false
-}
-
-// 处理热门问题点击事件
+// 处理热门问题点击
 const handleQuestionSelect = (question) => {
     inputValue.value = question
 }
-
 </script>
-
 <style lang="scss" scoped>
 // 1. 父容器 .chat-page（核心布局基础）
 .chat-page {
