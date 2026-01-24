@@ -64,94 +64,21 @@ const inputValue = ref('')
 const messages = ref([])
 // 定义Authorization令牌（建议从本地存储/状态管理中读取，这里先硬编码）
 const TOKEN = localStorage.getItem('token') // 带Authorization的流式请求（fetch + ReadableStream方案）
+
 const sendMessage = async () => {
-    const content = inputValue.value.trim()
-    if (!content) return
+    const content = inputValue.value
+    const userId = localStorage.getItem('id')
+    const currentSessionId = localStorage.getItem('sessionId') || sessionId.value
 
-    // 1. 添加用户消息
-    const userMsg = { type: 'user', content: content }
-    messages.value.push(userMsg)
-    console.log('添加用户消息：', userMsg)
+    // 调用store的核心发送逻辑
+    await chatStore.sendMessage(content, userId, currentSessionId, TOKEN)
 
-    // 2. 初始化机器人消息
-    const robotMsg = { type: 'robot', content: '' }
-    messages.value.push(robotMsg)
-    const robotMsgIndex = messages.value.length - 1
-    console.log('初始化机器人消息，索引：', robotMsgIndex)
-
+    // 组件层处理：清空输入框 + 路由跳转
     inputValue.value = ''
-
     router.push({
         name: 'chatDetail',
-        params: { sessionId: '' + localStorage.getItem('id') + sessionId.value },
+        params: { sessionId: '' + userId + sessionId.value },
     })
-
-    try {
-        const url = new URL('http://localhost:8080/chat/memory')
-        url.searchParams.append('prompt', content)
-        url.searchParams.append('userId', localStorage.getItem('id'))
-        url.searchParams.append('sessionId', localStorage.getItem('sessionId'))
-
-        const response = await fetch(url, {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-                Accept: 'text/event-stream',
-                'Cache-Control': 'no-cache',
-                Connection: 'keep-alive',
-                Authorization: TOKEN,
-            },
-        })
-
-        if (!response.ok) {
-            throw new Error(`请求失败：${response.status} ${response.statusText}`)
-        }
-        console.log('请求成功，开始读取流式数据')
-
-        const reader = response.body.getReader()
-        const decoder = new TextDecoder('utf-8')
-        let buffer = ''
-
-        while (true) {
-            const { done, value } = await reader.read()
-            if (done) {
-                console.log('流式数据读取完成')
-                break
-            }
-
-            // 解码原始二进制数据
-            buffer += decoder.decode(value, { stream: true })
-
-            // ========== 核心修改：适配后端的多行SSE格式 ==========
-            // 1. 按换行符分割所有行（不管是\n还是\r\n）
-            const allLines = buffer.split(/\r?\n/)
-            // 2. 最后一行可能不完整，放回buffer
-            buffer = allLines.pop() || ''
-
-            // 3. 遍历每一行，只处理data:开头的行
-            for (const line of allLines) {
-                const trimedLine = line.trim()
-                if (!trimedLine) continue
-
-                // 跳过id:和event:行，只处理data:行
-                if (trimedLine.startsWith('data:')) {
-                    // 提取data:后面的内容（去掉data:前缀）
-                    const chunk = trimedLine.substring(5).trim()
-                    // 跳过空的data行
-                    if (chunk === '' || chunk === '[DONE]') continue
-
-                    console.log('提取到的有效内容：', chunk) // 验证提取结果
-                    // 拼接内容到机器人消息（响应式更新）
-                    messages.value[robotMsgIndex].content += chunk
-                }
-            }
-        }
-    } catch (error) {
-        console.error('流式请求出错：', error)
-        if (messages.value[robotMsgIndex]) {
-            messages.value[robotMsgIndex].content = `请求失败：${error.message}`
-        }
-    }
 }
 
 import { getUser } from '@/axios/user'

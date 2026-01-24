@@ -16,9 +16,45 @@
 
 <script setup>
 import { useChatStore } from '@/stores/chat'
-import { computed } from 'vue'
+import { computed, watch, onMounted } from 'vue'
+// 新增：引入路由相关API
+import { useRoute } from 'vue-router'
+
 const chatStore = useChatStore()
+// 新增：获取当前路由对象
+const route = useRoute()
 const messages = computed(() => chatStore.chatMessages)
+
+// 新增核心逻辑：加载历史消息（封装成函数复用）
+const loadHistoryMessages = async () => {
+    // 从路由参数中获取sessionId
+    const sessionId = route.params.sessionId
+    if (!sessionId) return // 无sessionId时不执行
+
+    // 同步当前会话ID + 加载历史消息
+    chatStore.setCurrentSessionId(sessionId)
+    await chatStore.fetchMessages(sessionId)
+
+    // 可选：如果需要滚动到消息底部，可在这里添加滚动逻辑
+    // const messageList = ref(null) // 需在template中绑定ref="messageList"
+    // if (messageList.value) {
+    //   messageList.value.scrollTop = messageList.value.scrollHeight
+    // }
+}
+
+// 新增：组件挂载时加载一次（直接访问链接触发）
+onMounted(() => {
+    loadHistoryMessages()
+})
+
+// 新增：监听路由参数变化（比如从其他会话跳转过来时触发）
+watch(
+    () => route.params.sessionId,
+    () => {
+        loadHistoryMessages()
+    },
+    { immediate: true } // 立即执行一次（和onMounted效果叠加，双重保障）
+)
 </script>
 
 <!-- 样式保持不变（因为class还是user/robot，和原来一致） -->

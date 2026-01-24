@@ -57,21 +57,6 @@ const filteredHistory = computed(() => {
 
 // 核心修改1：修正emit事件名（和父组件一致：refreshDone）
 const emit = defineEmits(['refreshDone', 'get-message'])
-// 点击历史记录项（可跳转到对应对话）
-// const handleItemClick = (id) => {
-//     activeItemId.value = id
-//     // 这里可以添加跳转到对应对话的逻辑，比如向父组件传递选中的记录
-//     console.log('选中对话ID：', id)
-//     router.push({
-//         name: 'chatDetail',
-//         params: {
-//             sessionId: id,
-//         },
-//     })
-//     // 核心修改2：触发get-message，通知父组件获取选中对话的消息
-//     emit('get-message', id)
-//     sidebarStore.closeLeft()
-// }
 
 // 引入chatStore
 import { useChatStore } from '@/stores/chat'
