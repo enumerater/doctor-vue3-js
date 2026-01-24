@@ -1,34 +1,35 @@
-<template>
-    <div class="logo-section">
-        <img src="../assets/home/S-农业.png" alt="Chat小农" class="avatar" />
-        <h1 class="title">Chat小农</h1>
-    </div>
-</template>
-
 <script setup>
 // 该组件仅负责Logo和标题展示，无业务逻辑，便于后续替换样式/内容
 </script>
 
-<style lang="scss" scoped>
-.logo-section {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px 16px 8px;
-    background-color: #f5f7fa;
+<!-- LogoSection.vue 示例 -->
+<template>
+    <div class="logo-wrapper">
+        <img src="../assets/home/S-农业.png" alt="Chat小农" class="logo-img" />
+        <h2 class="logo-title">Chat小农</h2>
+        <p class="logo-subtitle">专业解答农业种植问题</p>
+    </div>
+</template>
 
-    .avatar {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        margin-right: 12px;
-    }
+<style scoped>
+.logo-wrapper {
+    text-align: center;
+}
 
-    .title {
-        font-size: 28px;
-        font-weight: bold;
-        color: #333;
-        margin: 0;
-    }
+.logo-img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+}
+
+.logo-title {
+    font-size: 24px;
+    color: #2d3748;
+    margin: 15px 0 8px 0;
+}
+
+.logo-subtitle {
+    font-size: 14px;
+    color: #718096;
 }
 </style>

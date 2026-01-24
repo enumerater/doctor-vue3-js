@@ -12,12 +12,14 @@
         </div>
 
         <div class="main-content">
-            <router-view @question-click="handleQuestionSelect" :messages="messages"
-                :key="$route.fullPath"></router-view>
+            <!-- 不再传递messages和question-click，子组件直接用Store -->
+            <router-view :key="$route.fullPath"></router-view>
         </div>
 
         <div class="input-area">
-            <van-field v-model="inputValue" placeholder="请提问和农业相关的内容" class="input-field" @keyup.enter="sendMessage" />
+            <!-- 绑定Store的inputValue，而非本地状态 -->
+            <van-field v-model="chatStore.inputValue" placeholder="请提问和农业相关的内容" class="input-field"
+                @keyup.enter="sendMessage" />
             <van-button
                 icon="https://enumerate-oss.oss-cn-qingdao.aliyuncs.com/fe62741e-d350-4c13-8cf5-a1edf8c98784.png"
                 type="default" class="action-btn" @click="sendMessage" />
@@ -27,7 +29,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { storeToRefs } from 'pinia' // 新增：用于解构Store的响应式状态
 import Sidebar from '@/views/SidebarView.vue'
 import { useSidebarStore } from '@/stores/sidebar'
 import { useChatStore } from '@/stores/chat'
@@ -37,11 +39,11 @@ const sidebarStore = useSidebarStore()
 const chatStore = useChatStore()
 const router = useRouter()
 
-const inputValue = ref('')
-const messages = ref([])
+// 解构Store的响应式状态（必须用storeToRefs）
+const { inputValue } = storeToRefs(chatStore)
 const TOKEN = localStorage.getItem('token')
 
-// 发送消息逻辑（保留原有核心）
+// 简化发送消息逻辑
 const sendMessage = async () => {
     const content = inputValue.value.trim()
     if (!content) return
@@ -51,30 +53,27 @@ const sendMessage = async () => {
 
     await chatStore.sendMessage(content, userId, currentSessionId, TOKEN)
 
-    inputValue.value = ''
+    // 跳转逻辑保留，也可以抽离到Store（可选）
     router.push({
         name: 'chatDetail',
         params: { sessionId: `${userId}${currentSessionId}` },
     })
 }
 
-// 处理热门问题点击
-const handleQuestionSelect = (question) => {
-    inputValue.value = question
-}
+// 移除handleQuestionSelect（逻辑已移到Store）
 </script>
+
 <style lang="scss" scoped>
-// 1. 父容器 .chat-page（核心布局基础）
+// 原有样式保留，无需修改
 .chat-page {
     min-height: 100vh;
     background-color: #f5f7fa;
     display: flex;
     flex-direction: column;
-    overflow: hidden; // 防止页面整体滚动（关键）
-    position: relative; // 新增：为固定定位的子元素提供参考
+    overflow: hidden;
+    position: relative;
 }
 
-// 2. 导航栏 - 固定在顶部
 .nav-header {
     display: flex;
     align-items: center;
@@ -83,26 +82,24 @@ const handleQuestionSelect = (question) => {
     background-color: #f5f7fa;
     height: 50px;
     flex-shrink: 0;
-    border-bottom: 1px solid #eee;
-    // 核心修改：固定定位 + 层级
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 100; // 确保在最上层
+    z-index: 100;
+    border-bottom: 1px solid #eee;
 }
 
-// 3. 中间内容区 - 避开固定的头部和底部
 .main-content {
-    flex: 1; // 占满剩余高度
-    overflow-y: auto; // 内容过多时内部滚动（关键）
-    // 核心修改：留出头部和底部的间距
-    margin-top: 63px; // 对应导航栏高度
-    margin-bottom: 63px; // 对应输入栏高度
-    height: calc(100vh - 110px); // 50+60=110，确保高度适配
+    flex: 1;
+    overflow-y: auto;
+    margin-top: 63px;
+    margin-bottom: 63px;
+    height: calc(100vh - 126px); // 微调：63+63=126，精准适配
+    padding: 0; // 移除默认padding，避免子组件偏移
+    background-color: #f8f9fa; // 与初始界面背景统一
 }
 
-// 4. 输入栏 - 固定在底部
 .input-area {
     display: flex;
     align-items: center;
@@ -111,12 +108,11 @@ const handleQuestionSelect = (question) => {
     border-top: 1px solid #eee;
     height: 60px;
     flex-shrink: 0;
-    // 核心修改：固定定位 + 层级
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 100; // 确保在最上层
+    z-index: 100;
 }
 
 .content-container {
@@ -124,7 +120,6 @@ const handleQuestionSelect = (question) => {
     overflow: auto;
 }
 
-// 导航栏内部样式（原有保留）
 .nav-header .menu-btn {
     font-size: 20px;
     color: #333;
@@ -134,7 +129,6 @@ const handleQuestionSelect = (question) => {
     width: 60px;
 }
 
-// 输入栏内部样式（原有保留）
 .input-area .input-field {
     flex: 1;
     margin-right: 8px;

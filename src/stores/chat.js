@@ -1,3 +1,4 @@
+// stores/chat.js（扩展后）
 import { defineStore } from 'pinia'
 import { getMessage } from '@/axios/chat'
 
@@ -6,6 +7,7 @@ export const useChatStore = defineStore('chat', {
     currentSessionId: '', // 当前选中的会话ID
     chatMessages: [], // 当前会话的消息列表
     currentRobotMsgIndex: -1, // 机器人消息索引
+    inputValue: '', // ✅ 新增：输入框内容（从ChatPage抽离）
   }),
   actions: {
     setCurrentSessionId(sessionId) {
@@ -15,6 +17,18 @@ export const useChatStore = defineStore('chat', {
       this.chatMessages = []
       this.currentRobotMsgIndex = -1
     },
+    // ✅ 新增：设置输入框内容（供所有组件调用）
+    setInputValue(value) {
+      this.inputValue = value
+    },
+    // ✅ 新增：清空输入框（复用）
+    clearInputValue() {
+      this.inputValue = ''
+    },
+    // ✅ 新增：处理热门问题点击（集中逻辑）
+    handleHotQuestionClick(question) {
+      this.setInputValue(question) // 直接赋值到输入框
+    },
     async fetchMessages(sessionId) {
       if (!sessionId) return
       this.clearMessages()
@@ -22,17 +36,15 @@ export const useChatStore = defineStore('chat', {
         console.log('请求历史消息：', sessionId)
         const res = await getMessage({ sessionId: sessionId })
         if (Array.isArray(res.data)) {
-          // 兼容接口返回的字段（如果接口返回content，转成messageContent）
           this.chatMessages = res.data.map((msg) => ({
             ...msg,
             messageContent: msg.messageContent || msg.content,
-            messageRole: msg.messageRole || (msg.type === 'user' ? '0' : '1'), // 兼容type字段
+            messageRole: msg.messageRole || (msg.type === 'user' ? '0' : '1'),
           }))
         }
         console.log('历史消息请求结果：', res)
       } catch (err) {
         console.error('获取历史消息失败：', err)
-        // 统一用messageContent
         this.chatMessages = [
           { type: 'robot', messageContent: '获取历史记录失败，请重试', messageRole: '1' },
         ]
@@ -43,26 +55,24 @@ export const useChatStore = defineStore('chat', {
       if (!trimmedContent) return Promise.reject(new Error('消息内容不能为空'))
 
       try {
-        // 1. 添加用户消息（统一用messageContent）
+        // 改用store的inputValue（可选，也可以继续传参）
         const userMsg = {
           type: 'user',
           messageContent: trimmedContent,
-          messageRole: '0', // 标记为用户消息，和模板的判断匹配
+          messageRole: '0',
         }
         this.chatMessages.push(userMsg)
         console.log('添加用户消息：', userMsg)
 
-        // 2. 初始化机器人消息（统一用messageContent）
         const robotMsg = {
           type: 'robot',
           messageContent: '',
-          messageRole: '1', // 标记为机器人消息
+          messageRole: '1',
         }
         this.chatMessages.push(robotMsg)
         this.currentRobotMsgIndex = this.chatMessages.length - 1
         console.log('初始化机器人消息，索引：', this.currentRobotMsgIndex)
 
-        // 3. 构建SSE请求（逻辑不变）
         const url = new URL('http://localhost:8080/chat/memory')
         url.searchParams.append('prompt', trimmedContent)
         url.searchParams.append('userId', userId)
@@ -84,7 +94,6 @@ export const useChatStore = defineStore('chat', {
         }
         console.log('请求成功，开始读取流式数据')
 
-        // 4. 处理流式响应（更新messageContent）
         const reader = response.body.getReader()
         const decoder = new TextDecoder('utf-8')
         let buffer = ''
@@ -109,7 +118,6 @@ export const useChatStore = defineStore('chat', {
               if (chunk === '' || chunk === '[DONE]') continue
 
               console.log('提取到的有效内容：', chunk)
-              // 核心：更新messageContent字段
               if (this.currentRobotMsgIndex >= 0) {
                 this.chatMessages[this.currentRobotMsgIndex].messageContent += chunk
               }
@@ -117,10 +125,10 @@ export const useChatStore = defineStore('chat', {
           }
         }
 
+        this.clearInputValue() // ✅ 发送后清空输入框（复用store方法）
         return Promise.resolve()
       } catch (error) {
         console.error('流式请求出错：', error)
-        // 错误提示也更新messageContent
         if (this.currentRobotMsgIndex >= 0) {
           this.chatMessages[this.currentRobotMsgIndex].messageContent = `请求失败：${error.message}`
         }

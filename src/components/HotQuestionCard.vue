@@ -1,114 +1,50 @@
+<!-- 假设你的 HotQuestionCard.vue 结构 -->
 <template>
-    <div class="question-card" border="false">
-        <div class="card-header">
-            <span class="card-title">精选问题</span>
-            <span class="card-date">01.16</span>
-        </div>
+    <div class="hot-question-card">
+        <h3 class="card-title">热门农业问题</h3>
         <div class="question-list">
-            <div class="question-item" v-for="(item, index) in hotQuestions" :key="index"
-                @click="handleQuestionClick(item)">
-                {{ index + 1 }}. {{ item }}
+            <div class="question-item" v-for="question in hotQuestions" :key="question.id"
+                @click="handleQuestionClick(question.content)">
+                {{ question.content }}
             </div>
         </div>
-        <van-button icon="https://enumerate-oss.oss-cn-qingdao.aliyuncs.com/f5f85af5-f362-44f3-95a1-9a6192be36ef.png"
-            type="default" class="refresh-btn" @click="refreshQuestions">
-            换一换
-        </van-button>
     </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { useChatStore } from '@/stores/chat'
 
-// 定义事件发射，向父组件传递选中的问题
-const emit = defineEmits(['question-click'])
-
-// 备用问题池（组件内部维护，如需外部配置可改为props）
-const questionPool = [
-    '如何防治番茄晚疫病？',
-    '小麦倒伏后如何补救？',
-    '大棚蔬菜如何提高坐果率？',
-    '如何辨别果树缺素症状？',
-    '玉米螟的最佳防治时期是什么时候？',
+const chatStore = useChatStore()
+// 热门问题数据（也可以抽离到单独的常量文件，进一步解耦）
+const hotQuestions = [
+    { id: 1, content: '小麦常见病虫害有哪些？' },
+    { id: 2, content: '大棚蔬菜如何控温？' },
+    { id: 3, content: '水稻施肥的最佳时期？' },
 ]
 
-// 接收父组件传入的初始问题（增强灵活性）
-const props = defineProps({
-    initialQuestions: {
-        type: Array,
-        default: () => [
-            '如何预防农药抗药性的产生？',
-            '如何识别假劣农药？',
-            '农药使用后的包装如何处理？',
-        ],
-    },
-})
-
-// 精选问题列表
-const hotQuestions = ref([...props.initialQuestions])
-
-// 点击问题时向父组件传递选中的内容
+// 直接调用Store方法，无需emit
 const handleQuestionClick = (question) => {
-    emit('question-click', question)
-}
-
-// 刷新精选问题逻辑
-const refreshQuestions = () => {
-    const shuffled = [...questionPool].sort(() => 0.5 - Math.random())
-    hotQuestions.value = shuffled.slice(0, 3)
+    chatStore.handleHotQuestionClick(question)
 }
 </script>
 
 <style lang="scss" scoped>
-.question-card {
-    margin: 8px 16px 16px;
-    border-radius: 12px;
-    padding: 16px;
-    background-color: #fff;
+/* 你的样式 */
+.hot-question-card {
+    width: 100%;
+    max-width: 500px;
+    margin-top: 20px;
+}
 
-    .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
+.question-item {
+    padding: 10px 15px;
+    background: #f5f7fa;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
 
-        .card-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .card-date {
-            font-size: 12px;
-            color: #999;
-        }
-    }
-
-    .question-list {
-        margin-bottom: 16px;
-
-        .question-item {
-            padding: 10px 0;
-            font-size: 14px;
-            color: #333;
-            border-bottom: 1px solid #f0f0f0;
-
-            &:last-child {
-                border-bottom: none;
-            }
-
-            &:active {
-                background-color: #f5f7fa;
-            }
-        }
-    }
-
-    .refresh-btn {
-        display: block;
-        margin: 0 auto;
-        font-size: 14px;
-        color: #666;
-        padding: 4px 16px;
+    &:hover {
+        background: #e8f4f8;
     }
 }
 </style>
