@@ -53,6 +53,7 @@ export const useChatStore = defineStore('chat', {
     async sendMessage(content, userId, sessionId, TOKEN) {
       const trimmedContent = content.trim()
       if (!trimmedContent) return Promise.reject(new Error('消息内容不能为空'))
+      this.clearInputValue()
 
       try {
         // 改用store的inputValue（可选，也可以继续传参）
@@ -125,7 +126,6 @@ export const useChatStore = defineStore('chat', {
           }
         }
 
-        this.clearInputValue() // ✅ 发送后清空输入框（复用store方法）
         return Promise.resolve()
       } catch (error) {
         console.error('流式请求出错：', error)

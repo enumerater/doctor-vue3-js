@@ -18,7 +18,7 @@
                 <div class="message-bubble">
                     <div class="bubble-content">{{ msg.messageContent }}</div>
                     <!-- 原生JS格式化时间：无dayjs依赖 -->
-                    <div class="message-time" v-if="msg.createTime">{{ formatTime(msg.createTime) }}</div>
+                    <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
                 </div>
             </div>
         </div>
