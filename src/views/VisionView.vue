@@ -61,64 +61,17 @@
                 </div>
             </section>
 
-            <!-- 识别结果 -->
-            <section class="result-section" v-if="diseaseResult">
+            <!-- 识别结果：修改为渲染 Markdown -->
+            <section class="result-section" v-if="markdownResult">
                 <div class="result-card">
                     <h2 class="card-title">
-                        <!-- <span class="title-icon">📊</span> -->
                         识别结果
                     </h2>
 
-                    <!-- 结果头部 -->
-                    <div class="result-header">
-                        <h3 class="disease-name">{{ diseaseResult.name }}</h3>
-                        <div class="confidence-tag">
-                            <!-- <span class="tag-icon">✅</span> -->
-                            置信度：{{ (diseaseResult.confidence * 100).toFixed(2) }}%
-                        </div>
-                    </div>
-
-                    <!-- 结果详情 -->
-                    <div class="result-details">
-                        <div class="detail-item">
-                            <div class="detail-header">
-                                <!-- <span class="detail-icon">🌾</span> -->
-                                <h4 class="detail-label">作物类型</h4>
-                            </div>
-                            <p class="detail-value">{{ selectedCrop || '未知' }}</p>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-header">
-                                <!-- <span class="detail-icon">📋</span> -->
-                                <h4 class="detail-label">病害类型</h4>
-                            </div>
-                            <p class="detail-value">{{ diseaseResult.type }}</p>
-                        </div>
-
-                        <div class="detail-item">
-                            <div class="detail-header">
-                                <!-- <span class="detail-icon">📝</span> -->
-                                <h4 class="detail-label">症状描述</h4>
-                            </div>
-                            <p class="detail-value">{{ diseaseResult.description }}</p>
-                        </div>
-
-                        <div class="detail-item">
-                            <div class="detail-header">
-                                <!-- <span class="detail-icon">💡</span> -->
-                                <h4 class="detail-label">防治建议</h4>
-                            </div>
-                            <ul class="prevention-list">
-                                <li v-for="(item, index) in diseaseResult.prevention" :key="index">
-                                    <span class="list-icon">▸</span>
-                                    {{ item }}
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
+                    <!-- Markdown 渲染区域 -->
+                    <div class="markdown-content" v-html="renderedMarkdown"></div>
 
                     <button class="reset-btn" @click="resetAll">
-                        <!-- <span class="reset-icon">🔄</span> -->
                         重新检测
                     </button>
                 </div>
@@ -151,17 +104,31 @@
                 </div>
             </div>
         </div>
-
-        <!-- 页脚
-        <footer class="page-footer">
-            <p>© 2026 农智问答 · 专业农业病害检测工具</p>
-        </footer> -->
     </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { upload } from '@/axios/oss';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
+// 导入 Markdown 解析库
+import { marked } from 'marked';
+// 可选：导入代码高亮样式（如果需要）
+// import 'highlight.js/styles/github.css';
+// import hljs from 'highlight.js';
+
+// 配置 marked（可选：自定义解析规则）
+marked.setOptions({
+    breaks: true, // 支持换行符
+    gfm: true,    // 支持 GitHub 风格的 Markdown
+    // 可选：代码高亮配置
+    // highlight: (code, lang) => {
+    //     if (lang && hljs.getLanguage(lang)) {
+    //         return hljs.highlight(code, { language: lang }).value;
+    //     }
+    //     return hljs.highlightAuto(code).value;
+    // }
+});
 
 // 路由实例
 const router = useRouter();
@@ -171,10 +138,18 @@ const fileInput = ref(null);
 const uploadedImage = ref('');
 const isDragging = ref(false);
 const isDetecting = ref(false);
-const diseaseResult = ref(null);
-// 新增：作物选择相关
 const showCropSelect = ref(false); // 控制弹窗显示
 const selectedCrop = ref(''); // 选中的作物类型
+const selectedFile = ref(null);
+const markdownResult = ref(''); // 存储原始 Markdown 内容
+
+// 计算属性：解析 Markdown 为 HTML
+const renderedMarkdown = computed(() => {
+    if (!markdownResult.value) return '';
+    // 解析 Markdown 为 HTML
+    return marked.parse(markdownResult.value);
+});
+
 // 作物列表
 const cropList = ref([
     { icon: '🌾', name: '小麦' },
@@ -222,10 +197,12 @@ const handleFileUpload = (file) => {
         return;
     }
 
+    selectedFile.value = file;
+
     const reader = new FileReader();
     reader.onload = (e) => {
         uploadedImage.value = e.target.result;
-        diseaseResult.value = null;
+        markdownResult.value = ''; // 清空之前的结果
     };
     reader.readAsDataURL(file);
 };
@@ -252,8 +229,9 @@ const handleDrop = (e) => {
 // 清空图片
 const clearImage = () => {
     uploadedImage.value = '';
-    diseaseResult.value = null;
-    selectedCrop.value = ''; // 清空选中的作物
+    markdownResult.value = '';
+    selectedCrop.value = '';
+    selectedFile.value = null;
     if (fileInput.value) {
         fileInput.value.value = '';
     }
@@ -265,66 +243,41 @@ const confirmCropSelect = () => {
     detectDisease();
 };
 
-// 病害识别逻辑（新增作物类型参数）
+import { imageChat } from '@/axios/chat';
+
+// 病害识别逻辑：修改为获取 Markdown 结果
 const detectDisease = async () => {
-    isDetecting.value = true;
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // 模拟识别结果（可根据选中的作物类型返回不同结果）
-    let result = {
-        name: '小麦条锈病',
-        type: '真菌性病害',
-        confidence: 0.987,
-        description: '小麦条锈病主要危害叶片，其次是叶鞘和茎秆，穗部、颖壳及芒也可受害。发病初期，叶片上出现褪绿斑点，以后形成鲜黄色的粉疱，即夏孢子堆。夏孢子堆较小，长椭圆形，与叶脉平行排列成虚线状，像缝纫机轧过的针脚一样，呈黄色条形，故称条锈病。',
-        prevention: [
-            '选用抗病品种：如济麦44、鲁原502等抗锈病品种',
-            '农业防治：合理施肥，避免偏施氮肥，适当增施磷钾肥，提高植株抗病能力',
-            '化学防治：发病初期喷施三唑类杀菌剂（如三唑酮、戊唑醇），间隔7-10天喷一次，连续喷2-3次',
-            '加强田间管理：及时清除病残体，减少菌源；合理灌溉，避免田间湿度过大'
-        ]
-    };
-
-    // 根据选中的作物类型调整模拟结果
-    if (selectedCrop.value === '玉米') {
-        result = {
-            name: '玉米大斑病',
-            type: '真菌性病害',
-            confidence: 0.975,
-            description: '玉米大斑病主要危害叶片，也可危害叶鞘和苞叶。发病初期，叶片上出现水渍状青灰色斑点，以后沿叶脉向两端扩展，形成边缘暗褐色、中央淡褐色或青灰色的大斑。病斑大小可达10-20厘米，严重时病斑融合，叶片变黄枯死。',
-            prevention: [
-                '选用抗病品种：如农大108、郑单958等抗病品种',
-                '农业防治：清除田间病残体，实行轮作，合理密植，增施磷钾肥',
-                '化学防治：发病初期喷施百菌清、多菌灵等杀菌剂，7-10天喷一次，连喷2-3次',
-                '加强田间管理：及时排水，降低田间湿度，避免偏施氮肥'
-            ]
-        };
-    } else if (selectedCrop.value === '水稻') {
-        result = {
-            name: '水稻纹枯病',
-            type: '真菌性病害',
-            confidence: 0.968,
-            description: '水稻纹枯病又称云纹病，主要危害叶鞘和叶片，严重时可危害稻穗和茎秆。发病初期，叶鞘上出现水渍状暗绿色斑点，以后扩大成椭圆形或云纹状病斑，边缘褐色，中央灰绿色或灰白色。严重时病斑融合，导致叶片枯死，稻穗不能抽出或结实不良。',
-            prevention: [
-                '选用抗病品种：如汕优63、扬稻6号等抗病品种',
-                '农业防治：合理密植，浅水勤灌，适时晒田，清除田间杂草',
-                '化学防治：发病初期喷施井冈霉素、纹枯净等杀菌剂，重点喷洒植株中下部',
-                '施肥管理：避免偏施氮肥，增施磷钾肥，提高植株抗病能力'
-            ]
-        };
-    } else if (selectedCrop.value) {
-        result.name = `${selectedCrop.value}常见病害`;
-        result.description = `${selectedCrop.value}的常见病害主要危害叶片和茎秆，发病初期出现斑点状病变，后期会影响作物生长和产量。`;
+    if (!selectedFile.value) {
+        alert('请先上传图片！');
+        return;
     }
 
-    diseaseResult.value = result;
-    isDetecting.value = false;
+    isDetecting.value = true;
+    try {
+        const url = await upload(selectedFile.value);
+        console.log(url.data.url)
+
+        const res = await imageChat({
+            url: url.data.url,
+            cropType: selectedCrop.value
+        });
+        // 提取接口返回的 Markdown 数据
+        markdownResult.value = res.data;
+
+    } catch (error) {
+        console.error('识别失败：', error);
+        alert('识别失败，请重试！');
+    } finally {
+        isDetecting.value = false;
+    }
 };
 
 // 重置所有状态
 const resetAll = () => {
     uploadedImage.value = '';
-    diseaseResult.value = null;
-    selectedCrop.value = ''; // 清空选中的作物
+    markdownResult.value = '';
+    selectedCrop.value = '';
+    selectedFile.value = null;
     if (fileInput.value) {
         fileInput.value.value = '';
     }
@@ -460,10 +413,6 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         align-items: center;
         gap: 8px;
 
-        .title-icon {
-            font-size: 1.4rem;
-        }
-
         @media (max-width: 768px) {
             font-size: 1.15rem;
             margin-bottom: 1.5rem;
@@ -598,10 +547,6 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 4px 8px rgba(56, 142, 60, 0.3);
         }
 
-        .detect-icon {
-            font-size: 1.1rem;
-        }
-
         .loading {
             display: flex;
             align-items: center;
@@ -627,114 +572,70 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 }
 
-// 结果区域
+// Markdown 内容样式（关键新增）
 .result-section {
-    .result-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.75rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid $border;
-
-        .disease-name {
-            font-size: 1.4rem;
-            color: $primary;
-            font-weight: 600;
-            margin: 0;
-            letter-spacing: 0.2px;
-        }
-
-        .confidence-tag {
-            background: linear-gradient(135deg, $primary-light, #dcedc8);
-            color: $primary;
-            padding: 0.4rem 1rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            box-shadow: 0 2px 4px rgba(56, 142, 60, 0.1);
-
-            .tag-icon {
-                font-size: 0.85rem;
-            }
-        }
-
-        @media (max-width: 768px) {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.75rem;
-
-            .disease-name {
-                font-size: 1.25rem;
-            }
-
-            .confidence-tag {
-                align-self: flex-start;
-            }
-        }
-    }
-
-    .result-details {
+    .markdown-content {
+        line-height: 1.8;
+        color: $text-secondary;
+        font-size: 0.95rem;
         margin-bottom: 2rem;
 
-        .detail-item {
-            margin-bottom: 1.5rem;
+        // 适配 Markdown 常见元素样式
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            color: $primary;
+            margin: 1.2rem 0 0.8rem;
+            font-weight: 600;
+        }
 
-            .detail-header {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin-bottom: 0.75rem;
+        p {
+            margin: 0.8rem 0;
+            text-align: justify;
+        }
 
-                .detail-icon {
-                    font-size: 1rem;
-                    color: $primary;
-                }
+        ul,
+        ol {
+            padding-left: 1.5rem;
+            margin: 0.8rem 0;
+        }
 
-                .detail-label {
-                    font-size: 1rem;
-                    color: $text-primary;
-                    font-weight: 600;
-                    margin: 0;
-                }
-            }
+        li {
+            margin: 0.4rem 0;
+        }
 
-            .detail-value {
-                line-height: 1.7;
-                color: $text-secondary;
-                margin: 0;
-                font-size: 0.95rem;
-                text-align: justify;
-            }
+        strong {
+            color: $primary;
+            font-weight: 600;
+        }
 
-            .prevention-list {
-                padding-left: 1.5rem;
-                margin: 0;
+        em {
+            color: $text-primary;
+        }
 
-                li {
-                    line-height: 1.8;
-                    color: $text-secondary;
-                    margin-bottom: 0.75rem;
-                    font-size: 0.95rem;
-                    list-style: none;
-                    position: relative;
-                    padding-left: 0.5rem;
+        // 代码块样式（可选）
+        pre {
+            background-color: $bg-main;
+            padding: 1rem;
+            border-radius: $radius-sm;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
 
-                    &:last-child {
-                        margin-bottom: 0;
-                    }
+        code {
+            background-color: $primary-light;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            color: $primary;
+            font-size: 0.9rem;
+        }
 
-                    .list-icon {
-                        color: $secondary;
-                        position: absolute;
-                        left: -1.25rem;
-                        top: 0.1rem;
-                    }
-                }
-            }
+        pre code {
+            background: none;
+            padding: 0;
         }
     }
 
@@ -762,10 +663,6 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border-color: $primary-light;
             transform: translateY(-2px);
             box-shadow: $shadow-sm;
-        }
-
-        .reset-icon {
-            font-size: 1.1rem;
         }
     }
 }
@@ -941,17 +838,6 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 }
 
-// 页脚
-.page-footer {
-    text-align: center;
-    padding: 1.5rem;
-    color: $text-tertiary;
-    font-size: 0.85rem;
-    border-top: 1px solid $border;
-    margin-top: 1rem;
-    background-color: $bg-card;
-}
-
 // 动画效果
 @keyframes loading {
 
@@ -1004,8 +890,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         padding: 2.5rem 1rem !important;
     }
 
-    .detail-value,
-    .prevention-list li {
+    .markdown-content {
         font-size: 0.9rem;
     }
 }

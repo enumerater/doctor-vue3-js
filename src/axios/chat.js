@@ -16,10 +16,15 @@ export const getMessage = (sessionId) => {
   })
 }
 
-export const imageChat = (url) => {
+export const imageChat = (params) => {
+  // 解构参数，兜底空值
+  const { url = '', cropType = '' } = params || {}
   return request({
     url: '/vision',
     method: 'get',
-    params: url,
+    params: {
+      url: url,
+      cropType: cropType,
+    },
   })
 }

@@ -17,6 +17,7 @@
     "axios": "^1.13.2",
     "dayjs": "^1.11.19",
     "echarts": "^6.0.0",
+    "marked": "^17.0.1",
     "pinia": "^3.0.3",
     "pinia-plugin-persistedstate": "^4.7.1",
     "vant": "^4.9.21",

@@ -14,9 +14,10 @@
             }">
                 <!-- 移除所有头像相关代码 -->
 
-                <!-- 消息气泡：美化样式 + 自适应宽度 -->
+                <!-- 消息气泡：美化样式 + 自适应宽度 + Markdown渲染 -->
                 <div class="message-bubble">
-                    <div class="bubble-content">{{ msg.messageContent }}</div>
+                    <!-- 核心修改：用v-html渲染解析后的Markdown -->
+                    <div class="bubble-content" v-html="parseMarkdown(msg.messageContent)"></div>
                     <!-- 原生JS格式化时间：无dayjs依赖 -->
                     <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
                 </div>
@@ -29,6 +30,16 @@
 import { useChatStore } from '@/stores/chat'
 import { computed, watch, onMounted, ref, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
+// 核心新增：导入marked库解析Markdown
+import { marked } from 'marked'
+
+// 配置marked（适配聊天场景）
+marked.setOptions({
+    breaks: true, // 支持换行符
+    gfm: true,    // 支持GitHub风格Markdown
+    sanitize: true, // 基础XSS防护（可选，若消息来源可控可关闭）
+    renderer: new marked.Renderer() // 使用默认渲染器
+})
 
 // 移除VanEmpty导入（彻底不用Vant）
 const chatStore = useChatStore()
@@ -37,6 +48,13 @@ const messageList = ref(null) // 消息列表ref：用于自动滚动到底部
 
 // 计算属性：获取聊天消息
 const messages = computed(() => chatStore.chatMessages)
+
+// 核心新增：Markdown解析方法
+const parseMarkdown = (content) => {
+    if (!content) return ''
+    // 将文本解析为Markdown HTML
+    return marked.parse(content)
+}
 
 // 原生JS格式化时间（无dayjs依赖）
 const formatTime = (timeStr) => {
@@ -209,13 +227,150 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); // 顺滑过渡
     flex-direction: column;
 
     .bubble-content {
-        padding: 0.75rem 1rem;
+        padding: 0.05rem 1rem;
         border-radius: $radius-md;
         line-height: 1.7;
         font-size: 0.9375rem;
         word-wrap: break-word;
         box-shadow: $shadow-sm; // 轻微阴影，提升立体感
         transition: $transition;
+
+        // 核心新增：Markdown样式适配（气泡内）
+        // 标题样式
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            margin: 0.3rem 0 0.5rem;
+            font-weight: 600;
+            line-height: 1.4;
+
+            // 区分用户/机器人气泡的标题颜色
+            .user-message & {
+                color: #fff;
+                opacity: 0.95;
+            }
+
+            .robot-message & {
+                color: $primary;
+            }
+
+            // 缩小标题字号（适配气泡）
+            h1 {
+                font-size: 1.1rem;
+            }
+
+            h2 {
+                font-size: 1.05rem;
+            }
+
+            h3 {
+                font-size: 1rem;
+            }
+
+            h4,
+            h5,
+            h6 {
+                font-size: 0.95rem;
+            }
+        }
+
+        // 列表样式
+        ul,
+        ol {
+            padding-left: 1.2rem;
+            margin: 0.4rem 0;
+
+            .user-message & {
+                color: #fff;
+                opacity: 0.95;
+            }
+
+            .robot-message & {
+                color: $text-primary;
+            }
+        }
+
+        li {
+            margin: 0.2rem 0;
+        }
+
+        // 加粗/斜体
+        strong {
+            font-weight: 600;
+
+            .user-message & {
+                color: #fff;
+                opacity: 1;
+            }
+
+            .robot-message & {
+                color: $primary;
+            }
+        }
+
+        em {
+            font-style: italic;
+
+            .user-message & {
+                opacity: 0.95;
+            }
+        }
+
+        // 代码块/行内代码
+        pre {
+            background-color: rgba(0, 0, 0, 0.15);
+            padding: 0.5rem 0.8rem;
+            border-radius: $radius-sm;
+            overflow-x: auto;
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+
+            .user-message & {
+                background-color: rgba(255, 255, 255, 0.15);
+            }
+        }
+
+        code {
+            padding: 0.1rem 0.3rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+
+            .user-message & {
+                background-color: rgba(255, 255, 255, 0.2);
+                color: #fff;
+            }
+
+            .robot-message & {
+                background-color: $primary-light;
+                color: $primary;
+            }
+        }
+
+        // 段落间距
+        p {
+            margin: 0.3rem 0;
+        }
+
+        // 链接样式
+        a {
+            text-decoration: underline;
+
+            .user-message & {
+                color: #fff;
+                opacity: 0.95;
+            }
+
+            .robot-message & {
+                color: $primary;
+            }
+
+            &:hover {
+                opacity: 1;
+            }
+        }
     }
 
     .message-time {
@@ -256,7 +411,31 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); // 顺滑过渡
 
     .bubble-content {
         padding: 0.625rem 0.875rem;
-        font-size: 0.875rem;
+        font-size: 0.875rem !important;
+
+        // 移动端缩小Markdown元素字号
+        h1 {
+            font-size: 1rem !important;
+        }
+
+        h2 {
+            font-size: 0.95rem !important;
+        }
+
+        h3 {
+            font-size: 0.9rem !important;
+        }
+
+        h4,
+        h5,
+        h6 {
+            font-size: 0.85rem !important;
+        }
+
+        code,
+        pre {
+            font-size: 0.8rem !important;
+        }
     }
 
     .message-item {
