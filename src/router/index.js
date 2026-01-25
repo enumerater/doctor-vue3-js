@@ -11,6 +11,12 @@ const router = createRouter({
       meta: { title: '登录' },
     },
     {
+      path: '/vision',
+      name: 'vision',
+      component: () => import('@/views/VisionView.vue'),
+      meta: { title: '智能诊断' },
+    },
+    {
       path: '/home',
       component: () => import('@/views/HomeView.vue'),
       meta: { title: '首页' },
