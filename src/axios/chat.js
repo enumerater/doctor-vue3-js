@@ -15,3 +15,11 @@ export const getMessage = (sessionId) => {
     params: sessionId,
   })
 }
+
+export const imageChat = (url) => {
+  return request({
+    url: '/vision',
+    method: 'get',
+    params: url,
+  })
+}
