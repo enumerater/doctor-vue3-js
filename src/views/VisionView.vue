@@ -61,16 +61,164 @@
                 </div>
             </section>
 
-            <!-- 识别结果：修改为渲染 Markdown -->
-            <section class="result-section" v-if="markdownResult">
+            <!-- 识别结果：结构化可视化展示 -->
+            <section class="result-section" v-if="structuredResult">
                 <div class="result-card">
                     <h2 class="card-title">
                         识别结果
                     </h2>
 
-                    <!-- Markdown 渲染区域 -->
-                    <div class="markdown-content" v-html="renderedMarkdown"></div>
+                    <!-- 可视化结果区域 -->
+                    <div class="visual-result">
+                        <!-- 病害基本信息卡片 -->
+                        <div class="result-card-item basic-info">
+                            <div class="info-header">
+                                <svg class="info-icon" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <h3 class="info-title">病害基本信息</h3>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-row">
+                                    <label>作物类型：</label>
+                                    <span class="value crop-type">{{ selectedCrop }}</span>
+                                </div>
+                                <div class="info-row">
+                                    <label>病害名称：</label>
+                                    <span class="value disease-name">{{ structuredResult.diseaseName }}</span>
+                                </div>
+                                <div class="info-row confidence-row">
+                                    <label>识别置信度：</label>
+                                    <div class="confidence-wrapper">
+                                        <div class="confidence-bar"
+                                            :style="{ width: structuredResult.confidence + '%' }"></div>
+                                        <span class="confidence-value">{{ structuredResult.confidence }}%</span>
+                                    </div>
+                                </div>
+                                <div class="info-row">
+                                    <label>病害等级：</label>
+                                    <span class="value severity-tag"
+                                        :class="getSeverityClass(structuredResult.severity)">
+                                        {{ structuredResult.severity }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
 
+                        <!-- 病害症状描述 -->
+                        <div class="result-card-item symptoms">
+                            <div class="info-header">
+                                <svg class="info-icon" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                    <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <h3 class="info-title">病害症状</h3>
+                            </div>
+                            <div class="info-content">
+                                <ul class="symptoms-list">
+                                    <li v-for="(symptom, index) in structuredResult.symptoms" :key="index">
+                                        {{ symptom }}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- 防治方法 -->
+                        <div class="result-card-item prevention">
+                            <div class="info-header">
+                                <svg class="info-icon" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                                <h3 class="info-title">防治方法</h3>
+                            </div>
+                            <div class="info-content">
+                                <div class="prevention-tabs">
+                                    <div class="tab-item" :class="{ active: activePreventionTab === tab.key }"
+                                        v-for="tab in preventionTabs" :key="tab.key"
+                                        @click="activePreventionTab = tab.key">
+                                        {{ tab.name }}
+                                    </div>
+                                </div>
+                                <div class="prevention-content">
+                                    <ul v-if="activePreventionTab === 'agricultural'">
+                                        <li v-for="(method, index) in structuredResult.prevention.agricultural"
+                                            :key="index">
+                                            {{ method }}
+                                        </li>
+                                    </ul>
+                                    <ul v-if="activePreventionTab === 'chemical'">
+                                        <li v-for="(method, index) in structuredResult.prevention.chemical"
+                                            :key="index">
+                                            {{ method }}
+                                        </li>
+                                    </ul>
+                                    <ul v-if="activePreventionTab === 'biological'">
+                                        <li v-for="(method, index) in structuredResult.prevention.biological"
+                                            :key="index">
+                                            {{ method }}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 注意事项 -->
+                        <div class="result-card-item notes"
+                            v-if="structuredResult.notes && structuredResult.notes.length">
+                            <div class="info-header">
+                                <svg class="info-icon" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                    <path d="M12 8V12M12 16H12.01" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <h3 class="info-title">注意事项</h3>
+                            </div>
+                            <div class="info-content">
+                                <div class="notes-content">
+                                    {{ structuredResult.notes.join('；') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 兼容原有 Markdown 展示（可选） -->
+                    <div class="markdown-fallback" v-if="markdownResult">
+                        <div class="fallback-title">详细说明</div>
+                        <div class="markdown-content" v-html="renderedMarkdown"></div>
+                    </div>
+
+                    <button class="reset-btn" @click="resetAll">
+                        重新检测
+                    </button>
+                </div>
+            </section>
+
+            <!-- 兼容纯 Markdown 结果的展示 -->
+            <section class="result-section" v-if="markdownResult && !structuredResult">
+                <div class="result-card">
+                    <h2 class="card-title">
+                        识别结果
+                    </h2>
+                    <div class="markdown-content" v-html="renderedMarkdown"></div>
                     <button class="reset-btn" @click="resetAll">
                         重新检测
                     </button>
@@ -111,23 +259,12 @@
 import { upload } from '@/axios/oss';
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-// 导入 Markdown 解析库
 import { marked } from 'marked';
-// 可选：导入代码高亮样式（如果需要）
-// import 'highlight.js/styles/github.css';
-// import hljs from 'highlight.js';
 
-// 配置 marked（可选：自定义解析规则）
+// 配置 marked
 marked.setOptions({
-    breaks: true, // 支持换行符
-    gfm: true,    // 支持 GitHub 风格的 Markdown
-    // 可选：代码高亮配置
-    // highlight: (code, lang) => {
-    //     if (lang && hljs.getLanguage(lang)) {
-    //         return hljs.highlight(code, { language: lang }).value;
-    //     }
-    //     return hljs.highlightAuto(code).value;
-    // }
+    breaks: true,
+    gfm: true,
 });
 
 // 路由实例
@@ -138,15 +275,23 @@ const fileInput = ref(null);
 const uploadedImage = ref('');
 const isDragging = ref(false);
 const isDetecting = ref(false);
-const showCropSelect = ref(false); // 控制弹窗显示
-const selectedCrop = ref(''); // 选中的作物类型
+const showCropSelect = ref(false);
+const selectedCrop = ref('');
 const selectedFile = ref(null);
-const markdownResult = ref(''); // 存储原始 Markdown 内容
+const markdownResult = ref('');
+// 新增：结构化结果存储
+const structuredResult = ref(null);
+// 防治方法标签页
+const preventionTabs = ref([
+    { key: 'agricultural', name: '农业防治' },
+    { key: 'chemical', name: '化学防治' },
+    { key: 'biological', name: '生物防治' }
+]);
+const activePreventionTab = ref('agricultural');
 
 // 计算属性：解析 Markdown 为 HTML
 const renderedMarkdown = computed(() => {
     if (!markdownResult.value) return '';
-    // 解析 Markdown 为 HTML
     return marked.parse(markdownResult.value);
 });
 
@@ -202,7 +347,8 @@ const handleFileUpload = (file) => {
     const reader = new FileReader();
     reader.onload = (e) => {
         uploadedImage.value = e.target.result;
-        markdownResult.value = ''; // 清空之前的结果
+        markdownResult.value = '';
+        structuredResult.value = null; // 清空结构化结果
     };
     reader.readAsDataURL(file);
 };
@@ -230,6 +376,7 @@ const handleDrop = (e) => {
 const clearImage = () => {
     uploadedImage.value = '';
     markdownResult.value = '';
+    structuredResult.value = null;
     selectedCrop.value = '';
     selectedFile.value = null;
     if (fileInput.value) {
@@ -245,7 +392,21 @@ const confirmCropSelect = () => {
 
 import { imageChat } from '@/axios/chat';
 
-// 病害识别逻辑：修改为获取 Markdown 结果
+// 获取病害等级样式类
+const getSeverityClass = (severity) => {
+    switch (severity) {
+        case '轻微':
+            return 'severity-mild';
+        case '中度':
+            return 'severity-moderate';
+        case '重度':
+            return 'severity-severe';
+        default:
+            return '';
+    }
+};
+
+// 病害识别逻辑：解析结构化数据
 const detectDisease = async () => {
     if (!selectedFile.value) {
         alert('请先上传图片！');
@@ -261,8 +422,23 @@ const detectDisease = async () => {
             url: url.data.url,
             cropType: selectedCrop.value
         });
-        // 提取接口返回的 Markdown 数据
-        markdownResult.value = res.data;
+
+
+        // 优先解析结构化数据（假设后端返回的res.data是JSON格式的结构化数据）
+        // 如果后端返回的是字符串，可先尝试JSON.parse
+        try {
+            const resultData = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+            // 验证是否为结构化数据
+            if (resultData.diseaseName && resultData.confidence) {
+                structuredResult.value = resultData;
+            } else {
+                // 否则作为markdown处理
+                markdownResult.value = res.data;
+            }
+        } catch (e) {
+            // 解析失败则作为markdown处理
+            markdownResult.value = res.data;
+        }
 
     } catch (error) {
         console.error('识别失败：', error);
@@ -276,8 +452,10 @@ const detectDisease = async () => {
 const resetAll = () => {
     uploadedImage.value = '';
     markdownResult.value = '';
+    structuredResult.value = null;
     selectedCrop.value = '';
     selectedFile.value = null;
+    activePreventionTab.value = 'agricultural';
     if (fileInput.value) {
         fileInput.value.value = '';
     }
@@ -304,13 +482,18 @@ $radius-md: 12px;
 $radius-lg: 16px;
 $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
+// 新增：状态色值
+$severity-mild: #48bb78; // 轻微-绿色
+$severity-moderate: #ed8936; // 中度-橙色
+$severity-severe: #e53e3e; // 重度-红色
+
 // 全局样式
 .disease-detection-container {
     min-height: 100vh;
     background-color: $bg-main;
     font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
     color: $text-primary;
-    position: relative; // 为弹窗定位做准备
+    position: relative;
 }
 
 // 导航栏
@@ -572,15 +755,251 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 }
 
-// Markdown 内容样式（关键新增）
+// 可视化结果样式（核心新增）
 .result-section {
+    .visual-result {
+        margin-bottom: 2rem;
+
+        .result-card-item {
+            background-color: $bg-main;
+            border-radius: $radius-md;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid $primary;
+            transition: $transition;
+
+            &:hover {
+                box-shadow: $shadow-sm;
+                transform: translateY(-1px);
+            }
+
+            &.basic-info {
+                border-left-color: $primary;
+            }
+
+            &.symptoms {
+                border-left-color: #4299e1;
+            }
+
+            &.prevention {
+                border-left-color: #9f7aea;
+            }
+
+            &.notes {
+                border-left-color: #ed8936;
+            }
+
+            .info-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 1rem;
+
+                .info-icon {
+                    width: 20px;
+                    height: 20px;
+                    color: inherit;
+                }
+
+                .info-title {
+                    font-size: 1rem;
+                    font-weight: 600;
+                    color: $text-primary;
+                    margin: 0;
+                }
+            }
+
+            .info-content {
+                font-size: 0.95rem;
+                color: $text-secondary;
+
+                .info-row {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 0.75rem;
+
+                    &:last-child {
+                        margin-bottom: 0;
+                    }
+
+                    label {
+                        width: 80px;
+                        color: $text-primary;
+                        font-weight: 500;
+                        flex-shrink: 0;
+                    }
+
+                    .value {
+                        flex: 1;
+                    }
+
+                    .crop-type {
+                        color: $primary;
+                        font-weight: 500;
+                    }
+
+                    .disease-name {
+                        color: $primary;
+                        font-weight: 600;
+                        font-size: 1.05rem;
+                    }
+                }
+
+                .confidence-row {
+                    align-items: flex-start;
+
+                    .confidence-wrapper {
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 4px;
+
+                        .confidence-bar {
+                            height: 8px;
+                            background: linear-gradient(90deg, $primary, $secondary);
+                            border-radius: 4px;
+                            transition: width 0.5s ease;
+                        }
+
+                        .confidence-value {
+                            font-size: 0.85rem;
+                            color: $primary;
+                            font-weight: 500;
+                        }
+                    }
+                }
+
+                .severity-tag {
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    font-size: 0.8rem;
+                    font-weight: 500;
+
+                    &.severity-mild {
+                        background-color: rgba(72, 187, 120, 0.1);
+                        color: $severity-mild;
+                    }
+
+                    &.severity-moderate {
+                        background-color: rgba(237, 137, 54, 0.1);
+                        color: $severity-moderate;
+                    }
+
+                    &.severity-severe {
+                        background-color: rgba(229, 62, 62, 0.1);
+                        color: $severity-severe;
+                    }
+                }
+
+                .symptoms-list {
+                    margin: 0;
+                    padding-left: 1.25rem;
+
+                    li {
+                        margin-bottom: 0.5rem;
+                        position: relative;
+
+                        &:last-child {
+                            margin-bottom: 0;
+                        }
+
+                        &::before {
+                            content: '•';
+                            color: #4299e1;
+                            font-weight: bold;
+                            position: absolute;
+                            left: -1rem;
+                        }
+                    }
+                }
+
+                .prevention-tabs {
+                    display: flex;
+                    gap: 8px;
+                    margin-bottom: 1rem;
+                    border-bottom: 1px solid $border;
+                    padding-bottom: 0.5rem;
+
+                    .tab-item {
+                        padding: 4px 12px;
+                        border-radius: 16px;
+                        font-size: 0.85rem;
+                        cursor: pointer;
+                        transition: $transition;
+
+                        &.active {
+                            background-color: $primary-light;
+                            color: $primary;
+                            font-weight: 500;
+                        }
+
+                        &:hover:not(.active) {
+                            background-color: rgba(0, 0, 0, 0.03);
+                        }
+                    }
+                }
+
+                .prevention-content {
+                    ul {
+                        margin: 0;
+                        padding-left: 1.25rem;
+
+                        li {
+                            margin-bottom: 0.5rem;
+                            position: relative;
+
+                            &:last-child {
+                                margin-bottom: 0;
+                            }
+
+                            &::before {
+                                content: '✓';
+                                color: #9f7aea;
+                                font-weight: bold;
+                                position: absolute;
+                                left: -1rem;
+                            }
+                        }
+                    }
+                }
+
+                .notes-content {
+                    line-height: 1.6;
+                    padding: 0.5rem;
+                    background-color: rgba(237, 137, 54, 0.05);
+                    border-radius: $radius-sm;
+                }
+            }
+        }
+    }
+
+    // Markdown 降级展示样式
+    .markdown-fallback {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px dashed $border;
+
+        .fallback-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: $text-primary;
+            margin-bottom: 0.75rem;
+        }
+
+        .markdown-content {
+            line-height: 1.8;
+            color: $text-secondary;
+            font-size: 0.9rem;
+        }
+    }
+
+    // 原有 Markdown 样式
     .markdown-content {
         line-height: 1.8;
         color: $text-secondary;
         font-size: 0.95rem;
         margin-bottom: 2rem;
 
-        // 适配 Markdown 常见元素样式
         h1,
         h2,
         h3,
@@ -616,7 +1035,6 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             color: $text-primary;
         }
 
-        // 代码块样式（可选）
         pre {
             background-color: $bg-main;
             padding: 1rem;
@@ -679,7 +1097,6 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     align-items: center;
     justify-content: center;
 
-    // 遮罩层
     .modal-mask {
         position: absolute;
         top: 0;
@@ -691,7 +1108,6 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         transition: $transition;
     }
 
-    // 弹窗内容
     .modal-content {
         position: relative;
         width: 90%;
@@ -702,7 +1118,6 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         overflow: hidden;
         animation: modalFadeIn 0.3s ease;
 
-        // 弹窗头部
         .modal-header {
             padding: 1.25rem 1.5rem;
             border-bottom: 1px solid $border;
@@ -738,7 +1153,6 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
         }
 
-        // 弹窗主体
         .modal-body {
             padding: 1.5rem;
             max-height: 60vh;
@@ -788,7 +1202,6 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
         }
 
-        // 弹窗底部
         .modal-footer {
             padding: 1rem 1.5rem;
             border-top: 1px solid $border;
@@ -892,6 +1305,21 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     .markdown-content {
         font-size: 0.9rem;
+    }
+
+    .result-card-item {
+        padding: 1rem;
+    }
+
+    .info-row {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 4px;
+
+        label {
+            width: 100% !important;
+            margin-bottom: 2px;
+        }
     }
 }
 </style>
