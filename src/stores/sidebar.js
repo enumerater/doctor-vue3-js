@@ -60,15 +60,17 @@ export const useSidebarStore = defineStore('sidebar', {
       const chatStore = useChatStore()
       const userId = localStorage.getItem('id')
 
-      // 1. 更新会话ID并加载消息
-      chatStore.setCurrentSessionId(sessionId)
-      await chatStore.fetchMessages(sessionId)
-
-      // 2. 更新 localStorage 中的 sessionId（从完整 sessionId 中提取部分）
+      // 1. 从完整 sessionId 中提取部分 sessionId（去掉 userId 前缀）
       // 完整 sessionId 格式：userId + sessionId
       const partialSessionId = sessionId.startsWith(userId)
         ? sessionId.substring(userId.length)
         : sessionId
+
+      // 2. 更新会话ID并加载消息
+      chatStore.setCurrentSessionId(partialSessionId)
+      await chatStore.fetchMessages(sessionId)
+
+      // 3. 更新 localStorage 中的 sessionId
       localStorage.setItem('sessionId', partialSessionId)
 
       router.push({

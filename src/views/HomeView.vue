@@ -165,12 +165,12 @@ const sendMessage = async () => {
   const userId = localStorage.getItem('id')
   // 优先使用 store 中的 sessionId（点击历史记录后会设置）
   // 如果 store 中没有，则使用 localStorage 中的
-  let partialSessionId = chatStore.currentSessionId || ''
+  let storedSessionId = String(chatStore.currentSessionId || localStorage.getItem('sessionId') || '')
 
-  // 如果 store 中没有 sessionId，使用 localStorage 中的
-  if (!partialSessionId) {
-    partialSessionId = localStorage.getItem('sessionId') || ''
-  }
+  // 从存储的 sessionId 中提取部分 sessionId（去掉 userId 前缀，避免重复）
+  let partialSessionId = storedSessionId.startsWith(userId)
+    ? storedSessionId.substring(userId.length)
+    : storedSessionId
 
   // 构建完整 sessionId
   const fullSessionId = `${userId}${partialSessionId}`
