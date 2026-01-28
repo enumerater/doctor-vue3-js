@@ -136,7 +136,10 @@ let visionTimer = null
 onMounted(async () => {
   // 只准备会话，不创建会话记录（避免空会话出现在历史记录）
   // 真正的会话会在用户发送第一条消息时创建
-  await sidebarStore.prepareConversation()
+  // 但是，如果当前已经在chatDetail页面，就不需要准备新会话（避免清空刚加载的消息）
+  if (router.currentRoute.value.name !== 'chatDetail') {
+    await sidebarStore.prepareConversation()
+  }
   checkIsPC()
   window.addEventListener('resize', checkIsPC)
 

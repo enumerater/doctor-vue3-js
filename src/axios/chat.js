@@ -12,7 +12,7 @@ export const getMessage = (sessionId) => {
   return request({
     url: '/message',
     method: 'get',
-    params: sessionId,
+    params: { sessionId },
   })
 }
 

@@ -8,15 +8,10 @@
 
     <!-- 聊天消息列表：修复滚动 + 自动滚动到底部 -->
     <div class="message-list" ref="messageList">
-      <div
-        v-for="(msg, index) in messages"
-        :key="msg.id || index"
-        class="message-item"
-        :class="{
-          'user-message': msg.messageRole === '0',
-          'robot-message': msg.messageRole === '1',
-        }"
-      >
+      <div v-for="(msg, index) in messages" :key="msg.id || index" class="message-item" :class="{
+        'user-message': msg.messageRole === '0',
+        'robot-message': msg.messageRole === '1',
+      }">
         <!-- 移除所有头像相关代码 -->
 
         <!-- 消息气泡：美化样式 + 自适应宽度 + Markdown渲染 -->
@@ -42,7 +37,6 @@ import { marked } from 'marked'
 marked.setOptions({
   breaks: true, // 支持换行符
   gfm: true, // 支持GitHub风格Markdown
-  sanitize: true, // 基础XSS防护（可选，若消息来源可控可关闭）
   renderer: new marked.Renderer(), // 使用默认渲染器
 })
 
@@ -52,13 +46,23 @@ const route = useRoute()
 const messageList = ref(null) // 消息列表ref：用于自动滚动到底部
 
 // 计算属性：获取聊天消息
-const messages = computed(() => chatStore.chatMessages)
+const messages = computed(() => {
+  console.log('计算属性messages被调用，当前chatMessages长度:', chatStore.chatMessages.length)
+  console.log('chatMessages内容:', chatStore.chatMessages)
+  return chatStore.chatMessages
+})
 
 // 核心新增：Markdown解析方法
 const parseMarkdown = (content) => {
   if (!content) return ''
-  // 将文本解析为Markdown HTML
-  return marked.parse(content)
+  try {
+    // 将文本解析为Markdown HTML
+    return marked.parse(content)
+  } catch (error) {
+    console.error('Markdown解析错误:', error)
+    // 如果解析失败，直接返回原始内容
+    return content
+  }
 }
 
 // 原生JS格式化时间（无dayjs依赖）
@@ -80,6 +84,7 @@ let isLoadingMessages = false
 
 // 加载历史消息（带防抖）
 const loadHistoryMessages = async () => {
+  console.log('loadHistoryMessages函数被调用')
   // 防止重复调用
   if (isLoadingMessages) {
     console.log('正在加载中，跳过重复调用')
@@ -87,21 +92,22 @@ const loadHistoryMessages = async () => {
   }
 
   const sessionId = route.params.sessionId
+  console.log('当前路由参数sessionId:', sessionId)
   if (!sessionId) return
 
   isLoadingMessages = true
 
   try {
     // 检查是否是刚刚发送的消息（当前 store 中的消息）
-    // 只有在以下情况才跳过加载：
-    // 1. store 中的 sessionId 匹配路由中的 sessionId
-    // 2. store 中已经有消息（说明是刚刚发送的，还没刷新）
+    // 如果 store 中已经有消息，优先使用本地消息（无论 sessionId 是否匹配）
+    // 因为刚刚发送消息后跳转过来时，store 中已经有用户消息和空的机器人消息
     const hasMessages = chatStore.chatMessages.length > 0
-    const sessionIdMatches = chatStore.currentSessionId === sessionId
+    console.log('当前store中是否有消息:', hasMessages, '消息长度:', chatStore.chatMessages.length)
 
-    // 如果 sessionId 匹配且有消息，说明是刚刚发送的，不需要重新加载
-    if (sessionIdMatches && hasMessages) {
+    if (hasMessages) {
       console.log('使用 store 中的消息，跳过加载历史消息')
+      // 确保当前会话ID正确设置
+      chatStore.setCurrentSessionId(sessionId)
       nextTick(() => scrollToBottom())
       return
     }
@@ -110,9 +116,12 @@ const loadHistoryMessages = async () => {
     console.log('加载历史消息，sessionId:', sessionId)
     chatStore.setCurrentSessionId(sessionId)
     await chatStore.fetchMessages(sessionId)
+    console.log('fetchMessages调用完成，当前chatMessages长度:', chatStore.chatMessages.length)
 
     // 加载完成后滚动到底部
     nextTick(() => scrollToBottom())
+  } catch (error) {
+    console.error('loadHistoryMessages发生错误:', error)
   } finally {
     isLoadingMessages = false
   }
@@ -263,13 +272,22 @@ $bubble-radius: $radius-lg;
   flex-direction: column;
 
   .bubble-content {
-    padding: 0.05rem 1rem;
+    padding: 0.75rem 1rem;
     border-radius: $bubble-radius;
     line-height: 1.7;
     font-size: 0.9375rem;
     word-wrap: break-word;
     box-shadow: $shadow-sm; // 轻微阴影，提升立体感
     transition: $transition;
+    // 确保文本在气泡中可见
+    color: $text-primary;
+    background-color: #fff; // 默认背景色（机器人消息）
+
+    // 用户消息样式覆盖
+    .user-message & {
+      background-color: $primary;
+      color: #fff;
+    }
 
     // 核心新增：Markdown样式适配（气泡内）
     // 标题样式
