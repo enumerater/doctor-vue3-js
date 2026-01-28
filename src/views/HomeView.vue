@@ -35,16 +35,12 @@
       <div class="input-row">
         <van-field v-model="chatStore.inputValue" placeholder="请输入您的问题" class="input-field"
           @keyup.enter="sendMessage" />
-        <van-button icon="https://enumerate-oss.oss-cn-qingdao.aliyuncs.com/fe62741e-d350-4c13-8cf5-a1edf8c98784.png"
-          type="default" class="action-btn send-btn" @click="sendMessage" />
+        <div class="send-btn-container" @click="sendMessage">✓</div>
         <van-button class="fold-btn" icon="ellipsis" type="default" @click="isFunctionShow = !isFunctionShow" />
       </div>
 
       <div class="function-area" :class="{ show: isFunctionShow }">
         <!-- 仅绑定 active 类控制两种状态 -->
-        <van-button icon="photo-o" type="default" class="function-btn" @click="photo">
-          图像识别
-        </van-button>
         <van-button icon="lightbulb-o" type="default" class="function-btn" :class="{ active: functionStatus.netSearch }"
           @click="netSearch">
           联网搜索
@@ -74,7 +70,6 @@ import { useRouter } from 'vue-router'
 const isFunctionShow = ref(false)
 // 核心：仅用布尔值控制 未选中(false)/选中(true) 两种状态
 const functionStatus = ref({
-  photo: false,
   netSearch: false,
   switchModel: false,
   moreSettings: false,
@@ -103,10 +98,6 @@ const handleToggleSidebar = () => {
     sidebarStore.toggleLeft()
   }
   // PC端点击菜单按钮不做任何操作（或者可以添加其他功能）
-}
-
-const photo = () => {
-  router.push({ name: 'vision' })
 }
 
 const netSearch = () => {
@@ -605,6 +596,19 @@ const sendMessage = async () => {
   .function-area {
     display: flex !important;
   }
+}
+
+.send-btn-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: $default-bg;
+  color: $primary;
+  cursor: pointer;
+  font-size: 20px;
 }
 
 @media (max-width: 375px) {

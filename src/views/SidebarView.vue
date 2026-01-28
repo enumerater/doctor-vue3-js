@@ -15,13 +15,17 @@
     <!-- 分割线 -->
     <van-divider class="sidebar-divider" />
 
-    <!-- Agent功能区域 -->
+    <!-- 功能区域 -->
     <div class="sidebar-agent">
-      <div class="agent-title">Agent功能</div>
+      <div class="agent-title">更多功能</div>
       <div class="agent-list">
         <div class="agent-item" @click="handleAgentFunction('report')">
           <van-icon name="description" class="agent-icon" />
           <span class="agent-text">自动生成报表</span>
+        </div>
+        <div class="agent-item" @click="handleAgentFunction('vision')">
+          <van-icon name="photo-o" class="agent-icon" />
+          <span class="agent-text">图像识别</span>
         </div>
         <!-- 后续可以继续添加更多agent功能 -->
       </div>
@@ -43,10 +47,14 @@
 
 <script setup>
 import { useSidebarStore } from '@/stores/sidebar'
+import { useVisionStore } from '@/stores/vision'
+import { useRouter } from 'vue-router'
 import history from '@/components/HistoryList.vue'
 
 // 直接获取侧边栏store
 const sidebarStore = useSidebarStore()
+const visionStore = useVisionStore()
+const router = useRouter()
 
 // Agent功能处理函数
 const handleAgentFunction = (type) => {
@@ -57,6 +65,10 @@ const handleAgentFunction = (type) => {
     case 'report':
       // TODO: 实现自动生成报表功能
       console.log('打开自动生成报表功能')
+      break
+    case 'vision':
+      // 跳转到图像识别页面
+      router.push({ name: 'vision' })
       break
     default:
       break
