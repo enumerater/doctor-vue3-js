@@ -58,10 +58,18 @@ export const useSidebarStore = defineStore('sidebar', {
     },
     async selectHistoryItem(sessionId) {
       const chatStore = useChatStore()
+      const userId = localStorage.getItem('id')
 
       // 1. 更新会话ID并加载消息
       chatStore.setCurrentSessionId(sessionId)
       await chatStore.fetchMessages(sessionId)
+
+      // 2. 更新 localStorage 中的 sessionId（从完整 sessionId 中提取部分）
+      // 完整 sessionId 格式：userId + sessionId
+      const partialSessionId = sessionId.startsWith(userId)
+        ? sessionId.substring(userId.length)
+        : sessionId
+      localStorage.setItem('sessionId', partialSessionId)
 
       router.push({
         name: 'chatDetail',
@@ -69,6 +77,25 @@ export const useSidebarStore = defineStore('sidebar', {
       })
       this.closeLeft()
     },
+    // 准备新对话：只更新 sessionId，不创建会话记录（避免空会话出现在历史记录）
+    async prepareConversation() {
+      const chatStore = useChatStore()
+      const userId = localStorage.getItem('id')
+
+      try {
+        await updateSesssionId({ userId })
+
+        const userRes = await getUser({ id: userId })
+        const newSessionId = userRes.data.sessionId
+        localStorage.setItem('sessionId', newSessionId)
+        chatStore.setCurrentSessionId(newSessionId)
+        chatStore.clearMessages()
+      } catch (err) {
+        console.error('准备新对话失败：', err)
+        throw err
+      }
+    },
+    // 重置对话：创建新会话并保存到历史记录（用于用户主动点击"新对话"按钮）
     async resetConversation() {
       const chatStore = useChatStore()
       const userId = localStorage.getItem('id')

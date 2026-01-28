@@ -1,6 +1,7 @@
 // stores/chat.js（扩展后）
 import { defineStore } from 'pinia'
 import { getMessage } from '@/axios/chat'
+import { createSession } from '@/axios/session'
 
 export const useChatStore = defineStore('chat', {
   state: () => ({
@@ -50,30 +51,62 @@ export const useChatStore = defineStore('chat', {
         ]
       }
     },
-    async sendMessage(content, userId, sessionId, TOKEN) {
+    // 准备消息：添加用户消息和空的机器人消息，立即返回（不等待流式响应）
+    async prepareMessage(content, userId, sessionId) {
       const trimmedContent = content.trim()
       if (!trimmedContent) return Promise.reject(new Error('消息内容不能为空'))
       this.clearInputValue()
 
+      // 如果这是第一条消息且会话尚未创建，则创建会话
+      const fullSessionId = `${userId}${sessionId}`
+      const isFirstMessage = this.chatMessages.length === 0
+
+      if (isFirstMessage && sessionId) {
+        try {
+          await createSession({
+            userId,
+            sessionTitle:
+              trimmedContent.length > 20 ? trimmedContent.substring(0, 20) + '...' : trimmedContent,
+            sessionId: fullSessionId,
+          })
+          console.log('创建新会话成功：', fullSessionId)
+          // 刷新历史记录（如果 sidebarStore 可用）
+          const { useSidebarStore } = await import('@/stores/sidebar')
+          const sidebarStore = useSidebarStore()
+          await sidebarStore.refreshHistory()
+        } catch (err) {
+          console.warn('创建会话失败，继续发送消息：', err)
+          // 即使创建会话失败，也继续发送消息
+        }
+      }
+
+      // 添加用户消息
+      const userMsg = {
+        type: 'user',
+        messageContent: trimmedContent,
+        messageRole: '0',
+      }
+      this.chatMessages.push(userMsg)
+      console.log('添加用户消息：', userMsg)
+
+      // 添加空的机器人消息（等待流式数据填充）
+      const robotMsg = {
+        type: 'robot',
+        messageContent: '',
+        messageRole: '1',
+      }
+      this.chatMessages.push(robotMsg)
+      this.currentRobotMsgIndex = this.chatMessages.length - 1
+      console.log('初始化机器人消息，索引：', this.currentRobotMsgIndex)
+
+      return Promise.resolve()
+    },
+    // 启动流式请求：在后台处理流式响应，实时更新消息
+    async startStreaming(content, userId, sessionId, TOKEN) {
+      const trimmedContent = content.trim()
+      if (!trimmedContent) return Promise.reject(new Error('消息内容不能为空'))
+
       try {
-        // 改用store的inputValue（可选，也可以继续传参）
-        const userMsg = {
-          type: 'user',
-          messageContent: trimmedContent,
-          messageRole: '0',
-        }
-        this.chatMessages.push(userMsg)
-        console.log('添加用户消息：', userMsg)
-
-        const robotMsg = {
-          type: 'robot',
-          messageContent: '',
-          messageRole: '1',
-        }
-        this.chatMessages.push(robotMsg)
-        this.currentRobotMsgIndex = this.chatMessages.length - 1
-        console.log('初始化机器人消息，索引：', this.currentRobotMsgIndex)
-
         const url = new URL('http://localhost:8080/chat/memory')
         url.searchParams.append('prompt', trimmedContent)
         url.searchParams.append('userId', userId)
@@ -134,6 +167,16 @@ export const useChatStore = defineStore('chat', {
         }
         return Promise.reject(error)
       }
+    },
+    // 兼容旧接口：保持原有 sendMessage 方法，但内部使用新的分离方法
+    async sendMessage(content, userId, sessionId, TOKEN) {
+      await this.prepareMessage(content, userId, sessionId)
+      // 不等待流式响应完成，立即返回
+      // 流式响应在后台继续处理
+      this.startStreaming(content, userId, sessionId, TOKEN).catch((err) => {
+        console.error('后台流式请求失败：', err)
+      })
+      return Promise.resolve()
     },
     addRobotMessage(chunk) {
       if (this.currentRobotMsgIndex >= 0) {

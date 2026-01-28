@@ -176,8 +176,10 @@ const goToVision = () => {
 
 // 定时更新任务已用时间
 let visionTimer = null
-onMounted(() => {
-  sidebarStore.resetConversation()
+onMounted(async () => {
+  // 只准备会话，不创建会话记录（避免空会话出现在历史记录）
+  // 真正的会话会在用户发送第一条消息时创建
+  await sidebarStore.prepareConversation()
   checkIsPC()
   window.addEventListener('resize', checkIsPC)
 
@@ -204,25 +206,35 @@ const sendMessage = async () => {
   if (!content) return
 
   const userId = localStorage.getItem('id')
-  const currentSessionId = localStorage.getItem('sessionId') || ''
+  // 优先使用 store 中的 sessionId（点击历史记录后会设置）
+  // 如果 store 中没有，则使用 localStorage 中的
+  let fullSessionId = chatStore.currentSessionId || ''
 
-  await chatStore.sendMessage(content, userId, currentSessionId, TOKEN)
+  // 如果 store 中没有 sessionId，使用 localStorage 中的构建完整 sessionId
+  if (!fullSessionId) {
+    const currentSessionId = localStorage.getItem('sessionId') || ''
+    fullSessionId = `${userId}${currentSessionId}`
+  }
 
+  // 从完整 sessionId 中提取部分 sessionId（去掉 userId 前缀）
+  const partialSessionId = fullSessionId.startsWith(userId)
+    ? fullSessionId.substring(userId.length)
+    : fullSessionId
+
+  // 先准备消息（添加用户消息和空的机器人消息），立即返回
+  await chatStore.prepareMessage(content, userId, partialSessionId)
+
+  // 立即跳转到对话页面，不等待流式响应
   router.push({
     name: 'chatDetail',
-    params: { sessionId: `${userId}${currentSessionId}` },
+    params: { sessionId: fullSessionId },
+  })
+
+  // 在后台启动流式请求，实时更新消息（不阻塞页面跳转）
+  chatStore.startStreaming(content, userId, partialSessionId, TOKEN).catch((err) => {
+    console.error('流式请求失败：', err)
   })
 }
-
-onMounted(() => {
-  sidebarStore.resetConversation()
-  checkIsPC()
-  window.addEventListener('resize', checkIsPC)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', checkIsPC)
-})
 </script>
 
 <style lang="scss" scoped>

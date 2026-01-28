@@ -75,16 +75,47 @@ const formatTime = (timeStr) => {
   return `${hours}:${minutes}`
 }
 
-// 加载历史消息
+// 防止重复加载的标记
+let isLoadingMessages = false
+
+// 加载历史消息（带防抖）
 const loadHistoryMessages = async () => {
+  // 防止重复调用
+  if (isLoadingMessages) {
+    console.log('正在加载中，跳过重复调用')
+    return
+  }
+
   const sessionId = route.params.sessionId
   if (!sessionId) return
 
-  chatStore.setCurrentSessionId(sessionId)
-  await chatStore.fetchMessages(sessionId)
+  isLoadingMessages = true
 
-  // 加载完成后滚动到底部
-  nextTick(() => scrollToBottom())
+  try {
+    // 检查是否是刚刚发送的消息（当前 store 中的消息）
+    // 只有在以下情况才跳过加载：
+    // 1. store 中的 sessionId 匹配路由中的 sessionId
+    // 2. store 中已经有消息（说明是刚刚发送的，还没刷新）
+    const hasMessages = chatStore.chatMessages.length > 0
+    const sessionIdMatches = chatStore.currentSessionId === sessionId
+
+    // 如果 sessionId 匹配且有消息，说明是刚刚发送的，不需要重新加载
+    if (sessionIdMatches && hasMessages) {
+      console.log('使用 store 中的消息，跳过加载历史消息')
+      nextTick(() => scrollToBottom())
+      return
+    }
+
+    // 否则加载历史消息（包括刷新页面、从历史记录点击进入等情况）
+    console.log('加载历史消息，sessionId:', sessionId)
+    chatStore.setCurrentSessionId(sessionId)
+    await chatStore.fetchMessages(sessionId)
+
+    // 加载完成后滚动到底部
+    nextTick(() => scrollToBottom())
+  } finally {
+    isLoadingMessages = false
+  }
 }
 
 // 自动滚动到底部
@@ -99,6 +130,20 @@ watch(
   () => messages.value.length,
   () => {
     nextTick(() => scrollToBottom())
+  },
+)
+
+// 监听最后一条消息的内容变化（流式更新时）
+watch(
+  () => {
+    const lastMsg = messages.value[messages.value.length - 1]
+    return lastMsg?.messageContent || ''
+  },
+  () => {
+    // 流式更新时，延迟滚动，避免过于频繁
+    setTimeout(() => {
+      nextTick(() => scrollToBottom())
+    }, 100)
   },
 )
 
