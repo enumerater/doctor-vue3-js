@@ -1,11 +1,7 @@
 <template>
   <div class="chat-page" :class="{ 'sidebar-open': sidebarStore.showLeft && !isPC }">
     <!-- 移动端遮罩层 -->
-    <div
-      v-if="!isPC && sidebarStore.showLeft"
-      class="sidebar-overlay"
-      @click="sidebarStore.closeLeft()"
-    ></div>
+    <div v-if="!isPC && sidebarStore.showLeft" class="sidebar-overlay" @click="sidebarStore.closeLeft()"></div>
 
     <!-- 侧边栏 -->
     <div class="sidebar-wrapper" :class="{ 'sidebar-visible': sidebarStore.showLeft || isPC }">
@@ -16,25 +12,14 @@
     </div>
 
     <div class="nav-header">
-      <van-button
-        icon="bars"
-        type="default"
-        size="small"
-        class="menu-btn"
-        @click="handleToggleSidebar"
-      />
+      <van-button icon="bars" type="default" size="small" class="menu-btn" @click="handleToggleSidebar" />
       <div class="header-right">
         <!-- 图像识别任务状态图标 -->
-        <div
-          v-if="visionStore.currentTask"
-          class="vision-task-badge"
-          :class="{
-            'task-detecting': visionStore.hasActiveTask,
-            'task-completed': visionStore.hasCompletedTask,
-            'task-failed': visionStore.currentTask.status === 'failed',
-          }"
-          @click="goToVision"
-        >
+        <div v-if="visionStore.currentTask" class="vision-task-badge" :class="{
+          'task-detecting': visionStore.hasActiveTask,
+          'task-completed': visionStore.hasCompletedTask,
+          'task-failed': visionStore.currentTask.status === 'failed',
+        }" @click="goToVision">
           <van-icon name="photo-o" class="badge-icon" />
           <span class="badge-text">{{ visionStore.taskStatusText }}</span>
           <span v-if="visionStore.hasActiveTask" class="badge-dot"></span>
@@ -48,24 +33,11 @@
 
     <div class="input-area" :class="{ 'with-sidebar': isPC }">
       <div class="input-row">
-        <van-field
-          v-model="chatStore.inputValue"
-          placeholder="请输入您的问题"
-          class="input-field"
-          @keyup.enter="sendMessage"
-        />
-        <van-button
-          icon="https://enumerate-oss.oss-cn-qingdao.aliyuncs.com/fe62741e-d350-4c13-8cf5-a1edf8c98784.png"
-          type="default"
-          class="action-btn send-btn"
-          @click="sendMessage"
-        />
-        <van-button
-          class="fold-btn"
-          icon="ellipsis"
-          type="default"
-          @click="isFunctionShow = !isFunctionShow"
-        />
+        <van-field v-model="chatStore.inputValue" placeholder="请输入您的问题" class="input-field"
+          @keyup.enter="sendMessage" />
+        <van-button icon="https://enumerate-oss.oss-cn-qingdao.aliyuncs.com/fe62741e-d350-4c13-8cf5-a1edf8c98784.png"
+          type="default" class="action-btn send-btn" @click="sendMessage" />
+        <van-button class="fold-btn" icon="ellipsis" type="default" @click="isFunctionShow = !isFunctionShow" />
       </div>
 
       <div class="function-area" :class="{ show: isFunctionShow }">
@@ -73,31 +45,16 @@
         <van-button icon="photo-o" type="default" class="function-btn" @click="photo">
           图像识别
         </van-button>
-        <van-button
-          icon="lightbulb-o"
-          type="default"
-          class="function-btn"
-          :class="{ active: functionStatus.netSearch }"
-          @click="netSearch"
-        >
+        <van-button icon="lightbulb-o" type="default" class="function-btn" :class="{ active: functionStatus.netSearch }"
+          @click="netSearch">
           联网搜索
         </van-button>
-        <van-button
-          icon="switch-o"
-          type="default"
-          class="function-btn"
-          :class="{ active: functionStatus.switchModel }"
-          @click="switchModel"
-        >
+        <van-button icon="switch-o" type="default" class="function-btn" :class="{ active: functionStatus.switchModel }"
+          @click="switchModel">
           模型切换
         </van-button>
-        <van-button
-          icon="setting-o"
-          type="default"
-          class="function-btn"
-          :class="{ active: functionStatus.moreSettings }"
-          @click="moreSettings"
-        >
+        <van-button icon="setting-o" type="default" class="function-btn"
+          :class="{ active: functionStatus.moreSettings }" @click="moreSettings">
           更多设置
         </van-button>
       </div>
@@ -208,18 +165,18 @@ const sendMessage = async () => {
   const userId = localStorage.getItem('id')
   // 优先使用 store 中的 sessionId（点击历史记录后会设置）
   // 如果 store 中没有，则使用 localStorage 中的
-  let fullSessionId = chatStore.currentSessionId || ''
+  let partialSessionId = chatStore.currentSessionId || ''
 
-  // 如果 store 中没有 sessionId，使用 localStorage 中的构建完整 sessionId
-  if (!fullSessionId) {
-    const currentSessionId = localStorage.getItem('sessionId') || ''
-    fullSessionId = `${userId}${currentSessionId}`
+  // 如果 store 中没有 sessionId，使用 localStorage 中的
+  if (!partialSessionId) {
+    partialSessionId = localStorage.getItem('sessionId') || ''
   }
 
-  // 从完整 sessionId 中提取部分 sessionId（去掉 userId 前缀）
-  const partialSessionId = fullSessionId.startsWith(userId)
-    ? fullSessionId.substring(userId.length)
-    : fullSessionId
+  // 构建完整 sessionId
+  const fullSessionId = `${userId}${partialSessionId}`
+
+  // 设置当前会话ID为完整的sessionId，确保与路由参数匹配
+  chatStore.setCurrentSessionId(fullSessionId)
 
   // 先准备消息（添加用户消息和空的机器人消息），立即返回
   await chatStore.prepareMessage(content, userId, partialSessionId)
@@ -274,6 +231,7 @@ const sendMessage = async () => {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -458,6 +416,7 @@ const sendMessage = async () => {
 }
 
 @keyframes pulse {
+
   0%,
   100% {
     opacity: 1;
