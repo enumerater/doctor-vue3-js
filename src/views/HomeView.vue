@@ -1,5 +1,8 @@
 <template>
-  <div class="chat-page" :class="{ 'sidebar-open': sidebarStore.showLeft && !isPC }">
+  <div class="chat-page" :class="{
+    'sidebar-open': sidebarStore.showLeft && !isPC,
+    'agriculture-agent-active': sidebarStore.isAgricultureAgent
+  }">
     <!-- 移动端遮罩层 -->
     <div v-if="!isPC && sidebarStore.showLeft" class="sidebar-overlay" @click="sidebarStore.closeLeft()"></div>
 
@@ -614,6 +617,55 @@ const sendMessage = async () => {
 @media (max-width: 375px) {
   .fold-btn {
     display: flex !important;
+  }
+}
+
+/* 农业Agent模式样式 */
+.agriculture-agent-active {
+  // 为整个对话界面添加发光绿色边框效果
+  box-shadow: inset 0 0 20px rgba(52, 199, 89, 0.3),
+    inset 0 0 40px rgba(52, 199, 89, 0.2),
+    0 0 30px rgba(52, 199, 89, 0.15);
+  border: 2px solid rgba(52, 199, 89, 0.8);
+  border-radius: 8px;
+
+  // 导航栏样式调整
+  .nav-header {
+    background-color: rgba(236, 249, 238, 0.95);
+    border-bottom: 1px solid rgba(52, 199, 89, 0.2);
+  }
+
+  // 主内容区域样式调整
+  .main-content {
+    background-color: rgba(248, 250, 249, 0.95);
+  }
+
+  // 输入区域样式调整
+  .input-area {
+    background-color: rgba(236, 249, 238, 0.95);
+    border-top: 1px solid rgba(52, 199, 89, 0.2);
+  }
+
+  // 输入框样式调整
+  .input-field {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(52, 199, 89, 0.2);
+
+    &:focus-within {
+      border-color: rgba(52, 199, 89, 0.4);
+      box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.1);
+    }
+  }
+
+  // 发送按钮样式调整
+  .send-btn-container {
+    background-color: rgba(52, 199, 89, 0.1);
+    color: #34c759;
+
+    &:hover {
+      background-color: rgba(52, 199, 89, 0.2);
+      box-shadow: 0 0 10px rgba(52, 199, 89, 0.3);
+    }
   }
 }
 </style>

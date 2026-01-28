@@ -12,6 +12,7 @@ export const useSidebarStore = defineStore('sidebar', {
     refreshTrigger: false,
     searchKeyword: '',
     activeItemId: '',
+    isAgricultureAgent: false, // 农业Agent模式开关
   }),
   getters: {
     filteredHistory: (state) => {
@@ -124,6 +125,19 @@ export const useSidebarStore = defineStore('sidebar', {
       const chatStore = useChatStore()
       chatStore.setCurrentSessionId(sessionId)
       router.push({ name: 'chatDetail', params: { sessionId } })
+    },
+    // 切换农业Agent模式
+    toggleAgricultureAgent() {
+      this.isAgricultureAgent = !this.isAgricultureAgent
+      // 如果开启农业Agent模式，确保使用农业相关的会话
+      if (this.isAgricultureAgent) {
+        const chatStore = useChatStore()
+        chatStore.clearMessages()
+      }
+    },
+    // 设置农业Agent模式
+    setAgricultureAgent(enabled) {
+      this.isAgricultureAgent = enabled
     },
   },
 })

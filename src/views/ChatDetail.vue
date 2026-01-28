@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-detail-container">
+  <div class="chat-detail-container" :class="{ 'agriculture-agent-chat': sidebarStore.isAgricultureAgent }">
     <!-- 原生空状态：替代Vant的Empty组件，无第三方依赖 -->
     <div class="empty-state" v-if="messages.length === 0">
       <div class="empty-icon">💬</div>
@@ -28,6 +28,7 @@
 
 <script setup>
 import { useChatStore } from '@/stores/chat'
+import { useSidebarStore } from '@/stores/sidebar'
 import { computed, watch, onMounted, ref, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 // 核心新增：导入marked库解析Markdown
@@ -42,6 +43,7 @@ marked.setOptions({
 
 // 移除VanEmpty导入（彻底不用Vant）
 const chatStore = useChatStore()
+const sidebarStore = useSidebarStore()
 const route = useRoute()
 const messageList = ref(null) // 消息列表ref：用于自动滚动到底部
 
@@ -503,5 +505,112 @@ $bubble-radius: $radius-lg;
   .empty-text {
     font-size: 0.8125rem !important;
   }
+}
+
+/* 农业Agent聊天样式 */
+.agriculture-agent-chat {
+  // 农业Agent聊天容器的特殊背景
+  background-color: rgba(248, 250, 249, 0.95);
+
+  // 农业Agent思考过程的样式
+  .agent-thought {
+    background-color: rgba(52, 199, 89, 0.1);
+    border: 1px solid rgba(52, 199, 89, 0.2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+
+    .thought-icon {
+      color: #34c759;
+      font-size: 16px;
+      margin-right: 8px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .thought-content {
+      font-size: 14px;
+      color: #2d3748;
+      line-height: 1.6;
+      font-style: italic;
+    }
+  }
+
+  // 农业Agent执行过程的样式
+  .agent-execute {
+    background-color: rgba(52, 199, 89, 0.05);
+    border: 1px solid rgba(52, 199, 89, 0.1);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+
+    .execute-icon {
+      color: #34c759;
+      font-size: 16px;
+      margin-right: 8px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .execute-content {
+      font-size: 14px;
+      color: #2d3748;
+      line-height: 1.6;
+    }
+  }
+
+  // 农业Agent消息气泡的特殊样式
+  .robot-message .message-bubble .bubble-content {
+    background-color: rgba(255, 255, 255, 0.95);
+    border-color: rgba(52, 199, 89, 0.3);
+    box-shadow: 0 2px 8px rgba(52, 199, 89, 0.1);
+  }
+}
+
+// 农业Agent聊天中的特殊消息类型
+.agent-tool-call {
+  background-color: rgba(255, 248, 225, 0.9);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 8px 0;
+
+  .tool-name {
+    font-weight: 600;
+    color: #d69e2e;
+    margin-bottom: 4px;
+  }
+
+  .tool-params {
+    font-size: 13px;
+    color: #718096;
+    margin-left: 16px;
+  }
+}
+
+// 农业Agent决策过程的动画效果
+@keyframes thinking-pulse {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+}
+
+.agent-thought {
+  animation: thinking-pulse 2s infinite ease-in-out;
 }
 </style>

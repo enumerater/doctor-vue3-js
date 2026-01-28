@@ -111,10 +111,18 @@ export const useChatStore = defineStore('chat', {
       if (!trimmedContent) return Promise.reject(new Error('消息内容不能为空'))
 
       try {
-        const url = new URL('http://localhost:8080/chat/memory')
+        // 根据是否启用农业Agent选择不同的API路径
+        const sidebarStore = (await import('@/stores/sidebar')).useSidebarStore()
+        const apiPath = sidebarStore.isAgricultureAgent ? '/chat/agriculture-agent' : '/chat/memory'
+
+        const url = new URL(`http://localhost:8080${apiPath}`)
         url.searchParams.append('prompt', trimmedContent)
         url.searchParams.append('userId', userId)
         url.searchParams.append('sessionId', sessionId)
+        // 添加农业Agent模式标记
+        if (sidebarStore.isAgricultureAgent) {
+          url.searchParams.append('agent_mode', 'agriculture')
+        }
 
         const response = await fetch(url, {
           method: 'GET',

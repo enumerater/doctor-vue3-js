@@ -1,8 +1,8 @@
-// ========== Chat小农 全局设计变量 ==========
+// Chat小农 全局设计变量 ==========
 // 主色：农业绿
 $primary: #388e3c;
 $primary-light: #e8f5e9;
-$default-bg: #e8f5e9; // 与 primary-light 一致，兼容旧写法
+$default-bg: #e8f5e9;
 $primary-hover: #2e7d32;
 $secondary: #66bb6a;
 
@@ -30,14 +30,14 @@ $radius-md: 12px;
 $radius-lg: 16px;
 $radius-xl: 20px;
 
-// 动效
+// 动画
 $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 $transition-fast: all 0.2s ease;
 
 // 字体
 $font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 
-// 状态色（病害等级等）
+// 严重程度色（病害等级等）
 $severity-mild: #48bb78;
 $severity-moderate: #ed8936;
 $severity-severe: #e53e3e;

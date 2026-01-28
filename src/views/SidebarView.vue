@@ -27,6 +27,11 @@
           <van-icon name="photo-o" class="agent-icon" />
           <span class="agent-text">图像识别</span>
         </div>
+        <div class="agent-item" @click="handleAgentFunction('agriculture')"
+          :class="{ 'agriculture-active': sidebarStore.isAgricultureAgent }">
+          <van-icon name="leaf" class="agent-icon" />
+          <span class="agent-text">农业Agent</span>
+        </div>
         <!-- 后续可以继续添加更多agent功能 -->
       </div>
     </div>
@@ -69,6 +74,12 @@ const handleAgentFunction = (type) => {
     case 'vision':
       // 跳转到图像识别页面
       router.push({ name: 'vision' })
+      break
+    case 'agriculture':
+      // 切换农业Agent模式
+      sidebarStore.toggleAgricultureAgent()
+      // 重置会话
+      sidebarStore.resetConversation()
       break
     default:
       break
@@ -176,12 +187,29 @@ const handleAgentFunction = (type) => {
       .agent-icon {
         font-size: 18px;
         color: #34c759;
-        margin-right: 10px;
+        margin: 0 10px 0 0;
       }
 
       .agent-text {
         font-size: 14px;
         color: #333;
+      }
+
+      // 农业Agent选中状态样式
+      &.agriculture-active {
+        background-color: #e8f5e9;
+        border-color: rgba(52, 199, 89, 0.6);
+        box-shadow: 0 0 10px rgba(52, 199, 89, 0.2);
+
+        .agent-icon {
+          color: #34c759;
+          filter: drop-shadow(0 0 5px rgba(52, 199, 89, 0.5));
+        }
+
+        .agent-text {
+          color: #34c759;
+          font-weight: 500;
+        }
       }
     }
   }
