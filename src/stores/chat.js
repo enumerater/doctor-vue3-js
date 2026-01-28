@@ -63,9 +63,9 @@ export const useChatStore = defineStore('chat', {
       // 检查是否需要创建会话：
       // 1. 当前没有任何消息（确保是新会话）
       // 2. 有有效的sessionId
-      // 3. 当前会话ID与传入的sessionId一致（确保是当前会话的第一条消息）
+      // 3. 当前会话ID与完整sessionId一致（确保是当前会话的第一条消息）
       const needsCreateSession =
-        this.chatMessages.length === 0 && sessionId && this.currentSessionId === sessionId
+        this.chatMessages.length === 0 && sessionId && this.currentSessionId === fullSessionId
 
       if (needsCreateSession) {
         try {

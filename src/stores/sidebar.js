@@ -67,7 +67,7 @@ export const useSidebarStore = defineStore('sidebar', {
         : sessionId
 
       // 2. 更新会话ID并加载消息
-      chatStore.setCurrentSessionId(partialSessionId)
+      chatStore.setCurrentSessionId(sessionId)
       await chatStore.fetchMessages(sessionId)
 
       // 3. 更新 localStorage 中的 sessionId
@@ -88,9 +88,10 @@ export const useSidebarStore = defineStore('sidebar', {
         await updateSesssionId({ userId })
 
         const userRes = await getUser({ id: userId })
-        const newSessionId = userRes.data.sessionId
-        localStorage.setItem('sessionId', newSessionId)
-        chatStore.setCurrentSessionId(newSessionId)
+        const partialSessionId = userRes.data.sessionId
+        localStorage.setItem('sessionId', partialSessionId)
+        // 设置当前会话ID为部分的sessionId，因为还没有完整的sessionId（需要userId前缀）
+        chatStore.setCurrentSessionId(partialSessionId)
         chatStore.clearMessages()
       } catch (err) {
         console.error('准备新对话失败：', err)
@@ -106,9 +107,10 @@ export const useSidebarStore = defineStore('sidebar', {
         await updateSesssionId({ userId })
 
         const userRes = await getUser({ id: userId })
-        const newSessionId = userRes.data.sessionId
-        localStorage.setItem('sessionId', newSessionId)
-        chatStore.setCurrentSessionId(newSessionId)
+        const partialSessionId = userRes.data.sessionId
+        localStorage.setItem('sessionId', partialSessionId)
+        // 设置当前会话ID为部分的sessionId，因为还没有完整的sessionId（需要userId前缀）
+        chatStore.setCurrentSessionId(partialSessionId)
 
         router.push({ name: 'chatBegin' })
         this.closeLeft()
