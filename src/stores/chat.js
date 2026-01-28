@@ -37,11 +37,31 @@ export const useChatStore = defineStore('chat', {
         console.log('请求历史消息：', sessionId)
         const res = await getMessage(sessionId)
         if (Array.isArray(res.data)) {
-          this.chatMessages = res.data.map((msg) => ({
-            ...msg,
-            messageContent: msg.messageContent || msg.content,
-            messageRole: msg.messageRole || (msg.type === 'user' ? '0' : '1'),
-          }))
+          this.chatMessages = res.data.map((msg) => {
+            // 解析JSON格式的消息内容
+            let messageContent = msg.messageContent || msg.content || ''
+            let isImageMessage = false
+
+            try {
+              const parsedContent = JSON.parse(messageContent)
+              if (parsedContent.content) {
+                messageContent = parsedContent.content
+                // 如果包含图片，则标记为图片消息
+                if (parsedContent.images && parsedContent.images.length > 0) {
+                  isImageMessage = true
+                }
+              }
+            } catch (e) {
+              // 不是JSON格式，直接使用原始内容
+            }
+
+            return {
+              ...msg,
+              messageContent: messageContent,
+              messageRole: msg.messageRole || (msg.type === 'user' ? '0' : '1'),
+              isImageMessage: isImageMessage,
+            }
+          })
         }
         console.log('历史消息请求结果：', res)
       } catch (err) {
