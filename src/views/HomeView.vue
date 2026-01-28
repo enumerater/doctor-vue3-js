@@ -175,8 +175,8 @@ const sendMessage = async () => {
   // 构建完整 sessionId
   const fullSessionId = `${userId}${partialSessionId}`
 
-  // 设置当前会话ID为完整的sessionId，确保与路由参数匹配
-  chatStore.setCurrentSessionId(fullSessionId)
+  // 设置当前会话ID为部分的sessionId，确保与prepareMessage中的处理一致
+  chatStore.setCurrentSessionId(partialSessionId)
 
   // 先准备消息（添加用户消息和空的机器人消息），立即返回
   await chatStore.prepareMessage(content, userId, partialSessionId)

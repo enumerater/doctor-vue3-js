@@ -59,16 +59,15 @@ export const useChatStore = defineStore('chat', {
 
       // 如果这是第一条消息且会话尚未创建，则创建会话
       const fullSessionId = `${userId}${sessionId}`
-      const isFirstMessage = this.chatMessages.length === 0
-      const hasExistingSession = this.chatMessages.some(
-        (msg) => msg.type === 'user' || msg.type === 'robot',
-      )
 
-      // 只有在真正需要创建会话时才创建：
-      // 1. 是第一条消息
-      // 2. 当前没有任何消息（确保是新会话）
-      // 3. 有有效的sessionId
-      if (isFirstMessage && !hasExistingSession && sessionId) {
+      // 检查是否需要创建会话：
+      // 1. 当前没有任何消息（确保是新会话）
+      // 2. 有有效的sessionId
+      // 3. 当前会话ID与传入的sessionId一致（确保是当前会话的第一条消息）
+      const needsCreateSession =
+        this.chatMessages.length === 0 && sessionId && this.currentSessionId === sessionId
+
+      if (needsCreateSession) {
         try {
           await createSession({
             userId,

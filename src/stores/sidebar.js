@@ -97,7 +97,7 @@ export const useSidebarStore = defineStore('sidebar', {
         throw err
       }
     },
-    // 重置对话：创建新会话并保存到历史记录（用于用户主动点击"新对话"按钮）
+    // 重置对话：只更新sessionId和清空消息，不创建会话记录（会话创建由prepareMessage统一处理）
     async resetConversation() {
       const chatStore = useChatStore()
       const userId = localStorage.getItem('id')
@@ -110,16 +110,8 @@ export const useSidebarStore = defineStore('sidebar', {
         localStorage.setItem('sessionId', newSessionId)
         chatStore.setCurrentSessionId(newSessionId)
 
-        const fullSessionId = `${userId}${newSessionId}`
-        await createSession({
-          userId,
-          sessionTitle: '新会话',
-          sessionId: fullSessionId,
-        })
-
         router.push({ name: 'chatBegin' })
         this.closeLeft()
-        await this.refreshHistory()
         chatStore.clearMessages()
       } catch (err) {
         console.error('创建新对话失败：', err)
