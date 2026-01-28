@@ -26,5 +26,6 @@ export const imageChat = (params) => {
       url: url,
       cropType: cropType,
     },
+    timeout: 60000, // 图像识别接口超时时间设置为1分钟
   })
 }

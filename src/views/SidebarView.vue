@@ -1,29 +1,44 @@
 <template>
-    <div class="sidebar-container">
-        <!-- 组件头部 -->
-        <div class="history-header">
-            <h3 class="history-title">Chat小农</h3>
-        </div>
-
-        <!-- 功能按钮区域 -->
-        <div class="sidebar-function">
-            <van-button type="primary" block class="new-chat-btn" @click="sidebarStore.resetConversation">
-                <van-icon name="plus" class="btn-icon" /> 新对话
-            </van-button>
-        </div>
-
-        <!-- 分割线 -->
-        <van-divider class="sidebar-divider" />
-
-        <!-- 历史记录区域 -->
-        <div class="sidebar-history">
-            <div class="history-title">历史记录</div>
-            <div class="history-list">
-                <!-- 不再传递任何props/emit，直接用store -->
-                <history />
-            </div>
-        </div>
+  <div class="sidebar-container">
+    <!-- 组件头部 -->
+    <div class="history-header">
+      <h3 class="history-title">Chat小农</h3>
     </div>
+
+    <!-- 功能按钮区域 -->
+    <div class="sidebar-function">
+      <van-button type="primary" block class="new-chat-btn" @click="sidebarStore.resetConversation">
+        <van-icon name="plus" class="btn-icon" /> 新对话
+      </van-button>
+    </div>
+
+    <!-- 分割线 -->
+    <van-divider class="sidebar-divider" />
+
+    <!-- Agent功能区域 -->
+    <div class="sidebar-agent">
+      <div class="agent-title">Agent功能</div>
+      <div class="agent-list">
+        <div class="agent-item" @click="handleAgentFunction('report')">
+          <van-icon name="description" class="agent-icon" />
+          <span class="agent-text">自动生成报表</span>
+        </div>
+        <!-- 后续可以继续添加更多agent功能 -->
+      </div>
+    </div>
+
+    <!-- 分割线 -->
+    <van-divider class="sidebar-divider" />
+
+    <!-- 历史记录区域 -->
+    <div class="sidebar-history">
+      <div class="history-title">历史记录</div>
+      <div class="history-list">
+        <!-- 不再传递任何props/emit，直接用store -->
+        <history />
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -32,48 +47,131 @@ import history from '@/components/HistoryList.vue'
 
 // 直接获取侧边栏store
 const sidebarStore = useSidebarStore()
+
+// Agent功能处理函数
+const handleAgentFunction = (type) => {
+  console.log('Agent功能:', type)
+  // 后续可以在这里添加具体的功能逻辑
+  // 例如：跳转到报表生成页面、打开弹窗等
+  switch (type) {
+    case 'report':
+      // TODO: 实现自动生成报表功能
+      console.log('打开自动生成报表功能')
+      break
+    default:
+      break
+  }
+}
 </script>
 
 <style lang="scss" scoped>
 .sidebar-container {
-    height: 100%;
-    padding: 16px;
-    box-sizing: border-box;
-    background-color: #fff;
+  height: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 
-    // 功能按钮区域
-    .sidebar-function {
-        margin-bottom: 12px;
+  // 组件头部
+  .history-header {
+    flex-shrink: 0;
+  }
 
-        .new-chat-btn {
-            border-radius: 8px;
-            background-color: #34c759; // 延续农业绿色主题
-            border: none;
+  // 功能按钮区域
+  .sidebar-function {
+    margin-bottom: 12px;
+    flex-shrink: 0;
 
-            .btn-icon {
-                margin-right: 4px;
-            }
-        }
+    .new-chat-btn {
+      border-radius: 8px;
+      background-color: #34c759; // 延续农业绿色主题
+      border: none;
+
+      .btn-icon {
+        margin-right: 4px;
+      }
+    }
+  }
+
+  // 分割线样式
+  .sidebar-divider {
+    margin: 12px 0;
+    background-color: #f5f7fa;
+    flex-shrink: 0;
+  }
+
+  // 历史记录区域 - 可滚动
+  .sidebar-history {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0; // 重要：允许flex子元素缩小
+
+    .history-title {
+      font-size: 15px;
+      color: #666;
+      margin-bottom: 8px;
+      font-weight: 500;
+      flex-shrink: 0;
     }
 
-    // 分割线样式
-    .sidebar-divider {
-        margin: 12px 0;
-        background-color: #f5f7fa;
+    .history-list {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+  }
+
+  // Agent功能区域 - 固定在历史记录上方
+  .sidebar-agent {
+    flex-shrink: 0;
+
+    .agent-title {
+      font-size: 15px;
+      color: #666;
+      margin-bottom: 8px;
+      font-weight: 500;
     }
 
-    // 历史记录区域
-    .sidebar-history {
-        .history-title {
-            font-size: 15px;
-            color: #666;
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
+    .agent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
-}
 
-.history-list {
-    padding-bottom: 60px;
+    .agent-item {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border-radius: 8px;
+      background-color: #f5f7fa;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid transparent;
+
+      &:hover {
+        background-color: #e8f5e9;
+        border-color: rgba(52, 199, 89, 0.3);
+      }
+
+      &:active {
+        background-color: #d4edda;
+      }
+
+      .agent-icon {
+        font-size: 18px;
+        color: #34c759;
+        margin-right: 10px;
+      }
+
+      .agent-text {
+        font-size: 14px;
+        color: #333;
+      }
+    }
+  }
 }
 </style>
