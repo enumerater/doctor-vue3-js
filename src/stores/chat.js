@@ -57,6 +57,29 @@ export const useChatStore = defineStore('chat', {
       if (!trimmedContent) return Promise.reject(new Error('消息内容不能为空'))
       this.clearInputValue()
 
+      // 解析JSON格式的消息数据
+      let messageContent = trimmedContent
+      let sessionTitle = trimmedContent
+      let isImageMessage = false
+
+      try {
+        const parsedContent = JSON.parse(trimmedContent)
+        // 如果是JSON格式且包含content字段，则使用content作为显示内容
+        if (parsedContent.content) {
+          messageContent = parsedContent.content
+          // 如果包含图片，则标记为图片消息
+          if (parsedContent.images && parsedContent.images.length > 0) {
+            isImageMessage = true
+            // 如果有文本内容，使用文本作为会话标题，否则使用图片消息提示
+            sessionTitle = parsedContent.content || '图片消息'
+          }
+        }
+      } catch (e) {
+        // 不是JSON格式，直接使用原始内容
+        sessionTitle =
+          trimmedContent.length > 20 ? trimmedContent.substring(0, 20) + '...' : trimmedContent
+      }
+
       // 如果这是第一条消息且会话尚未创建，则创建会话
       const fullSessionId = `${userId}${sessionId}`
 
@@ -69,8 +92,7 @@ export const useChatStore = defineStore('chat', {
         try {
           await createSession({
             userId,
-            sessionTitle:
-              trimmedContent.length > 20 ? trimmedContent.substring(0, 20) + '...' : trimmedContent,
+            sessionTitle: sessionTitle,
             sessionId: fullSessionId,
           })
           console.log('创建新会话成功：', fullSessionId)
@@ -87,8 +109,10 @@ export const useChatStore = defineStore('chat', {
       // 添加用户消息
       const userMsg = {
         type: 'user',
-        messageContent: trimmedContent,
+        messageContent: messageContent,
         messageRole: '0',
+        isImageMessage: isImageMessage,
+        originalData: trimmedContent, // 保存原始数据以便后续使用
       }
       this.chatMessages.push(userMsg)
       console.log('添加用户消息：', userMsg)

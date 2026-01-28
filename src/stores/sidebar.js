@@ -2,7 +2,7 @@
 import { defineStore } from 'pinia'
 import { useChatStore } from '@/stores/chat'
 import router from '@/router/index.js'
-import { getAllSession, deleteSession, createSession } from '@/axios/session'
+import { getAllSession, deleteSession } from '@/axios/session'
 import { updateSesssionId, getUser } from '@/axios/user'
 
 export const useSidebarStore = defineStore('sidebar', {

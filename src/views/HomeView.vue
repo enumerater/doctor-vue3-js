@@ -35,11 +35,33 @@
     </div>
 
     <div class="input-area" :class="{ 'with-sidebar': isPC }">
+      <!-- 图片预览区域 -->
+      <div v-if="sidebarStore.isAgricultureAgent && uploadedImages.length > 0" class="image-preview-section">
+        <div class="preview-header">
+          <span class="preview-title">已上传图片 ({{ uploadedImages.length }})</span>
+          <span class="toggle-preview" @click="showImagePreview = !showImagePreview">
+            {{ showImagePreview ? '收起' : '展开' }} <van-icon :name="showImagePreview ? 'arrow-up' : 'arrow-down'" />
+          </span>
+        </div>
+        <div v-if="showImagePreview" class="preview-list">
+          <div v-for="(imageUrl, index) in uploadedImages" :key="index" class="preview-item">
+            <img :src="imageUrl" :alt="`上传的图片 ${index + 1}`" class="preview-img" />
+            <span class="remove-img" @click="removeImage(index)">×</span>
+          </div>
+        </div>
+      </div>
       <div class="input-row">
         <van-field v-model="chatStore.inputValue" placeholder="请输入您的问题" class="input-field"
           @keyup.enter="sendMessage" />
+        <!-- 农业Agent模式下显示图片上传按钮 -->
+        <div v-if="sidebarStore.isAgricultureAgent" class="upload-btn-container" @click="triggerImageUpload">
+          <van-icon name="photo-o" class="upload-icon" />
+        </div>
         <div class="send-btn-container" @click="sendMessage">✓</div>
         <van-button class="fold-btn" icon="ellipsis" type="default" @click="isFunctionShow = !isFunctionShow" />
+        <!-- 隐藏的文件输入框 -->
+        <input type="file" ref="imageInput" class="hidden-file-input" accept="image/jpeg,image/png"
+          @change="handleImageUpload" />
       </div>
 
       <div class="function-area" :class="{ show: isFunctionShow }">
@@ -69,6 +91,7 @@ import { useSidebarStore } from '@/stores/sidebar'
 import { useChatStore } from '@/stores/chat'
 import { useVisionStore } from '@/stores/vision'
 import { useRouter } from 'vue-router'
+import { upload } from '@/axios/oss'
 
 const isFunctionShow = ref(false)
 // 核心：仅用布尔值控制 未选中(false)/选中(true) 两种状态
@@ -120,6 +143,11 @@ const chatStore = useChatStore()
 const visionStore = useVisionStore()
 const router = useRouter()
 
+// 图片上传相关
+const imageInput = ref(null)
+const uploadedImages = ref([])
+const showImagePreview = ref(true) // 控制图片预览的显示/隐藏
+
 // 跳转到图像识别页面
 const goToVision = () => {
   router.push({ name: 'vision' })
@@ -155,9 +183,63 @@ onBeforeUnmount(() => {
 const { inputValue } = storeToRefs(chatStore)
 const TOKEN = localStorage.getItem('token')
 
+// 触发图片上传
+const triggerImageUpload = () => {
+  if (imageInput.value) {
+    imageInput.value.click()
+  }
+}
+
+// 处理图片上传到OSS
+const handleImageUpload = async (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+
+  try {
+    // 验证文件类型和大小
+    const allowedTypes = ['image/jpeg', 'image/png']
+    const maxSize = 5 * 1024 * 1024
+
+    if (!allowedTypes.includes(file.type)) {
+      alert('仅支持上传 JPG/PNG 格式的图片！')
+      return
+    }
+
+    if (file.size > maxSize) {
+      alert('图片大小不能超过 5MB！')
+      return
+    }
+
+    // 上传到OSS
+    const response = await upload(file)
+    const imageUrl = response.data.url
+    console.log('图片上传成功：', imageUrl)
+
+    // 将图片URL存储起来，自动显示预览
+    uploadedImages.value.push(imageUrl)
+    showImagePreview.value = true // 上传新图片后自动展开预览
+
+    // 清空文件输入
+    if (imageInput.value) {
+      imageInput.value.value = ''
+    }
+  } catch (error) {
+    console.error('图片上传失败：', error)
+    alert('图片上传失败，请重试！')
+  }
+}
+
+// 移除指定索引的图片
+const removeImage = (index) => {
+  if (index >= 0 && index < uploadedImages.value.length) {
+    uploadedImages.value.splice(index, 1)
+  }
+}
+
 const sendMessage = async () => {
   const content = inputValue.value.trim()
-  if (!content) return
+  // 如果没有文本内容且没有上传图片，则不发送
+  if (!content && uploadedImages.value.length === 0) return
 
   const userId = localStorage.getItem('id')
   // 优先使用 store 中的 sessionId（点击历史记录后会设置）
@@ -175,8 +257,14 @@ const sendMessage = async () => {
   // 设置当前会话ID为完整的sessionId，确保与路由参数一致
   chatStore.setCurrentSessionId(fullSessionId)
 
+  // 构建消息内容，包括文本和图片URL
+  const messageData = {
+    content,
+    images: uploadedImages.value,
+  }
+
   // 先准备消息（添加用户消息和空的机器人消息），立即返回
-  await chatStore.prepareMessage(content, userId, partialSessionId)
+  await chatStore.prepareMessage(JSON.stringify(messageData), userId, partialSessionId)
 
   // 立即跳转到对话页面，不等待流式响应
   router.push({
@@ -185,9 +273,12 @@ const sendMessage = async () => {
   })
 
   // 在后台启动流式请求，实时更新消息（不阻塞页面跳转）
-  chatStore.startStreaming(content, userId, partialSessionId, TOKEN).catch((err) => {
+  chatStore.startStreaming(JSON.stringify(messageData), userId, partialSessionId, TOKEN).catch((err) => {
     console.error('流式请求失败：', err)
   })
+
+  // 清空上传的图片列表，准备下一次对话
+  uploadedImages.value = []
 }
 </script>
 
@@ -612,6 +703,159 @@ const sendMessage = async () => {
   color: $primary;
   cursor: pointer;
   font-size: 20px;
+}
+
+// 图片上传按钮样式
+.upload-btn-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: $default-bg;
+  color: $primary;
+  cursor: pointer;
+  font-size: 18px;
+  transition: $transition;
+
+  &:hover {
+    background-color: rgba(52, 199, 89, 0.1);
+    box-shadow: 0 0 10px rgba(52, 199, 89, 0.2);
+  }
+
+  // 农业Agent模式下的特殊样式
+  .agriculture-agent-active & {
+    background-color: rgba(52, 199, 89, 0.1);
+    color: #34c759;
+
+    &:hover {
+      background-color: rgba(52, 199, 89, 0.2);
+    }
+  }
+}
+
+.upload-icon {
+  font-size: 18px;
+  color: inherit;
+}
+
+// 隐藏的文件输入框
+.hidden-file-input {
+  display: none;
+}
+
+// 图片预览区域样式
+.image-preview-section {
+  margin-bottom: 12px;
+  background-color: rgba(236, 249, 238, 0.95);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid rgba(52, 199, 89, 0.2);
+  transition: all 0.3s ease;
+
+  // 农业Agent模式下的特殊样式
+  .agriculture-agent-active & {
+    background-color: rgba(236, 249, 238, 0.95);
+    border-color: rgba(52, 199, 89, 0.3);
+  }
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(52, 199, 89, 0.1);
+}
+
+.preview-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #34c759;
+}
+
+.toggle-preview {
+  font-size: 12px;
+  color: #66bb6a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #34c759;
+  }
+}
+
+.preview-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 4px 0;
+
+  // 美化滚动条
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(52, 199, 89, 0.3);
+    border-radius: 2px;
+  }
+}
+
+.preview-item {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.remove-img {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  background-color: rgba(229, 62, 62, 0.9);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #e53e3e;
+    transform: scale(1.1);
+  }
 }
 
 @media (max-width: 375px) {

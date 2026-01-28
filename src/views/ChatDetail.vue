@@ -11,11 +11,18 @@
       <div v-for="(msg, index) in messages" :key="msg.id || index" class="message-item" :class="{
         'user-message': msg.messageRole === '0',
         'robot-message': msg.messageRole === '1',
+        'image-message': msg.isImageMessage,
       }">
         <!-- 移除所有头像相关代码 -->
 
         <!-- 消息气泡：美化样式 + 自适应宽度 + Markdown渲染 -->
         <div class="message-bubble">
+          <!-- 如果是图片消息，显示图片预览 -->
+          <div v-if="msg.isImageMessage" class="image-preview-container">
+            <div v-for="(imageUrl, imgIndex) in getImagesFromMessage(msg)" :key="imgIndex" class="image-preview-item">
+              <img :src="imageUrl" alt="上传的图片" class="preview-image">
+            </div>
+          </div>
           <!-- 核心修改：用v-html渲染解析后的Markdown -->
           <div class="bubble-content" v-html="parseMarkdown(msg.messageContent)"></div>
           <!-- 原生JS格式化时间：无dayjs依赖 -->
@@ -79,6 +86,23 @@ const formatTime = (timeStr) => {
   const hours = String(date.getHours()).padStart(2, '0')
   const minutes = String(date.getMinutes()).padStart(2, '0')
   return `${hours}:${minutes}`
+}
+
+// 从消息中提取图片URL
+const getImagesFromMessage = (msg) => {
+  try {
+    // 如果消息有originalData字段，解析它获取图片URL
+    if (msg.originalData) {
+      const parsedData = JSON.parse(msg.originalData)
+      if (parsedData.images && Array.isArray(parsedData.images)) {
+        return parsedData.images
+      }
+    }
+  } catch (e) {
+    // 解析失败，返回空数组
+    return []
+  }
+  return []
 }
 
 // 防止重复加载的标记
@@ -590,6 +614,41 @@ $bubble-radius: $radius-lg;
     color: #718096;
     margin-left: 16px;
   }
+}
+
+// 图片消息样式
+.image-message {
+  // 图片消息的特殊样式
+}
+
+// 图片预览容器
+.image-preview-container {
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// 图片预览项
+.image-preview-item {
+  max-width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+// 预览图片
+.preview-image {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
 }
 
 // 农业Agent决策过程的动画效果
