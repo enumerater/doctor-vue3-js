@@ -1,12 +1,26 @@
 <script setup>
-// 仅负责 Logo 和标题展示，样式与全局主题统一
+// 接受标题和副标题属性，增强组件复用性
+const props = defineProps({
+  title: {
+    type: String,
+    default: 'Chat小农'
+  },
+  subtitle: {
+    type: String,
+    default: '专业解答农业种植问题'
+  },
+  altText: {
+    type: String,
+    default: 'Chat小农'
+  }
+})
 </script>
 
 <template>
   <div class="logo-wrapper">
-    <img src="@/assets/home/S-农业.png" alt="Chat小农" class="logo-img" />
-    <h2 class="logo-title">Chat小农</h2>
-    <p class="logo-subtitle">专业解答农业种植问题</p>
+    <img src="@/assets/home/S-农业.png" :alt="altText" class="logo-img" />
+    <h2 class="logo-title">{{ title }}</h2>
+    <p class="logo-subtitle">{{ subtitle }}</p>
   </div>
 </template>
 

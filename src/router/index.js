@@ -32,6 +32,12 @@ const router = createRouter({
           component: () => import('@/views/ChatContentBeginView.vue'),
           name: 'chatBegin',
         },
+        {
+          path: 'agent',
+          name: 'agent',
+          component: () => import('@/views/AgentHomeView.vue'),
+          meta: { title: 'Agent小农' },
+        },
       ],
     },
 

@@ -78,8 +78,14 @@ const handleAgentFunction = (type) => {
     case 'agriculture':
       // 切换农业Agent模式
       sidebarStore.toggleAgricultureAgent()
-      // 重置会话
-      sidebarStore.resetConversation()
+
+      if (sidebarStore.isAgricultureAgent) {
+        // 如果开启了农业Agent模式，导航到Agent专用页面
+        router.push({ name: 'agent' })
+      } else {
+        // 如果关闭了农业Agent模式，导航回普通聊天页面
+        router.push({ name: 'chatBegin' })
+      }
       break
     default:
       break
