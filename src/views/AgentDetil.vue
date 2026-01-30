@@ -55,7 +55,10 @@ const messages = computed(() => chatStore.chatMessages)
 // 配置不同类型的 UI 表现
 const getStepConfig = (type) => {
     const configs = {
-        img_find: { title: '图片分析结果', icon: '📷', color: '#059669' },
+        // 思考结果
+        think: { title: '思考汇总结果', icon: '💡', color: '#059669' },
+
+        img_find: { title: '多模态分析结果', icon: '📷', color: '#059669' },
         safe_notice: { title: '安全防护要求', icon: '🛡️', color: '#F59E0B' },
         pesticide: { title: '精准用药方案', icon: '💊', color: '#10B981' },
         field_manage: { title: '田间管理建议', icon: '🚜', color: '#3B82F6' },
