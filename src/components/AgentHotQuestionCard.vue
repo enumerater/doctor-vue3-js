@@ -19,20 +19,17 @@ const router = useRouter()
 
 // Agent专用的复杂问题列表
 const agentQuestions = [
-    { id: 1, content: '基于我上周上传的小麦田图像，分析当前生长阶段并提供病虫害防治方案' },
+    { id: 1, content: '玉米锈病怎么治' },
     { id: 2, content: '结合近7天的气象数据和土壤监测报告，为我的草莓大棚制定精准灌溉和施肥计划' },
     { id: 3, content: '分析我农场近3年的作物产量数据，识别影响产量的关键因素并提供优化建议' },
-    { id: 4, content: '根据我上传的番茄叶片图片，诊断病害类型并生成完整的治疗方案' },
-    { id: 5, content: '为我的20亩有机水稻田制定从播种到收获的全周期智能管理方案' },
-    { id: 6, content: '结合市场价格趋势和我的种植条件，推荐最具经济效益的作物轮作模式' },
 ]
 
 function handleQuestionClick(content) {
     // 设置输入内容
     chatStore.inputValue = content
 
-    // 跳转到主聊天页面进行处理
-    router.push({ name: 'chatBegin' })
+    // // 跳转到主聊天页面进行处理
+    // router.push({ name: 'AgentDetil', params: { sessionId: localStorage.getItem('id') + '' + chatStore.currentSessionId } })
 }
 </script>
 

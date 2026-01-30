@@ -38,6 +38,12 @@ const router = createRouter({
           component: () => import('@/views/AgentHomeView.vue'),
           meta: { title: 'Agent小农' },
         },
+        {
+          path: 'agen/:sessionId',
+          name: 'agentDetil',
+          component: () => import('@/views/AgentDetil.vue'),
+          meta: { title: 'Agent详情' },
+        },
       ],
     },
 

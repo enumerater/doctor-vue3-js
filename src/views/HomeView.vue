@@ -266,11 +266,21 @@ const sendMessage = async () => {
   // 先准备消息（添加用户消息和空的机器人消息），立即返回
   await chatStore.prepareMessage(JSON.stringify(messageData), userId, partialSessionId)
 
-  // 立即跳转到对话页面，不等待流式响应
-  router.push({
-    name: 'chatDetail',
-    params: { sessionId: fullSessionId },
-  })
+  if (sidebarStore.isAgricultureAgent) {
+    //agentDetil
+    router.push({
+      name: 'agentDetil',
+      params: { sessionId: fullSessionId },
+    })
+  }
+  else {
+    // 立即跳转到对话页面，不等待流式响应
+    router.push({
+      name: 'chatDetail',
+      params: { sessionId: fullSessionId },
+    })
+  }
+
 
   // 在后台启动流式请求，实时更新消息（不阻塞页面跳转）
   chatStore.startStreaming(JSON.stringify(messageData), userId, partialSessionId, TOKEN).catch((err) => {
