@@ -257,15 +257,8 @@ const sendMessage = async () => {
   // 设置当前会话ID为完整的sessionId，确保与路由参数一致
   chatStore.setCurrentSessionId(fullSessionId)
 
-  // 构建消息内容，包括文本和图片URL
-  const messageData = {
-    content,
-    images: uploadedImages.value,
-  }
-
   // 先准备消息（添加用户消息和空的机器人消息），立即返回
-  await chatStore.prepareMessage(JSON.stringify(messageData), userId, partialSessionId)
-
+  await chatStore.prepareMessage(content, userId, partialSessionId)
   if (sidebarStore.isAgricultureAgent) {
     //agentDetil
     router.push({
@@ -274,6 +267,7 @@ const sendMessage = async () => {
     })
   }
   else {
+
     // 立即跳转到对话页面，不等待流式响应
     router.push({
       name: 'chatDetail',
@@ -283,7 +277,7 @@ const sendMessage = async () => {
 
 
   // 在后台启动流式请求，实时更新消息（不阻塞页面跳转）
-  chatStore.startStreaming(JSON.stringify(messageData), userId, partialSessionId, TOKEN).catch((err) => {
+  chatStore.startStreaming(content, uploadedImages.value, userId, partialSessionId, TOKEN).catch((err) => {
     console.error('流式请求失败：', err)
   })
 
