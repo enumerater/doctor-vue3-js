@@ -242,6 +242,13 @@ $bubble-radius: $radius-lg;
     text-align: center;
     padding: 0 1rem;
   }
+
+  // 空状态最大宽度限制，与消息列表保持一致
+  @media (min-width: 768px) {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 // 消息列表：优化样式 + 统一滚动条
@@ -251,6 +258,13 @@ $bubble-radius: $radius-lg;
   overflow-y: auto; // 仅内部滚动
   padding-bottom: 0.625rem; // 底部留白
   scroll-behavior: smooth; // 平滑滚动
+
+  // 消息列表在页面中居中，与AgentDetil保持一致
+  @media (min-width: 768px) {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 
   // 美化滚动条（适配主题色）
   &::-webkit-scrollbar {
@@ -279,6 +293,7 @@ $bubble-radius: $radius-lg;
   margin-bottom: 1.25rem;
   align-items: flex-start; // 气泡顶部对齐
   transition: $transition;
+  width: 100%;
 }
 
 // 用户消息：右对齐
@@ -466,6 +481,7 @@ $bubble-radius: $radius-lg;
     background: linear-gradient(135deg, $primary, $primary-hover);
     color: #fff;
     border-bottom-right-radius: $radius-sm; // 分级圆角，更自然
+    max-width: 80%; // 限制最大宽度
   }
 
   // ******** 核心修改：机器人气泡适配绿色系 ********
@@ -474,6 +490,7 @@ $bubble-radius: $radius-lg;
     color: $text-primary;
     border: 1px solid $primary-light;
     border-bottom-left-radius: $radius-sm; // 分级圆角
+    max-width: 80%; // 限制最大宽度
   }
 
   // 气泡hover效果（和整体微交互统一）

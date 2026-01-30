@@ -25,8 +25,8 @@ import HotQuestionCard from '@/components/HotQuestionCard.vue'
 
 // 核心容器：统一风格 + 优化布局
 .chat-begin-container {
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
