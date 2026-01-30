@@ -1,13 +1,17 @@
 <template>
   <div class="chat-page" :class="{
     'sidebar-open': sidebarStore.showLeft && !isPC,
+    'pc-sidebar-open': sidebarStore.showLeft && isPC,
     'agriculture-agent-active': sidebarStore.isAgricultureAgent
   }">
     <!-- 移动端遮罩层 -->
     <div v-if="!isPC && sidebarStore.showLeft" class="sidebar-overlay" @click="sidebarStore.closeLeft()"></div>
 
     <!-- 侧边栏 -->
-    <div class="sidebar-wrapper" :class="{ 'sidebar-visible': sidebarStore.showLeft || isPC }">
+    <div class="sidebar-wrapper" :class="{
+      'sidebar-visible': sidebarStore.showLeft && !isPC,
+      'sidebar-collapsed': !sidebarStore.showLeft && isPC
+    }">
       <div class="sidebar-close-btn" v-if="!isPC" @click="sidebarStore.closeLeft()">
         <van-icon name="cross" />
       </div>
@@ -124,12 +128,9 @@ const checkIsPC = () => {
   }
 }
 
-// 处理侧边栏切换（PC端不切换，移动端切换）
+// 处理侧边栏切换
 const handleToggleSidebar = () => {
-  if (!isPC.value) {
-    sidebarStore.toggleLeft()
-  }
-  // PC端点击菜单按钮不做任何操作（或者可以添加其他功能）
+  sidebarStore.toggleLeft()
 }
 
 const netSearch = () => {
@@ -351,11 +352,13 @@ const sendMessage = async () => {
 
   // PC端：默认显示
   @media (min-width: 768px) {
-    position: relative;
     transform: translateX(0);
-    flex-shrink: 0;
-    box-shadow: none;
-    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  }
+
+  // 折叠状态（优先级更高）
+  &.sidebar-collapsed {
+    transform: translateX(-100%) !important;
   }
 
   // 移动端：显示时滑入
@@ -412,9 +415,17 @@ const sendMessage = async () => {
   border-bottom: none;
   transition: left 0.3s ease;
 
-  // PC端：侧边栏打开时，导航栏在侧边栏右侧
+  // PC端：根据侧边栏状态调整位置
   @media (min-width: 768px) {
-    left: 280px; // PC端侧边栏宽度
+    left: 0;
+    transition: left 0.3s ease;
+  }
+
+  // PC端侧边栏打开时的样式
+  .chat-page.pc-sidebar-open & {
+    @media (min-width: 768px) {
+      left: 280px; // 侧边栏宽度
+    }
   }
 
   // 移动端：侧边栏打开时，导航栏向右移动
@@ -550,12 +561,18 @@ const sendMessage = async () => {
   padding-right: 0.5rem;
   transition: margin-left 0.3s ease;
   min-width: 0; // 允许flex子元素缩小
+  margin-left: 0;
 
-  // PC端：侧边栏打开时，主内容区域正常显示（flex布局自动处理）
-  &.with-sidebar {
+  // PC端侧边栏打开时的样式
+  .chat-page.pc-sidebar-open & {
     @media (min-width: 768px) {
-      margin-left: 0;
+      margin-left: 280px; // 侧边栏宽度
     }
+  }
+
+  // PC端全屏显示时的样式
+  @media (min-width: 768px) {
+    width: 100%;
   }
 }
 
@@ -576,11 +593,17 @@ const sendMessage = async () => {
   padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
   transition: left 0.3s ease;
 
-  // PC端：侧边栏打开时，输入区域正常显示（不需要调整）
-  &.with-sidebar {
+  // PC端：根据侧边栏状态调整位置
+  @media (min-width: 768px) {
+    left: 0;
+    right: 0;
+    transition: left 0.3s ease;
+  }
+
+  // PC端侧边栏打开时的样式
+  .chat-page.pc-sidebar-open & {
     @media (min-width: 768px) {
-      left: 280px; // PC端侧边栏宽度
-      right: 0;
+      left: 280px; // 侧边栏宽度
     }
   }
 
