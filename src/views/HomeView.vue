@@ -26,6 +26,12 @@
           <van-icon name="photo-o" class="badge-icon" />
           <span class="badge-text">{{ visionStore.taskStatusText }}</span>
           <span v-if="visionStore.hasActiveTask" class="badge-dot"></span>
+          <!-- 取消识别按钮 -->
+          <van-icon v-if="visionStore.hasActiveTask" name="cross" class="cancel-icon"
+            @click.stop="visionStore.clearCurrentTask()" />
+          <!-- 清除完成任务按钮 -->
+          <van-icon v-else-if="visionStore.hasCompletedTask" name="cross" class="cancel-icon"
+            @click.stop="visionStore.clearCurrentTask()" />
         </div>
       </div>
     </div>
@@ -460,6 +466,19 @@ const sendMessage = async () => {
     background-color: rgba(56, 142, 60, 0.1);
     color: $primary;
     border: 1px solid rgba(56, 142, 60, 0.2);
+
+    .cancel-icon {
+      margin-left: 4px;
+      color: #e53e3e;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: scale(1.1);
+        color: #c53030;
+      }
+    }
 
     &:hover {
       background-color: rgba(56, 142, 60, 0.15);
