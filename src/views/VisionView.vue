@@ -1071,6 +1071,15 @@ onBeforeUnmount(() => {
             flex-shrink: 0;
           }
 
+          // 在移动端使用更灵活的标签宽度
+          @media (max-width: 768px) {
+            label {
+              width: auto;
+              margin-right: 0.75rem;
+              white-space: nowrap;
+            }
+          }
+
           .value {
             flex: 1;
           }
@@ -1107,6 +1116,15 @@ onBeforeUnmount(() => {
               font-size: 0.85rem;
               color: $primary;
               font-weight: 500;
+            }
+          }
+        }
+
+        // 在移动端确保进度条有足够的宽度
+        @media (max-width: 768px) {
+          .confidence-row {
+            .confidence-wrapper {
+              width: 100%;
             }
           }
         }
