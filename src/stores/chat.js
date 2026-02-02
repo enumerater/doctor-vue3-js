@@ -70,15 +70,15 @@ export const useChatStore = defineStore('chat', {
       this.clearInputValue()
       const sidebarStore = useSidebarStore()
       const fullSessionId = `${userId}${sessionId}`
-      if (this.chatMessages.length === 0 && sessionId && sidebarStore.isAgricultureAgent) {
+      // 只有正常对话才创建会话记录，agent对话不保存到侧边栏历史
+      if (this.chatMessages.length === 0 && sessionId && !sidebarStore.isAgricultureAgent) {
         try {
           await createSession({
             userId,
             sessionTitle: trimmedContent.substring(0, 20),
             sessionId: fullSessionId,
           })
-          const { useSidebarStore } = await import('@/stores/sidebar')
-          await useSidebarStore().refreshHistory()
+          // 两种对话模式都不自动刷新侧边栏
         } catch (err) {
           console.warn('创建会话失败', err)
         }
@@ -191,9 +191,9 @@ export const useChatStore = defineStore('chat', {
       }
     },
 
-    async sendMessage(content, userId, sessionId, TOKEN) {
+    async sendMessage(content, image, userId, sessionId, TOKEN) {
       await this.prepareMessage(content, userId, sessionId)
-      this.startStreaming(content, userId, sessionId, TOKEN)
+      this.startStreaming(content, image, userId, sessionId, TOKEN)
     },
   },
 })
