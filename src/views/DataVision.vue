@@ -1,7 +1,6 @@
 <template>
     <div class="dashboard-container">
         <header class="header">
-            <!-- 新增：返回首页按钮（左上角，核心新增） -->
             <div class="back-home" @click="goBackHome">
                 <span class="back-icon">&larr;</span>
                 <span class="back-text">返回首页</span>
@@ -12,7 +11,6 @@
         </header>
 
         <main class="main-content">
-            <!-- 左侧：环境因子（通用作物生长环境） -->
             <section class="panel-column side">
                 <div class="chart-box">
                     <div class="chart-title">月度降水量与温度变化</div>
@@ -24,7 +22,6 @@
                 </div>
             </section>
 
-            <!-- 中间：个人诊断数据（无雷达·用户端专属） -->
             <section class="panel-column center">
                 <div class="kpi-container">
                     <div class="kpi-item">
@@ -45,7 +42,6 @@
                         <div class="chart-title">近7天诊断次数趋势</div>
                         <div ref="sevenDTrendChart" class="chart-instance small-chart"></div>
                     </div>
-                    <!-- 替换后：个人诊断时段分布 -->
                     <div class="chart-grid-item">
                         <div class="chart-title">个人诊断时段分布</div>
                         <div ref="diagnoseTimeChart" class="chart-instance small-chart"></div>
@@ -57,14 +53,11 @@
                 </div>
             </section>
 
-            <!-- 右侧：替换后强关联图表（无冗余） -->
             <section class="panel-column side">
-                <!-- 替换后：个人诊断作物类型分布（按作物统计，非病害，不冗余） -->
                 <div class="chart-box">
                     <div class="chart-title">个人诊断作物类型分布</div>
                     <div ref="cropTypeChart" class="chart-instance"></div>
                 </div>
-                <!-- 替换后：个人诊断解决率趋势（诊断后解决情况，核心价值） -->
                 <div class="chart-box">
                     <div class="chart-title">个人诊断解决率趋势</div>
                     <div ref="solveRateChart" class="chart-instance"></div>
@@ -76,13 +69,11 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router'; // 引入Vue Router路由
+import { useRouter } from 'vue-router';
 import * as echarts from 'echarts';
 
-// 路由实例（核心：返回首页用）
 const router = useRouter();
 
-// DOM引用
 const lineBarChart = ref(null);
 const tempDayChart = ref(null);
 const top5DiseaseChart = ref(null);
@@ -96,13 +87,11 @@ const currentTime = ref('');
 let resizeTimer = null;
 let chartInstances = {};
 
-// 时间更新
 const updateTime = () => {
     const now = new Date();
     currentTime.value = now.toLocaleString();
 };
 
-// 窗口自适应
 const handleResize = () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
@@ -119,18 +108,11 @@ const handleResize = () => {
     }, 100);
 };
 
-// ==============================================
-// 【核心新增】返回首页方法（点击触发）
-// ==============================================
 const goBackHome = () => {
-    // 跳转到首页路由（根据你的实际首页路由名称/路径修改）
-    router.push({ name: 'chatBegin' }); // 或 router.push('/')
-    // 若无需路由，直接用 window.location.href = '/';
+    router.push({ name: 'chatBegin' });
 };
 
-// ==============================================
-// 左侧1：月度降水量 + 温度（保留）
-// ==============================================
+// 左侧1：月度降水量 + 温度（绿色系改造）
 const initLineBarChart = () => {
     const myChart = echarts.init(lineBarChart.value);
     chartInstances.lineBar = myChart;
@@ -139,12 +121,12 @@ const initLineBarChart = () => {
         xAxis: {
             type: 'category',
             data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-            axisLabel: { color: '#8fa0ff', fontSize: 10 },
-            axisLine: { lineStyle: { color: '#1a2b5a' } }
+            axisLabel: { color: '#8faa9f', fontSize: 10 },
+            axisLine: { lineStyle: { color: '#1a3a28' } }
         },
         yAxis: [
-            { type: 'value', name: '降水量(mm)', axisLabel: { color: '#8fa0ff', fontSize: 10 }, splitLine: { lineStyle: { color: '#1a2b5a' } } },
-            { type: 'value', name: '温度(℃)', axisLabel: { color: '#ff4d4f', fontSize: 10 }, splitLine: { show: false } }
+            { type: 'value', name: '降水量(mm)', axisLabel: { color: '#8faa9f', fontSize: 10 }, splitLine: { lineStyle: { color: '#1a3a28' } } },
+            { type: 'value', name: '温度(℃)', axisLabel: { color: '#009959', fontSize: 10 }, splitLine: { show: false } }
         ],
         series: [
             {
@@ -152,7 +134,7 @@ const initLineBarChart = () => {
                 type: 'bar',
                 barWidth: 15,
                 yAxisIndex: 0,
-                itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#00f2fe' }, { offset: 1, color: '#005bea' }]) },
+                itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#86f7c8' }, { offset: 1, color: '#00e08f' }]) },
                 data: [10, 15, 25, 40, 65, 78, 70, 55, 38, 22, 16, 8]
             },
             {
@@ -160,17 +142,15 @@ const initLineBarChart = () => {
                 type: 'line',
                 smooth: true,
                 yAxisIndex: 1,
-                lineStyle: { color: '#ff4d4f', width: 2 },
+                lineStyle: { color: '#009959', width: 2 },
                 data: [3, 6, 13, 19, 25, 29, 31, 30, 26, 19, 11, 5]
             }
         ],
-        tooltip: { trigger: 'axis', textStyle: { fontSize: 10 }, backgroundColor: 'rgba(0,20,60,0.8)', borderColor: '#00d8ff' }
+        tooltip: { trigger: 'axis', textStyle: { fontSize: 10 }, backgroundColor: 'rgba(0,40,20,0.8)', borderColor: '#00e08f' }
     });
 };
 
-// ==============================================
-// 左侧2：当日温湿度变化（保留）
-// ==============================================
+// 左侧2：当日温湿度变化（绿色系改造）
 const initTempDayChart = () => {
     const myChart = echarts.init(tempDayChart.value);
     chartInstances.tempDay = myChart;
@@ -180,31 +160,29 @@ const initTempDayChart = () => {
             type: 'category',
             boundaryGap: false,
             data: ['6:00', '8:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
-            axisLabel: { color: '#8fa0ff', fontSize: 10 },
-            axisLine: { lineStyle: { color: '#1a2b5a' } }
+            axisLabel: { color: '#8faa9f', fontSize: 10 },
+            axisLine: { lineStyle: { color: '#1a3a28' } }
         },
         yAxis: {
             type: 'value',
             min: 10,
-            axisLabel: { color: '#8fa0ff', fontSize: 10 },
-            splitLine: { lineStyle: { color: '#1a2b5a' } }
+            axisLabel: { color: '#8faa9f', fontSize: 10 },
+            splitLine: { lineStyle: { color: '#1a3a28' } }
         },
         series: [{
             type: 'line',
             smooth: true,
             data: [13, 16, 20, 25, 28, 26, 21, 17],
-            lineStyle: { color: '#00d8ff', width: 2 },
-            areaStyle: { color: 'rgba(0,216,255,0.2)' },
-            itemStyle: { color: '#00d8ff' },
+            lineStyle: { color: '#00e08f', width: 2 },
+            areaStyle: { color: 'rgba(0,224,143,0.2)' },
+            itemStyle: { color: '#00e08f' },
             label: { show: true, color: '#fff', fontSize: 9 }
         }],
-        tooltip: { trigger: 'axis', textStyle: { fontSize: 10 }, backgroundColor: 'rgba(0,20,60,0.8)', borderColor: '#00d8ff' }
+        tooltip: { trigger: 'axis', textStyle: { fontSize: 10 }, backgroundColor: 'rgba(0,40,20,0.8)', borderColor: '#00e08f' }
     });
 };
 
-// ==============================================
-// 中间1：个人病害识别TOP5（保留）
-// ==============================================
+// 中间1：个人病害识别TOP5（绿色系改造）
 const initTop5DiseaseChart = () => {
     const myChart = echarts.init(top5DiseaseChart.value);
     chartInstances.top5Disease = myChart;
@@ -221,7 +199,7 @@ const initTop5DiseaseChart = () => {
         yAxis: {
             type: 'category',
             data: data.map(i => i.name),
-            axisLabel: { color: '#8fa0ff', fontSize: 8 },
+            axisLabel: { color: '#8faa9f', fontSize: 8 },
             axisLine: { show: false },
             axisTick: { show: false }
         },
@@ -229,16 +207,14 @@ const initTop5DiseaseChart = () => {
             type: 'bar',
             barWidth: 6,
             data: data,
-            itemStyle: { color: (p) => ['#00f2fe', '#00d8ff', '#007eff', '#f093fb', '#4facfe'][p.dataIndex] },
+            itemStyle: { color: (p) => ['#00e08f', '#86f7c8', '#009959', '#73d9a3', '#28c77d'][p.dataIndex] },
             label: { show: true, position: 'right', formatter: '{c}次', color: '#fff', fontSize: 8 }
         }],
-        tooltip: { trigger: 'item', textStyle: { fontSize: 9 }, backgroundColor: 'rgba(0,20,60,0.8)', borderColor: '#00d8ff' }
+        tooltip: { trigger: 'item', textStyle: { fontSize: 9 }, backgroundColor: 'rgba(0,40,20,0.8)', borderColor: '#00e08f' }
     });
 };
 
-// ==============================================
-// 中间2：近7天诊断次数趋势（保留）
-// ==============================================
+// 中间2：近7天诊断次数趋势（绿色系改造）
 const init7dTrendChart = () => {
     const myChart = echarts.init(sevenDTrendChart.value);
     chartInstances.sevenDTrend = myChart;
@@ -247,32 +223,30 @@ const init7dTrendChart = () => {
         xAxis: {
             type: 'category',
             data: ['1日', '2日', '3日', '4日', '5日', '6日', '7日'],
-            axisLabel: { color: '#8fa0ff', fontSize: 8 },
-            axisLine: { lineStyle: { color: '#1a2b5a' } }
+            axisLabel: { color: '#8faa9f', fontSize: 8 },
+            axisLine: { lineStyle: { color: '#1a3a28' } }
         },
         yAxis: {
             type: 'value',
-            axisLabel: { color: '#8fa0ff', fontSize: 8 },
-            splitLine: { lineStyle: { color: '#1a2b5a' } },
+            axisLabel: { color: '#8faa9f', fontSize: 8 },
+            splitLine: { lineStyle: { color: '#1a3a28' } },
             axisLine: { show: false }
         },
         series: [{
             type: 'line',
             smooth: true,
             data: [12, 18, 25, 22, 30, 28, 35],
-            lineStyle: { color: '#00d8ff', width: 2 },
-            areaStyle: { color: 'rgba(0,216,255,0.2)' },
-            itemStyle: { color: '#00d8ff' },
+            lineStyle: { color: '#00e08f', width: 2 },
+            areaStyle: { color: 'rgba(0,224,143,0.2)' },
+            itemStyle: { color: '#00e08f' },
             label: { show: true, color: '#fff', fontSize: 8 },
-            markPoint: { data: [{ type: 'max', name: '峰值', itemStyle: { color: '#ff4d4f' } }] }
+            markPoint: { data: [{ type: 'max', name: '峰值', itemStyle: { color: '#ffcc00' } }] }
         }],
-        tooltip: { trigger: 'axis', textStyle: { fontSize: 9 }, backgroundColor: 'rgba(0,20,60,0.8)', borderColor: '#00d8ff' }
+        tooltip: { trigger: 'axis', textStyle: { fontSize: 9 }, backgroundColor: 'rgba(0,40,20,0.8)', borderColor: '#00e08f' }
     });
 };
 
-// ==============================================
-// 中间4：模型识别准确率趋势（保留）
-// ==============================================
+// 中间4：模型识别准确率趋势（绿色系改造）
 const initAccuracyTrendChart = () => {
     const myChart = echarts.init(accuracyTrendChart.value);
     chartInstances.accuracyTrend = myChart;
@@ -290,7 +264,7 @@ const initAccuracyTrendChart = () => {
                 axisLine: {
                     lineStyle: {
                         width: 8,
-                        color: [[0.935, new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#00f2fe' }, { offset: 1, color: '#005bea' }])], [1, '#1a2b5a']]
+                        color: [[0.935, new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#86f7c8' }, { offset: 1, color: '#00e08f' }])], [1, '#1a3a28']]
                     }
                 },
                 splitLine: { show: false },
@@ -301,7 +275,7 @@ const initAccuracyTrendChart = () => {
                     show: true,
                     position: 'center',
                     formatter: '{value}%',
-                    color: '#00d8ff',
+                    color: '#00e08f',
                     fontSize: 16,
                     fontWeight: 'bold'
                 },
@@ -313,27 +287,25 @@ const initAccuracyTrendChart = () => {
                 data: [85.2, 88.5, 90.8, 92.4, 93.5],
                 xAxisIndex: 0,
                 yAxisIndex: 0,
-                lineStyle: { color: '#00ff95', width: 2 },
-                itemStyle: { color: '#00ff95' },
+                lineStyle: { color: '#00e08f', width: 2 },
+                itemStyle: { color: '#00e08f' },
                 label: { show: true, color: '#fff', fontSize: 8 },
-                areaStyle: { color: 'rgba(0,255,149,0.2)' }
+                areaStyle: { color: 'rgba(0,224,143,0.2)' }
             }
         ],
         xAxis: [{
             type: 'category',
             data: ['V1', 'V2', 'V3', 'V4', 'V5'],
-            axisLabel: { color: '#8fa0ff', fontSize: 8 },
+            axisLabel: { color: '#8faa9f', fontSize: 8 },
             axisLine: { show: false },
             axisTick: { show: false }
         }],
         yAxis: [{ show: false, min: 85, max: 95 }],
-        tooltip: { trigger: 'item', textStyle: { fontSize: 9 }, backgroundColor: 'rgba(0,20,60,0.8)', borderColor: '#00d8ff' }
+        tooltip: { trigger: 'item', textStyle: { fontSize: 9 }, backgroundColor: 'rgba(0,40,20,0.8)', borderColor: '#00e08f' }
     });
 };
 
-// ==============================================
-// 替换1：个人诊断作物类型分布（保留）
-// ==============================================
+// 右侧1：个人诊断作物类型分布（绿色系改造）
 const initCropTypeChart = () => {
     const myChart = echarts.init(cropTypeChart.value);
     chartInstances.cropType = myChart;
@@ -349,14 +321,14 @@ const initCropTypeChart = () => {
         xAxis: {
             type: 'category',
             data: data.map(i => i.name),
-            axisLabel: { color: '#8fa0ff', fontSize: 10 },
-            axisLine: { lineStyle: { color: '#1a2b5a' } },
+            axisLabel: { color: '#8faa9f', fontSize: 10 },
+            axisLine: { lineStyle: { color: '#1a3a28' } },
             axisTick: { show: false }
         },
         yAxis: {
             type: 'value',
-            axisLabel: { color: '#8fa0ff', fontSize: 10 },
-            splitLine: { lineStyle: { color: '#1a2b5a' } },
+            axisLabel: { color: '#8faa9f', fontSize: 10 },
+            splitLine: { lineStyle: { color: '#1a3a28' } },
             axisLine: { show: false }
         },
         series: [{
@@ -364,18 +336,16 @@ const initCropTypeChart = () => {
             barWidth: 20,
             data: data,
             itemStyle: {
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#00f2fe' }, { offset: 1, color: '#005bea' }]),
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#86f7c8' }, { offset: 1, color: '#00e08f' }]),
                 borderRadius: 6
             },
             label: { show: true, position: 'top', formatter: '{c}次', color: '#fff', fontSize: 9 }
         }],
-        tooltip: { trigger: 'item', formatter: '{b}<br/>诊断次数：{c}次', textStyle: { fontSize: 10 }, backgroundColor: 'rgba(0,20,60,0.8)', borderColor: '#00d8ff' }
+        tooltip: { trigger: 'item', formatter: '{b}<br/>诊断次数：{c}次', textStyle: { fontSize: 10 }, backgroundColor: 'rgba(0,40,20,0.8)', borderColor: '#00e08f' }
     });
 };
 
-// ==============================================
-// 替换2：个人诊断解决率趋势（保留）
-// ==============================================
+// 右侧2：个人诊断解决率趋势（绿色系改造）
 const initSolveRateChart = () => {
     const myChart = echarts.init(solveRateChart.value);
     chartInstances.solveRate = myChart;
@@ -387,12 +357,12 @@ const initSolveRateChart = () => {
         xAxis: {
             type: 'category',
             data: dateList,
-            axisLabel: { color: '#8fa0ff', fontSize: 8, interval: 2 },
-            axisLine: { lineStyle: { color: '#1a2b5a' } }
+            axisLabel: { color: '#8faa9f', fontSize: 8, interval: 2 },
+            axisLine: { lineStyle: { color: '#1a3a28' } }
         },
         yAxis: [
-            { type: 'value', name: '解决率(%)', min: 70, max: 100, axisLabel: { color: '#00ff95', fontSize: 8 }, splitLine: { lineStyle: { color: '#1a2b5a' } } },
-            { type: 'value', name: '诊断次数', axisLabel: { color: '#00d8ff', fontSize: 8 }, splitLine: { show: false } }
+            { type: 'value', name: '解决率(%)', min: 70, max: 100, axisLabel: { color: '#00e08f', fontSize: 8 }, splitLine: { lineStyle: { color: '#1a3a28' } } },
+            { type: 'value', name: '诊断次数', axisLabel: { color: '#86f7c8', fontSize: 8 }, splitLine: { show: false } }
         ],
         series: [
             {
@@ -401,10 +371,10 @@ const initSolveRateChart = () => {
                 smooth: true,
                 yAxisIndex: 0,
                 data: solveRateList,
-                lineStyle: { color: '#00ff95', width: 2 },
-                itemStyle: { color: '#00ff95' },
+                lineStyle: { color: '#00e08f', width: 2 },
+                itemStyle: { color: '#00e08f' },
                 label: { show: true, color: '#fff', fontSize: 8 },
-                areaStyle: { color: 'rgba(0,255,149,0.2)' }
+                areaStyle: { color: 'rgba(0,224,143,0.2)' }
             },
             {
                 name: '诊断次数',
@@ -412,22 +382,20 @@ const initSolveRateChart = () => {
                 yAxisIndex: 1,
                 barWidth: 8,
                 data: diagnoseCountList,
-                itemStyle: { color: '#00d8ff', borderRadius: 4 }
+                itemStyle: { color: '#86f7c8', borderRadius: 4 }
             }
         ],
         tooltip: {
             trigger: 'axis',
             formatter: '{b}<br/>解决率：{c0}%<br/>诊断次数：{c1}次',
             textStyle: { fontSize: 9 },
-            backgroundColor: 'rgba(0,20,60,0.8)',
-            borderColor: '#00d8ff'
+            backgroundColor: 'rgba(0,40,20,0.8)',
+            borderColor: '#00e08f'
         }
     });
 };
 
-// ==============================================
-// 替换3：个人诊断时段分布（保留）
-// ==============================================
+// 中间3：个人诊断时段分布（绿色系改造）
 const initDiagnoseTimeChart = () => {
     const myChart = echarts.init(diagnoseTimeChart.value);
     chartInstances.diagnoseTime = myChart;
@@ -443,14 +411,14 @@ const initDiagnoseTimeChart = () => {
         xAxis: {
             type: 'category',
             data: data.map(i => i.name),
-            axisLabel: { color: '#8fa0ff', fontSize: 8, rotate: 15 },
-            axisLine: { lineStyle: { color: '#1a2b5a' } },
+            axisLabel: { color: '#8faa9f', fontSize: 8, rotate: 15 },
+            axisLine: { lineStyle: { color: '#1a3a28' } },
             axisTick: { show: false }
         },
         yAxis: {
             type: 'value',
-            axisLabel: { color: '#8fa0ff', fontSize: 8 },
-            splitLine: { lineStyle: { color: '#1a2b5a' } },
+            axisLabel: { color: '#8faa9f', fontSize: 8 },
+            splitLine: { lineStyle: { color: '#1a3a28' } },
             axisLine: { show: false }
         },
         series: [{
@@ -458,20 +426,18 @@ const initDiagnoseTimeChart = () => {
             barWidth: 12,
             data: data,
             itemStyle: {
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#00f2fe' }, { offset: 1, color: '#005bea' }]),
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#86f7c8' }, { offset: 1, color: '#00e08f' }]),
                 borderRadius: 6
             },
             label: { show: true, position: 'top', formatter: '{c}次', color: '#fff', fontSize: 8 }
         }],
-        tooltip: { trigger: 'item', formatter: '{b}<br/>诊断次数：{c}次', textStyle: { fontSize: 9 }, backgroundColor: 'rgba(0,20,60,0.8)', borderColor: '#00d8ff' }
+        tooltip: { trigger: 'item', formatter: '{b}<br/>诊断次数：{c}次', textStyle: { fontSize: 9 }, backgroundColor: 'rgba(0,40,20,0.8)', borderColor: '#00e08f' }
     });
 };
 
-// 生命周期
 onMounted(() => {
     updateTime();
     setInterval(updateTime, 1000);
-    // 初始化所有图表
     initLineBarChart();
     initTempDayChart();
     initTop5DiseaseChart();
@@ -480,12 +446,10 @@ onMounted(() => {
     initAccuracyTrendChart();
     initCropTypeChart();
     initSolveRateChart();
-    // 监听窗口变化
     window.addEventListener('resize', handleResize, { passive: true });
     handleResize();
 });
 
-// 生命周期
 onUnmounted(() => {
     window.removeEventListener('resize', handleResize);
     Object.values(chartInstances).forEach(instance => instance && echarts.dispose(instance));
@@ -495,7 +459,6 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
-// 全局重置
 * {
     margin: 0;
     padding: 0;
@@ -511,42 +474,43 @@ body {
 }
 
 .dashboard-container {
-    background: #000a2a;
-    background-image: radial-gradient(circle at center, #001a4d 0%, #000a2a 100%);
+    // 农业绿系主背景
+    background: #002a15;
+    background-image: radial-gradient(circle at center, #003a20 0%, #002a15 100%);
     color: #fff;
     min-height: 100vh;
     padding: 15px;
     display: flex;
     flex-direction: column;
 
-    // 头部：新增返回按钮后，调整flex布局
     .header {
         height: 60px;
         display: flex;
-        justify-content: flex-start; // 改为从左到右排列
+        justify-content: flex-start;
         align-items: center;
-        background: linear-gradient(to bottom, rgba(0, 80, 255, 0.3), transparent);
-        border-bottom: 2px solid #0050ff;
+        // 农业绿渐变头部
+        background: linear-gradient(to bottom, rgba(0, 224, 143, 0.3), transparent);
+        border-bottom: 2px solid #00e08f;
         margin-bottom: 15px;
         padding: 0 20px;
         border-radius: 6px;
-        gap: 15px; // 元素间距
+        gap: 15px;
 
-        // 【核心新增】返回首页按钮样式
+        // 返回按钮农业绿样式
         .back-home {
             display: flex;
             align-items: center;
             gap: 6px;
             padding: 6px 12px;
-            background: linear-gradient(to right, #005bea, #00f2fe);
-            border: 1px solid #00d8ff;
+            background: linear-gradient(to right, #009959, #00e08f);
+            border: 1px solid #86f7c8;
             border-radius: 4px;
             cursor: pointer;
             transition: all 0.3s ease;
             white-space: nowrap;
 
             &:hover {
-                background: linear-gradient(to right, #00f2fe, #005bea);
+                background: linear-gradient(to right, #00e08f, #009959);
                 transform: scale(1.05);
             }
 
@@ -571,19 +535,20 @@ body {
             font-size: 22px;
             font-weight: bold;
             letter-spacing: 2px;
-            text-shadow: 0 0 10px #00d8ff;
+            text-shadow: 0 0 10px #00e08f;
             margin: 0;
             text-align: center;
-            flex: 1; // 标题居中，占满剩余空间
+            flex: 1;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
+        // 时间/状态农业绿文字
         .header-left,
         .header-right {
             font-family: monospace;
-            color: #00d8ff;
+            color: #00e08f;
             width: 120px;
             font-size: 14px;
         }
@@ -614,8 +579,8 @@ body {
 
     .chart-box {
         flex: 1;
-        background: rgba(0, 20, 60, 0.4);
-        border: 1px solid #1a2b5a;
+        background: rgba(0, 40, 20, 0.4);
+        border: 1px solid #1a3a28;
         position: relative;
         padding: 10px;
         display: flex;
@@ -630,15 +595,15 @@ body {
             left: -1px;
             width: 10px;
             height: 10px;
-            border-top: 2px solid #00d8ff;
-            border-left: 2px solid #00d8ff;
+            border-top: 2px solid #00e08f;
+            border-left: 2px solid #00e08f;
             border-radius: 2px 0 0 0;
         }
 
         .chart-title {
             font-size: 14px;
-            color: #00d8ff;
-            border-left: 3px solid #00d8ff;
+            color: #00e08f;
+            border-left: 3px solid #00e08f;
             padding-left: 8px;
             margin-bottom: 10px;
             white-space: nowrap;
@@ -662,9 +627,9 @@ body {
             flex-wrap: nowrap;
 
             .kpi-item {
-                background: rgba(0, 20, 60, 0.3);
+                background: rgba(0, 40, 20, 0.3);
                 padding: 10px 30px;
-                border: 1px solid #0050ff;
+                border: 1px solid #00e08f;
                 text-align: center;
                 border-radius: 4px;
                 min-width: 160px;
@@ -672,7 +637,7 @@ body {
                 .label {
                     display: block;
                     font-size: 12px;
-                    color: #8fa0ff;
+                    color: #8faa9f;
                     margin-bottom: 5px;
                 }
 
@@ -680,7 +645,7 @@ body {
                     font-size: 32px;
                     font-weight: bold;
                     font-family: 'Impact', sans-serif;
-                    color: #00f2fe;
+                    color: #00e08f;
                 }
 
                 .yellow {
@@ -691,8 +656,8 @@ body {
 
         .chart-grid-container {
             flex: 1;
-            background: rgba(0, 20, 60, 0.3);
-            border: 1px solid #1a2b5a;
+            background: rgba(0, 40, 20, 0.3);
+            border: 1px solid #1a3a28;
             border-radius: 6px;
             padding: 15px;
             display: grid;
@@ -702,8 +667,8 @@ body {
             min-height: 450px;
 
             .chart-grid-item {
-                background: rgba(0, 15, 40, 0.4);
-                border: 1px solid #1a2b5a;
+                background: rgba(0, 30, 15, 0.4);
+                border: 1px solid #1a3a28;
                 border-radius: 4px;
                 padding: 8px;
                 display: flex;
@@ -718,15 +683,15 @@ body {
                     left: -1px;
                     width: 8px;
                     height: 8px;
-                    border-top: 2px solid #00d8ff;
-                    border-left: 2px solid #00d8ff;
+                    border-top: 2px solid #00e08f;
+                    border-left: 2px solid #00e08f;
                     border-radius: 2px 0 0 0;
                 }
 
                 .chart-title {
                     font-size: 12px;
-                    color: #00d8ff;
-                    border-left: 2px solid #00d8ff;
+                    color: #00e08f;
+                    border-left: 2px solid #00e08f;
                     padding-left: 6px;
                     margin-bottom: 8px;
                     white-space: nowrap;
@@ -744,7 +709,7 @@ body {
     }
 }
 
-// ECharts全局样式
+// ECharts全局绿色系样式
 :deep(.echarts) {
     width: 100% !important;
     height: 100% !important;
@@ -752,26 +717,32 @@ body {
 
 :deep(.ec-axis-label) {
     font-size: 10px !important;
+    color: #8faa9f !important;
 }
 
 :deep(.ec-tooltip) {
     font-size: 10px !important;
     padding: 6px 10px !important;
+    background: rgba(0, 40, 20, 0.8) !important;
+    border-color: #00e08f !important;
 }
 
 :deep(.ec-gauge-detail) {
     font-size: 16px !important;
+    color: #00e08f !important;
 }
 
 :deep(.ec-bar-label) {
     font-size: 9px !important;
+    color: #fff !important;
 }
 
 :deep(.ec-line-label) {
     font-size: 9px !important;
+    color: #fff !important;
 }
 
-// 移动端响应式（适配返回按钮）
+// 移动端响应式（农业绿系适配）
 @media screen and (max-width: 768px) {
     .dashboard-container {
         padding: 8px;
@@ -786,12 +757,12 @@ body {
             border-bottom-width: 1px;
             justify-content: flex-start;
 
-            // 移动端返回按钮：缩小尺寸，自适应
             .back-home {
                 padding: 4px 8px;
                 gap: 4px;
                 border-radius: 3px;
-                order: 1; // 返回按钮置顶
+                order: 1;
+                border-color: #86f7c8;
 
                 .back-icon {
                     font-size: 12px;
@@ -805,9 +776,10 @@ body {
             .title {
                 font-size: 18px;
                 letter-spacing: 1px;
-                order: 2; // 标题在返回按钮右侧/下方
+                order: 2;
                 width: 100%;
                 margin: 0;
+                text-shadow: 0 0 8px #00e08f;
             }
 
             .header-left,
@@ -815,7 +787,8 @@ body {
                 width: auto;
                 font-size: 12px;
                 flex: 1;
-                order: 3; // 时间/状态在最下方
+                order: 3;
+                color: #00e08f;
             }
         }
 
@@ -832,16 +805,19 @@ body {
             min-height: 200px;
             padding: 8px;
             border-width: 1px;
+            border-color: #1a3a28;
 
             &::before {
                 width: 8px;
                 height: 8px;
+                border-color: #00e08f;
             }
 
             .chart-title {
                 font-size: 12px;
                 padding-left: 6px;
                 border-left-width: 2px;
+                color: #00e08f;
             }
 
             .chart-instance {
@@ -860,13 +836,16 @@ body {
                     min-width: 120px;
                     flex: 1;
                     border-width: 1px;
+                    border-color: #00e08f;
 
                     .label {
                         font-size: 10px;
+                        color: #8faa9f;
                     }
 
                     .number {
                         font-size: 24px;
+                        color: #00e08f;
                     }
                 }
             }
@@ -878,20 +857,24 @@ body {
                 padding: 10px;
                 min-height: 800px;
                 height: auto;
+                border-color: #1a3a28;
 
                 .chart-grid-item {
                     min-height: 180px;
                     padding: 6px;
                     border-width: 1px;
+                    border-color: #1a3a28;
 
                     &::before {
                         width: 6px;
                         height: 6px;
+                        border-color: #00e08f;
                     }
 
                     .chart-title {
                         font-size: 10px;
                         padding-left: 4px;
+                        color: #00e08f;
                     }
 
                     .small-chart {
@@ -904,15 +887,19 @@ body {
 
     :deep(.ec-axis-label) {
         font-size: 8px !important;
+        color: #8faa9f !important;
     }
 
     :deep(.ec-tooltip) {
         font-size: 9px !important;
         padding: 4px 8px !important;
+        background: rgba(0, 40, 20, 0.8) !important;
+        border-color: #00e08f !important;
     }
 
     :deep(.ec-gauge-detail) {
         font-size: 12px !important;
+        color: #00e08f !important;
     }
 
     :deep(.ec-bar-label) {
