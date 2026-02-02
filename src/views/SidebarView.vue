@@ -21,7 +21,7 @@
       <div class="agent-list">
         <div class="agent-item" @click="handleAgentFunction('report')">
           <van-icon name="description" class="agent-icon" />
-          <span class="agent-text">自动生成报表</span>
+          <span class="agent-text" @click="handleAgentFunction('report')">自动生成报表</span>
         </div>
         <div class="agent-item" @click="handleAgentFunction('vision')">
           <van-icon name="photo-o" class="agent-icon" />
@@ -70,6 +70,7 @@ const handleAgentFunction = (type) => {
     case 'report':
       // TODO: 实现自动生成报表功能
       console.log('打开自动生成报表功能')
+      router.push({ name: 'data' })
       break
     case 'vision':
       // 跳转到图像识别页面

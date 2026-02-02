@@ -17,9 +17,16 @@ const router = createRouter({
       meta: { title: '智能诊断' },
     },
     {
+      path: '/data',
+      name: 'data',
+      component: () => import('@/views/DataVision.vue'),
+      meta: { title: '数据管理' },
+    },
+    {
       path: '/home',
       component: () => import('@/views/HomeView.vue'),
       meta: { title: '首页' },
+      name: 'home',
 
       children: [
         {

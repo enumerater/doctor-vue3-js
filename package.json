@@ -14,9 +14,10 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@amap/amap-jsapi-loader": "^1.0.1",
     "axios": "^1.13.2",
     "dayjs": "^1.11.19",
-    "echarts": "^6.0.0",
+    "echarts": "^5.6.0",
     "marked": "^17.0.1",
     "pinia": "^3.0.3",
     "pinia-plugin-persistedstate": "^4.7.1",

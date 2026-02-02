@@ -5,13 +5,8 @@
       <div class="nav-container">
         <button class="back-btn" @click="goBack">
           <svg class="back-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M19 12H5M5 12L12 19M5 12L12 5"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
+            <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
           </svg>
           <span class="back-text">返回</span>
         </button>
@@ -24,36 +19,15 @@
       <section class="upload-section">
         <div class="upload-card">
           <h2 class="card-title">上传检测图片</h2>
-          <div
-            class="upload-area"
-            @click="triggerFileInput"
-            @drop="handleDrop"
-            @dragover="handleDragOver"
-            @dragleave="handleDragLeave"
-            :class="{ 'upload-area--dragging': isDragging }"
-          >
+          <div class="upload-area" @click="triggerFileInput" @drop="handleDrop" @dragover="handleDragOver"
+            @dragleave="handleDragLeave" :class="{ 'upload-area--dragging': isDragging }">
             <div v-if="!uploadedImage" class="upload-placeholder">
               <div class="upload-icon-wrapper">
-                <svg
-                  class="upload-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M12 5V19M5 12H19"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M19 5L12 12L5 5"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                  <path d="M19 5L12 12L5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
                 </svg>
               </div>
               <p class="upload-desc">点击或拖拽图片至此处上传</p>
@@ -65,47 +39,21 @@
               <button class="remove-img-btn" @click="clearImage">×</button>
             </div>
 
-            <input
-              type="file"
-              ref="fileInput"
-              class="file-input"
-              accept="image/jpeg,image/png"
-              @change="handleFileChange"
-            />
+            <input type="file" ref="fileInput" class="file-input" accept="image/jpeg,image/png"
+              @change="handleFileChange" />
           </div>
 
           <!-- 识别状态提示 -->
           <div v-if="isDetecting" class="detecting-status">
             <div class="status-header">
               <div class="status-icon">
-                <svg
-                  class="spinner"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-dasharray="31.416"
-                    stroke-dashoffset="31.416"
-                  >
-                    <animate
-                      attributeName="stroke-dasharray"
-                      dur="2s"
-                      values="0 31.416;15.708 15.708;0 31.416;0 31.416"
-                      repeatCount="indefinite"
-                    />
-                    <animate
-                      attributeName="stroke-dashoffset"
-                      dur="2s"
-                      values="0;-15.708;-31.416;-31.416"
-                      repeatCount="indefinite"
-                    />
+                <svg class="spinner" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-dasharray="31.416" stroke-dashoffset="31.416">
+                    <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416;0 31.416"
+                      repeatCount="indefinite" />
+                    <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416;-31.416"
+                      repeatCount="indefinite" />
                   </circle>
                 </svg>
               </div>
@@ -116,18 +64,12 @@
               </div>
             </div>
             <div class="progress-bar">
-              <div
-                class="progress-fill"
-                :style="{ width: Math.min((detectingElapsedTime / 60) * 100, 95) + '%' }"
-              ></div>
+              <div class="progress-fill" :style="{ width: Math.min((detectingElapsedTime / 60) * 100, 95) + '%' }">
+              </div>
             </div>
           </div>
 
-          <button
-            class="detect-btn"
-            @click="showCropSelect = true"
-            :disabled="!uploadedImage || isDetecting"
-          >
+          <button class="detect-btn" @click="showCropSelect = true" :disabled="!uploadedImage || isDetecting">
             <span v-if="!isDetecting"> 开始识别 </span>
             <span v-else class="loading">
               <span class="loading-dot"></span>
@@ -149,26 +91,12 @@
             <!-- 病害基本信息卡片 -->
             <div class="result-card-item basic-info">
               <div class="info-header">
-                <svg
-                  class="info-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
+                <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
                     d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M12 6V12L16 14"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
                 </svg>
                 <h3 class="info-title">病害基本信息</h3>
               </div>
@@ -184,19 +112,13 @@
                 <div class="info-row confidence-row">
                   <label>识别置信度：</label>
                   <div class="confidence-wrapper">
-                    <div
-                      class="confidence-bar"
-                      :style="{ width: structuredResult.confidence + '%' }"
-                    ></div>
+                    <div class="confidence-bar" :style="{ width: structuredResult.confidence + '%' }"></div>
                     <span class="confidence-value">{{ structuredResult.confidence }}%</span>
                   </div>
                 </div>
                 <div class="info-row">
                   <label>病害等级：</label>
-                  <span
-                    class="value severity-tag"
-                    :class="getSeverityClass(structuredResult.severity)"
-                  >
+                  <span class="value severity-tag" :class="getSeverityClass(structuredResult.severity)">
                     {{ structuredResult.severity }}
                   </span>
                 </div>
@@ -206,26 +128,12 @@
             <!-- 病害症状描述 -->
             <div class="result-card-item symptoms">
               <div class="info-header">
-                <svg
-                  class="info-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
+                <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
                     d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M12 16V12M12 8H12.01"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
                 </svg>
                 <h3 class="info-title">病害症状</h3>
               </div>
@@ -241,56 +149,33 @@
             <!-- 防治方法 -->
             <div class="result-card-item prevention">
               <div class="info-header">
-                <svg
-                  class="info-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
+                <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
                     d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
                 <h3 class="info-title">防治方法</h3>
               </div>
               <div class="info-content">
                 <div class="prevention-tabs">
-                  <div
-                    class="tab-item"
-                    :class="{ active: activePreventionTab === tab.key }"
-                    v-for="tab in preventionTabs"
-                    :key="tab.key"
-                    @click="activePreventionTab = tab.key"
-                  >
+                  <div class="tab-item" :class="{ active: activePreventionTab === tab.key }"
+                    v-for="tab in preventionTabs" :key="tab.key" @click="activePreventionTab = tab.key">
                     {{ tab.name }}
                   </div>
                 </div>
                 <div class="prevention-content">
                   <ul v-if="activePreventionTab === 'agricultural'">
-                    <li
-                      v-for="(method, index) in structuredResult.prevention.agricultural"
-                      :key="index"
-                    >
+                    <li v-for="(method, index) in structuredResult.prevention.agricultural" :key="index">
                       {{ method }}
                     </li>
                   </ul>
                   <ul v-if="activePreventionTab === 'chemical'">
-                    <li
-                      v-for="(method, index) in structuredResult.prevention.chemical"
-                      :key="index"
-                    >
+                    <li v-for="(method, index) in structuredResult.prevention.chemical" :key="index">
                       {{ method }}
                     </li>
                   </ul>
                   <ul v-if="activePreventionTab === 'biological'">
-                    <li
-                      v-for="(method, index) in structuredResult.prevention.biological"
-                      :key="index"
-                    >
+                    <li v-for="(method, index) in structuredResult.prevention.biological" :key="index">
                       {{ method }}
                     </li>
                   </ul>
@@ -299,31 +184,14 @@
             </div>
 
             <!-- 注意事项 -->
-            <div
-              class="result-card-item notes"
-              v-if="structuredResult.notes && structuredResult.notes.length"
-            >
+            <div class="result-card-item notes" v-if="structuredResult.notes && structuredResult.notes.length">
               <div class="info-header">
-                <svg
-                  class="info-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
+                <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
                     d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M12 8V12M12 16H12.01"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M12 8V12M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
                 </svg>
                 <h3 class="info-title">注意事项</h3>
               </div>
@@ -359,19 +227,10 @@
     <transition name="notification">
       <div v-if="showNotification" class="notification-toast">
         <div class="notification-content">
-          <svg
-            class="notification-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
+          <svg class="notification-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
               d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
           <span class="notification-text">{{ notificationMessage }}</span>
         </div>
@@ -389,13 +248,8 @@
         <div class="modal-body">
           <div class="crop-grid">
             <!-- 常见农作物选项 -->
-            <div
-              class="crop-item"
-              v-for="(crop, index) in cropList"
-              :key="index"
-              :class="{ active: selectedCrop === crop.name }"
-              @click="selectedCrop = crop.name"
-            >
+            <div class="crop-item" v-for="(crop, index) in cropList" :key="index"
+              :class="{ active: selectedCrop === crop.name }" @click="selectedCrop = crop.name">
               <span class="crop-icon">{{ crop.icon }}</span>
               <span class="crop-name">{{ crop.name }}</span>
             </div>
@@ -1632,6 +1486,7 @@ onBeforeUnmount(() => {
 
 // 动画效果
 @keyframes loading {
+
   0%,
   80%,
   100% {
@@ -1692,6 +1547,7 @@ onBeforeUnmount(() => {
 }
 
 @keyframes progressPulse {
+
   0%,
   100% {
     opacity: 1;
@@ -1770,6 +1626,7 @@ onBeforeUnmount(() => {
 }
 
 @keyframes notificationPulse {
+
   0%,
   100% {
     box-shadow: 0 4px 12px rgba(56, 142, 60, 0.3);
@@ -1782,6 +1639,7 @@ onBeforeUnmount(() => {
 
 // 响应式细节优化
 @media (max-width: 768px) {
+
   .upload-card,
   .result-card {
     padding: 1.5rem;
