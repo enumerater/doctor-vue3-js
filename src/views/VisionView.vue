@@ -339,11 +339,12 @@ const restoreFromStore = () => {
       isDetecting.value = true
       detectingTaskId.value = task.id
       detectingStartTime.value = task.startTime
-      detectingElapsedTime.value = task.elapsedTime
+      // 计算当前的真实已用时间，而不是使用store中保存的旧值
+      detectingElapsedTime.value = Math.floor((Date.now() - task.startTime) / 1000)
       startTimer()
 
       // 如果任务时间超过60秒，可能已经超时，标记为失败
-      if (task.elapsedTime > 60) {
+      if (detectingElapsedTime.value > 60) {
         visionStore.failTask('识别超时，请重新识别')
         isDetecting.value = false
         stopTimer()
@@ -474,10 +475,18 @@ const getSeverityClass = (severity) => {
 
 // 开始计时
 const startTimer = () => {
-  detectingStartTime.value = Date.now()
-  detectingElapsedTime.value = 0
+  // 如果已有开始时间（从store恢复的），则基于该时间继续计时
+  if (!detectingStartTime.value) {
+    detectingStartTime.value = Date.now()
+    detectingElapsedTime.value = 0
+  }
+
   detectingTimer.value = setInterval(() => {
     detectingElapsedTime.value = Math.floor((Date.now() - detectingStartTime.value) / 1000)
+    // 定期更新store中的已用时间，确保页面刷新时能正确恢复
+    if (visionStore.currentTask && visionStore.currentTask.status === 'detecting') {
+      visionStore.updateTaskElapsedTime()
+    }
   }, 1000)
 }
 
