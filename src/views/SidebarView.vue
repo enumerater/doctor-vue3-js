@@ -21,7 +21,7 @@
       <div class="agent-list">
         <div class="agent-item" @click="handleAgentFunction('report')">
           <van-icon name="description" class="agent-icon" />
-          <span class="agent-text" @click="handleAgentFunction('report')">自动生成报表</span>
+          <span class="agent-text" @click="handleAgentFunction('report')">数据看板</span>
         </div>
         <div class="agent-item" @click="handleAgentFunction('vision')">
           <van-icon name="photo-o" class="agent-icon" />

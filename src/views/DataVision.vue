@@ -12,13 +12,15 @@
 
         <main class="main-content">
             <section class="panel-column side">
+                <!-- 左侧1：当日温度变化（独立图表） -->
                 <div class="chart-box">
-                    <div class="chart-title">月度降水量与温度变化</div>
-                    <div ref="lineBarChart" class="chart-instance"></div>
+                    <div class="chart-title">当日温度变化</div>
+                    <div ref="dayTempChart" class="chart-instance"></div>
                 </div>
+                <!-- 左侧2：当日湿度变化（独立图表） -->
                 <div class="chart-box">
-                    <div class="chart-title">当日环境温湿度变化</div>
-                    <div ref="tempDayChart" class="chart-instance"></div>
+                    <div class="chart-title">当日湿度变化</div>
+                    <div ref="dayHumidityChart" class="chart-instance"></div>
                 </div>
             </section>
 
@@ -47,8 +49,9 @@
                         <div ref="diagnoseTimeChart" class="chart-instance small-chart"></div>
                     </div>
                     <div class="chart-grid-item">
-                        <div class="chart-title">模型识别准确率趋势</div>
-                        <div ref="accuracyTrendChart" class="chart-instance small-chart"></div>
+                        <!-- 大模型接口调用响应耗时趋势（保留，核心监控指标） -->
+                        <div class="chart-title">大模型接口调用响应耗时趋势</div>
+                        <div ref="apiResponseTimeChart" class="chart-instance small-chart"></div>
                     </div>
                 </div>
             </section>
@@ -58,9 +61,10 @@
                     <div class="chart-title">个人诊断作物类型分布</div>
                     <div ref="cropTypeChart" class="chart-instance"></div>
                 </div>
+                <!-- 右侧2：替换为 大模型接口调用次数趋势（更合理的接口监控指标） -->
                 <div class="chart-box">
-                    <div class="chart-title">个人诊断解决率趋势</div>
-                    <div ref="solveRateChart" class="chart-instance"></div>
+                    <div class="chart-title">大模型接口调用次数趋势</div>
+                    <div ref="apiCallCountChart" class="chart-instance"></div>
                 </div>
             </section>
         </main>
@@ -74,13 +78,17 @@ import * as echarts from 'echarts';
 
 const router = useRouter();
 
-const lineBarChart = ref(null);
-const tempDayChart = ref(null);
+// 左侧：温度、湿度独立ref
+const dayTempChart = ref(null);
+const dayHumidityChart = ref(null);
+// 中间：大模型响应耗时
+const apiResponseTimeChart = ref(null);
+// 右侧：大模型调用次数
+const apiCallCountChart = ref(null);
+// 原有保留ref
 const top5DiseaseChart = ref(null);
 const sevenDTrendChart = ref(null);
-const accuracyTrendChart = ref(null);
 const cropTypeChart = ref(null);
-const solveRateChart = ref(null);
 const diagnoseTimeChart = ref(null);
 
 const currentTime = ref('');
@@ -112,77 +120,232 @@ const goBackHome = () => {
     router.push({ name: 'chatBegin' });
 };
 
-// 左侧1：月度降水量 + 温度（绿色系改造）
-const initLineBarChart = () => {
-    const myChart = echarts.init(lineBarChart.value);
-    chartInstances.lineBar = myChart;
-    myChart.setOption({
-        grid: { top: '20%', bottom: '15%', left: '12%', right: '5%' },
-        xAxis: {
-            type: 'category',
-            data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-            axisLabel: { color: '#8faa9f', fontSize: 10 },
-            axisLine: { lineStyle: { color: '#1a3a28' } }
-        },
-        yAxis: [
-            { type: 'value', name: '降水量(mm)', axisLabel: { color: '#8faa9f', fontSize: 10 }, splitLine: { lineStyle: { color: '#1a3a28' } } },
-            { type: 'value', name: '温度(℃)', axisLabel: { color: '#009959', fontSize: 10 }, splitLine: { show: false } }
-        ],
-        series: [
-            {
-                name: '降水量',
-                type: 'bar',
-                barWidth: 15,
-                yAxisIndex: 0,
-                itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#86f7c8' }, { offset: 1, color: '#00e08f' }]) },
-                data: [10, 15, 25, 40, 65, 78, 70, 55, 38, 22, 16, 8]
-            },
-            {
-                name: '平均温度',
-                type: 'line',
-                smooth: true,
-                yAxisIndex: 1,
-                lineStyle: { color: '#009959', width: 2 },
-                data: [3, 6, 13, 19, 25, 29, 31, 30, 26, 19, 11, 5]
-            }
-        ],
-        tooltip: { trigger: 'axis', textStyle: { fontSize: 10 }, backgroundColor: 'rgba(0,40,20,0.8)', borderColor: '#00e08f' }
-    });
-};
+// ==============================================
+// 左侧1：当日温度变化（独立图表，纯温度折线）
+// ==============================================
+const initDayTempChart = () => {
+    const myChart = echarts.init(dayTempChart.value);
+    chartInstances.dayTemp = myChart;
+    const timeData = ['6:00', '8:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'];
+    const tempData = [15, 18, 22, 26, 29, 27, 24, 21, 18]; // 温度数据(℃)
 
-// 左侧2：当日温湿度变化（绿色系改造）
-const initTempDayChart = () => {
-    const myChart = echarts.init(tempDayChart.value);
-    chartInstances.tempDay = myChart;
     myChart.setOption({
         grid: { top: '15%', bottom: '15%', left: '12%', right: '5%' },
         xAxis: {
             type: 'category',
             boundaryGap: false,
-            data: ['6:00', '8:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
+            data: timeData,
             axisLabel: { color: '#8faa9f', fontSize: 10 },
             axisLine: { lineStyle: { color: '#1a3a28' } }
         },
         yAxis: {
             type: 'value',
+            name: '温度(℃)',
             min: 10,
-            axisLabel: { color: '#8faa9f', fontSize: 10 },
+            max: 35,
+            axisLabel: { color: '#00e08f', fontSize: 10 },
             splitLine: { lineStyle: { color: '#1a3a28' } }
         },
         series: [{
+            name: '温度',
             type: 'line',
             smooth: true,
-            data: [13, 16, 20, 25, 28, 26, 21, 17],
+            data: tempData,
             lineStyle: { color: '#00e08f', width: 2 },
             areaStyle: { color: 'rgba(0,224,143,0.2)' },
             itemStyle: { color: '#00e08f' },
             label: { show: true, color: '#fff', fontSize: 9 }
         }],
-        tooltip: { trigger: 'axis', textStyle: { fontSize: 10 }, backgroundColor: 'rgba(0,40,20,0.8)', borderColor: '#00e08f' }
+        tooltip: {
+            trigger: 'axis',
+            textStyle: { fontSize: 10 },
+            backgroundColor: 'rgba(0,40,20,0.8)',
+            borderColor: '#00e08f',
+            formatter: '{b}<br/>温度：{c}℃'
+        }
     });
 };
 
-// 中间1：个人病害识别TOP5（绿色系改造）
+// ==============================================
+// 左侧2：当日湿度变化（独立图表，纯湿度折线）
+// ==============================================
+const initDayHumidityChart = () => {
+    const myChart = echarts.init(dayHumidityChart.value);
+    chartInstances.dayHumidity = myChart;
+    const timeData = ['6:00', '8:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'];
+    const humidityData = [68, 62, 55, 48, 45, 50, 58, 65, 70]; // 湿度数据(%RH)
+
+    myChart.setOption({
+        grid: { top: '15%', bottom: '15%', left: '12%', right: '5%' },
+        xAxis: {
+            type: 'category',
+            boundaryGap: false,
+            data: timeData,
+            axisLabel: { color: '#8faa9f', fontSize: 10 },
+            axisLine: { lineStyle: { color: '#1a3a28' } }
+        },
+        yAxis: {
+            type: 'value',
+            name: '湿度(%RH)',
+            min: 30,
+            max: 80,
+            axisLabel: { color: '#86f7c8', fontSize: 10 },
+            splitLine: { lineStyle: { color: '#1a3a28' } }
+        },
+        series: [{
+            name: '湿度',
+            type: 'line',
+            smooth: true,
+            data: humidityData,
+            lineStyle: { color: '#86f7c8', width: 2 },
+            areaStyle: { color: 'rgba(134,247,200,0.2)' },
+            itemStyle: { color: '#86f7c8' },
+            label: { show: true, color: '#fff', fontSize: 9 }
+        }],
+        tooltip: {
+            trigger: 'axis',
+            textStyle: { fontSize: 10 },
+            backgroundColor: 'rgba(0,40,20,0.8)',
+            borderColor: '#86f7c8',
+            formatter: '{b}<br/>湿度：{c}%RH'
+        }
+    });
+};
+
+// ==============================================
+// 中间：大模型接口调用响应耗时趋势（保留）
+// ==============================================
+const initApiResponseTimeChart = () => {
+    const myChart = echarts.init(apiResponseTimeChart.value);
+    chartInstances.apiResponseTime = myChart;
+    const timeTrendData = [2650, 2820, 2780, 2910, 2860];
+    const currentAvgTime = Math.round(timeTrendData.reduce((a, b) => a + b, 0) / timeTrendData.length);
+
+    myChart.setOption({
+        grid: { top: '50%', bottom: '10%', left: '10%', right: '10%' },
+        series: [
+            {
+                type: 'gauge',
+                center: ['50%', '30%'],
+                radius: '60%',
+                startAngle: 180,
+                endAngle: 0,
+                min: 1000,
+                max: 5000,
+                axisLine: {
+                    lineStyle: {
+                        width: 8,
+                        color: [
+                            [0.6, new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#86f7c8' }, { offset: 1, color: '#00e08f' }])],
+                            [1, '#1a3a28']
+                        ]
+                    }
+                },
+                splitLine: { show: false },
+                axisTick: { show: false },
+                axisLabel: { show: false },
+                pointer: { show: false },
+                detail: {
+                    show: true,
+                    position: 'center',
+                    formatter: '{value}ms',
+                    color: '#00e08f',
+                    fontSize: 16,
+                    fontWeight: 'bold'
+                },
+                data: [{ value: currentAvgTime, name: '平均耗时' }]
+            },
+            {
+                type: 'line',
+                smooth: true,
+                data: timeTrendData,
+                xAxisIndex: 0,
+                yAxisIndex: 0,
+                lineStyle: { color: '#00e08f', width: 2 },
+                itemStyle: { color: '#00e08f' },
+                label: { show: true, color: '#fff', fontSize: 8 },
+                areaStyle: { color: 'rgba(0,224,143,0.2)' }
+            }
+        ],
+        xAxis: [{
+            type: 'category',
+            data: ['第1次', '第2次', '第3次', '第4次', '第5次'],
+            axisLabel: { color: '#8faa9f', fontSize: 8 },
+            axisLine: { show: false },
+            axisTick: { show: false }
+        }],
+        yAxis: [{ show: false, min: 2000, max: 3000 }],
+        tooltip: {
+            trigger: 'item',
+            textStyle: { fontSize: 9 },
+            backgroundColor: 'rgba(0,40,20,0.8)',
+            borderColor: '#00e08f',
+            formatter: '第{cIndex+1}次调用<br/>响应耗时：{c}ms'
+        }
+    });
+};
+
+// ==============================================
+// 右侧2：大模型接口调用次数趋势（替换原成功率，更合理）
+// ==============================================
+const initApiCallCountChart = () => {
+    const myChart = echarts.init(apiCallCountChart.value);
+    chartInstances.apiCallCount = myChart;
+    const dateList = ['1日', '2日', '3日', '4日', '5日', '6日', '7日', '8日', '9日', '10日', '11日', '12日', '13日', '14日', '15日'];
+    // 每日接口调用次数（贴合诊断次数，真实业务监控）
+    const callCountData = [12, 15, 18, 20, 22, 25, 23, 26, 28, 30, 29, 32, 35, 33, 36];
+
+    myChart.setOption({
+        grid: { top: '15%', bottom: '15%', left: '10%', right: '10%' },
+        xAxis: {
+            type: 'category',
+            data: dateList,
+            axisLabel: { color: '#8faa9f', fontSize: 8, interval: 2 },
+            axisLine: { lineStyle: { color: '#1a3a28' } }
+        },
+        yAxis: {
+            type: 'value',
+            name: '调用次数',
+            axisLabel: { color: '#00e08f', fontSize: 8 },
+            splitLine: { lineStyle: { color: '#1a3a28' } }
+        },
+        series: [
+            {
+                name: '接口调用次数',
+                type: 'line',
+                smooth: true,
+                data: callCountData,
+                lineStyle: { color: '#00e08f', width: 2 },
+                itemStyle: { color: '#00e08f' },
+                label: { show: true, color: '#fff', fontSize: 8 },
+                areaStyle: { color: 'rgba(0,224,143,0.2)' }
+            },
+            {
+                name: '调用次数',
+                type: 'bar',
+                barWidth: 8,
+                data: callCountData,
+                itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#86f7c8' },
+                        { offset: 1, color: '#00e08f' }
+                    ]),
+                    borderRadius: 4
+                }
+            }
+        ],
+        tooltip: {
+            trigger: 'axis',
+            formatter: '{b}<br/>大模型接口调用：{c0}次',
+            textStyle: { fontSize: 9 },
+            backgroundColor: 'rgba(0,40,20,0.8)',
+            borderColor: '#00e08f'
+        }
+    });
+};
+
+// ==================== 原有保留图表 ====================
+// 中间1：个人病害识别TOP5
 const initTop5DiseaseChart = () => {
     const myChart = echarts.init(top5DiseaseChart.value);
     chartInstances.top5Disease = myChart;
@@ -214,7 +377,7 @@ const initTop5DiseaseChart = () => {
     });
 };
 
-// 中间2：近7天诊断次数趋势（绿色系改造）
+// 中间2：近7天诊断次数趋势
 const init7dTrendChart = () => {
     const myChart = echarts.init(sevenDTrendChart.value);
     chartInstances.sevenDTrend = myChart;
@@ -246,156 +409,7 @@ const init7dTrendChart = () => {
     });
 };
 
-// 中间4：模型识别准确率趋势（绿色系改造）
-const initAccuracyTrendChart = () => {
-    const myChart = echarts.init(accuracyTrendChart.value);
-    chartInstances.accuracyTrend = myChart;
-    myChart.setOption({
-        grid: { top: '50%', bottom: '10%', left: '10%', right: '10%' },
-        series: [
-            {
-                type: 'gauge',
-                center: ['50%', '30%'],
-                radius: '60%',
-                startAngle: 180,
-                endAngle: 0,
-                min: 80,
-                max: 100,
-                axisLine: {
-                    lineStyle: {
-                        width: 8,
-                        color: [[0.935, new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#86f7c8' }, { offset: 1, color: '#00e08f' }])], [1, '#1a3a28']]
-                    }
-                },
-                splitLine: { show: false },
-                axisTick: { show: false },
-                axisLabel: { show: false },
-                pointer: { show: false },
-                detail: {
-                    show: true,
-                    position: 'center',
-                    formatter: '{value}%',
-                    color: '#00e08f',
-                    fontSize: 16,
-                    fontWeight: 'bold'
-                },
-                data: [{ value: 93.5, name: '当前准确率' }]
-            },
-            {
-                type: 'line',
-                smooth: true,
-                data: [85.2, 88.5, 90.8, 92.4, 93.5],
-                xAxisIndex: 0,
-                yAxisIndex: 0,
-                lineStyle: { color: '#00e08f', width: 2 },
-                itemStyle: { color: '#00e08f' },
-                label: { show: true, color: '#fff', fontSize: 8 },
-                areaStyle: { color: 'rgba(0,224,143,0.2)' }
-            }
-        ],
-        xAxis: [{
-            type: 'category',
-            data: ['V1', 'V2', 'V3', 'V4', 'V5'],
-            axisLabel: { color: '#8faa9f', fontSize: 8 },
-            axisLine: { show: false },
-            axisTick: { show: false }
-        }],
-        yAxis: [{ show: false, min: 85, max: 95 }],
-        tooltip: { trigger: 'item', textStyle: { fontSize: 9 }, backgroundColor: 'rgba(0,40,20,0.8)', borderColor: '#00e08f' }
-    });
-};
-
-// 右侧1：个人诊断作物类型分布（绿色系改造）
-const initCropTypeChart = () => {
-    const myChart = echarts.init(cropTypeChart.value);
-    chartInstances.cropType = myChart;
-    const data = [
-        { name: '番茄', value: 112 },
-        { name: '黄瓜', value: 98 },
-        { name: '辣椒', value: 85 },
-        { name: '草莓', value: 72 },
-        { name: '白菜', value: 61 }
-    ];
-    myChart.setOption({
-        grid: { top: '15%', bottom: '15%', left: '10%', right: '10%' },
-        xAxis: {
-            type: 'category',
-            data: data.map(i => i.name),
-            axisLabel: { color: '#8faa9f', fontSize: 10 },
-            axisLine: { lineStyle: { color: '#1a3a28' } },
-            axisTick: { show: false }
-        },
-        yAxis: {
-            type: 'value',
-            axisLabel: { color: '#8faa9f', fontSize: 10 },
-            splitLine: { lineStyle: { color: '#1a3a28' } },
-            axisLine: { show: false }
-        },
-        series: [{
-            type: 'bar',
-            barWidth: 20,
-            data: data,
-            itemStyle: {
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#86f7c8' }, { offset: 1, color: '#00e08f' }]),
-                borderRadius: 6
-            },
-            label: { show: true, position: 'top', formatter: '{c}次', color: '#fff', fontSize: 9 }
-        }],
-        tooltip: { trigger: 'item', formatter: '{b}<br/>诊断次数：{c}次', textStyle: { fontSize: 10 }, backgroundColor: 'rgba(0,40,20,0.8)', borderColor: '#00e08f' }
-    });
-};
-
-// 右侧2：个人诊断解决率趋势（绿色系改造）
-const initSolveRateChart = () => {
-    const myChart = echarts.init(solveRateChart.value);
-    chartInstances.solveRate = myChart;
-    const dateList = ['1日', '2日', '3日', '4日', '5日', '6日', '7日', '8日', '9日', '10日', '11日', '12日', '13日', '14日', '15日'];
-    const solveRateList = [72, 75, 78, 80, 82, 85, 83, 86, 88, 90, 89, 91, 92, 93, 94];
-    const diagnoseCountList = [12, 15, 18, 20, 22, 25, 23, 26, 28, 30, 29, 32, 35, 33, 36];
-    myChart.setOption({
-        grid: { top: '15%', bottom: '15%', left: '10%', right: '10%' },
-        xAxis: {
-            type: 'category',
-            data: dateList,
-            axisLabel: { color: '#8faa9f', fontSize: 8, interval: 2 },
-            axisLine: { lineStyle: { color: '#1a3a28' } }
-        },
-        yAxis: [
-            { type: 'value', name: '解决率(%)', min: 70, max: 100, axisLabel: { color: '#00e08f', fontSize: 8 }, splitLine: { lineStyle: { color: '#1a3a28' } } },
-            { type: 'value', name: '诊断次数', axisLabel: { color: '#86f7c8', fontSize: 8 }, splitLine: { show: false } }
-        ],
-        series: [
-            {
-                name: '解决率',
-                type: 'line',
-                smooth: true,
-                yAxisIndex: 0,
-                data: solveRateList,
-                lineStyle: { color: '#00e08f', width: 2 },
-                itemStyle: { color: '#00e08f' },
-                label: { show: true, color: '#fff', fontSize: 8 },
-                areaStyle: { color: 'rgba(0,224,143,0.2)' }
-            },
-            {
-                name: '诊断次数',
-                type: 'bar',
-                yAxisIndex: 1,
-                barWidth: 8,
-                data: diagnoseCountList,
-                itemStyle: { color: '#86f7c8', borderRadius: 4 }
-            }
-        ],
-        tooltip: {
-            trigger: 'axis',
-            formatter: '{b}<br/>解决率：{c0}%<br/>诊断次数：{c1}次',
-            textStyle: { fontSize: 9 },
-            backgroundColor: 'rgba(0,40,20,0.8)',
-            borderColor: '#00e08f'
-        }
-    });
-};
-
-// 中间3：个人诊断时段分布（绿色系改造）
+// 中间3：个人诊断时段分布
 const initDiagnoseTimeChart = () => {
     const myChart = echarts.init(diagnoseTimeChart.value);
     chartInstances.diagnoseTime = myChart;
@@ -435,17 +449,61 @@ const initDiagnoseTimeChart = () => {
     });
 };
 
+// 右侧1：个人诊断作物类型分布
+const initCropTypeChart = () => {
+    const myChart = echarts.init(cropTypeChart.value);
+    chartInstances.cropType = myChart;
+    const data = [
+        { name: '番茄', value: 112 },
+        { name: '黄瓜', value: 98 },
+        { name: '辣椒', value: 85 },
+        { name: '草莓', value: 72 },
+        { name: '白菜', value: 61 }
+    ];
+    myChart.setOption({
+        grid: { top: '15%', bottom: '15%', left: '10%', right: '10%' },
+        xAxis: {
+            type: 'category',
+            data: data.map(i => i.name),
+            axisLabel: { color: '#8faa9f', fontSize: 10 },
+            axisLine: { lineStyle: { color: '#1a3a28' } },
+            axisTick: { show: false }
+        },
+        yAxis: {
+            type: 'value',
+            axisLabel: { color: '#8faa9f', fontSize: 10 },
+            splitLine: { lineStyle: { color: '#1a3a28' } },
+            axisLine: { show: false }
+        },
+        series: [{
+            type: 'bar',
+            barWidth: 20,
+            data: data,
+            itemStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#86f7c8' }, { offset: 1, color: '#00e08f' }]),
+                borderRadius: 6
+            },
+            label: { show: true, position: 'top', formatter: '{c}次', color: '#fff', fontSize: 9 }
+        }],
+        tooltip: { trigger: 'item', formatter: '{b}<br/>诊断次数：{c}次', textStyle: { fontSize: 10 }, backgroundColor: 'rgba(0,40,20,0.8)', borderColor: '#00e08f' }
+    });
+};
+
 onMounted(() => {
     updateTime();
     setInterval(updateTime, 1000);
-    initLineBarChart();
-    initTempDayChart();
+    // 左侧独立图表
+    initDayTempChart();
+    initDayHumidityChart();
+    // 中间&右侧
+    initApiResponseTimeChart();
+    initApiCallCountChart();
+    // 原有保留
     initTop5DiseaseChart();
     init7dTrendChart();
     initDiagnoseTimeChart();
-    initAccuracyTrendChart();
     initCropTypeChart();
-    initSolveRateChart();
+
     window.addEventListener('resize', handleResize, { passive: true });
     handleResize();
 });
@@ -474,7 +532,6 @@ body {
 }
 
 .dashboard-container {
-    // 农业绿系主背景
     background: #002a15;
     background-image: radial-gradient(circle at center, #003a20 0%, #002a15 100%);
     color: #fff;
@@ -488,7 +545,6 @@ body {
         display: flex;
         justify-content: flex-start;
         align-items: center;
-        // 农业绿渐变头部
         background: linear-gradient(to bottom, rgba(0, 224, 143, 0.3), transparent);
         border-bottom: 2px solid #00e08f;
         margin-bottom: 15px;
@@ -496,7 +552,6 @@ body {
         border-radius: 6px;
         gap: 15px;
 
-        // 返回按钮农业绿样式
         .back-home {
             display: flex;
             align-items: center;
@@ -544,7 +599,6 @@ body {
             text-overflow: ellipsis;
         }
 
-        // 时间/状态农业绿文字
         .header-left,
         .header-right {
             font-family: monospace;
@@ -709,7 +763,6 @@ body {
     }
 }
 
-// ECharts全局绿色系样式
 :deep(.echarts) {
     width: 100% !important;
     height: 100% !important;
@@ -742,7 +795,6 @@ body {
     color: #fff !important;
 }
 
-// 移动端响应式（农业绿系适配）
 @media screen and (max-width: 768px) {
     .dashboard-container {
         padding: 8px;
