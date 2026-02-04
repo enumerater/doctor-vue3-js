@@ -127,7 +127,7 @@ const initDayTempChart = (area) => {
     const myChart = echarts.init(dayTempChart.value);
     chartInstances.dayTemp = myChart;
     const timeData = ['6:00', '8:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'];
-    const tempData = [15, 18, 22, 26, 29, 27, 24, 21, 18]; // 温度数据(℃)
+    const tempData = [3, 3, 4, 8, 12, 15, 12, 8, 2]; // 温度数据(℃)
 
     myChart.setOption({
         grid: { top: '15%', bottom: '15%', left: '12%', right: '5%' },
@@ -141,8 +141,8 @@ const initDayTempChart = (area) => {
         yAxis: {
             type: 'value',
             name: '温度(℃)',
-            min: 10,
-            max: 35,
+            min: -5,
+            max: 20,
             axisLabel: { color: '#00e08f', fontSize: 10 },
             splitLine: { lineStyle: { color: '#1a3a28' } }
         },

@@ -24,3 +24,14 @@ export const deleteSession = (id) => {
     },
   })
 }
+
+export const setTitle = (title, sessionid) => {
+  return request({
+    url: '/session/title',
+    method: 'put',
+    params: {
+      title,
+      sessionid,
+    },
+  })
+}
