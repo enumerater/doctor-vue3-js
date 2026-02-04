@@ -123,11 +123,12 @@ const goBackHome = () => {
 // ==============================================
 // 左侧1：当日温度变化（独立图表，纯温度折线）
 // ==============================================
-const initDayTempChart = () => {
+const initDayTempChart = (tempData) => {
     const myChart = echarts.init(dayTempChart.value);
     chartInstances.dayTemp = myChart;
-    const timeData = ['6:00', '8:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'];
-    const tempData = [15, 18, 22, 26, 29, 27, 24, 21, 18]; // 温度数据(℃)
+    const timeData = ['0:00', '1:00', '2:00', '3:00', '4:00', '5:00', '6:00', '7:00', '8:00', '9:00',
+        '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00',
+    ];
 
     myChart.setOption({
         grid: { top: '15%', bottom: '15%', left: '12%', right: '5%' },
@@ -150,7 +151,7 @@ const initDayTempChart = () => {
             name: '温度',
             type: 'line',
             smooth: true,
-            data: tempData,
+            data: tempData.map(item => item.temperature),
             lineStyle: { color: '#00e08f', width: 2 },
             areaStyle: { color: 'rgba(0,224,143,0.2)' },
             itemStyle: { color: '#00e08f' },
@@ -169,11 +170,12 @@ const initDayTempChart = () => {
 // ==============================================
 // 左侧2：当日湿度变化（独立图表，纯湿度折线）
 // ==============================================
-const initDayHumidityChart = () => {
+const initDayHumidityChart = (humidityData) => {
     const myChart = echarts.init(dayHumidityChart.value);
     chartInstances.dayHumidity = myChart;
-    const timeData = ['6:00', '8:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'];
-    const humidityData = [68, 62, 55, 48, 45, 50, 58, 65, 70]; // 湿度数据(%RH)
+    const timeData = ['0:00', '1:00', '2:00', '3:00', '4:00', '5:00', '6:00', '7:00', '8:00', '9:00',
+        '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00',
+    ];
 
     myChart.setOption({
         grid: { top: '15%', bottom: '15%', left: '12%', right: '5%' },
@@ -196,7 +198,7 @@ const initDayHumidityChart = () => {
             name: '湿度',
             type: 'line',
             smooth: true,
-            data: humidityData,
+            data: humidityData.map(item => item.humidity),
             lineStyle: { color: '#86f7c8', width: 2 },
             areaStyle: { color: 'rgba(134,247,200,0.2)' },
             itemStyle: { color: '#86f7c8' },
@@ -344,18 +346,21 @@ const initApiCallCountChart = () => {
     });
 };
 
+import { getdiseasedata } from '@/axios/data'
+const diseaData = ref([])
+
+
+
 // ==================== 原有保留图表 ====================
 // 中间1：个人病害识别TOP5
 const initTop5DiseaseChart = () => {
     const myChart = echarts.init(top5DiseaseChart.value);
     chartInstances.top5Disease = myChart;
-    const data = [
-        { name: '番茄晚疫病', value: 96 },
-        { name: '黄瓜霜霉病', value: 82 },
-        { name: '辣椒炭疽病', value: 74 },
-        { name: '草莓白粉病', value: 65 },
-        { name: '白菜软腐病', value: 51 }
-    ];
+    // 核心：数据结构适配（后端字段diseaseName/value → ECharts需要的name/value）
+    const data = diseaData.value.map(item => ({
+        name: item.name, // 字段映射：病害名称
+        value: item.value       // 字段映射：数值
+    }));
     myChart.setOption({
         grid: { top: '20%', bottom: '10%', left: '35%', right: '5%' },
         xAxis: { show: false },
@@ -489,17 +494,29 @@ const initCropTypeChart = () => {
     });
 };
 
+
+
+import { getDayTemHum } from '@/axios/data'
+
 onMounted(() => {
     updateTime();
     setInterval(updateTime, 1000);
-    // 左侧独立图表
-    initDayTempChart();
-    initDayHumidityChart();
+
     // 中间&右侧
     initApiResponseTimeChart();
     initApiCallCountChart();
     // 原有保留
-    initTop5DiseaseChart();
+    getdiseasedata().then(res => {
+        console.log(res)
+        diseaData.value = res.data // 数据赋值完成
+        initTop5DiseaseChart() // 关键：数据就绪后，再初始化渲染图表
+    })
+
+    getDayTemHum("济宁").then(res => {
+        console.log(res)
+        initDayTempChart(res.data.temperature)
+        initDayHumidityChart(res.data.humidity)
+    })
     init7dTrendChart();
     initDiagnoseTimeChart();
     initCropTypeChart();
@@ -961,5 +978,73 @@ body {
     :deep(.ec-line-label) {
         font-size: 8px !important;
     }
+
+
+    // font-size: 2rem;
+    // margin-bottom: 0.5rem;
+
+}
+
+.layout-name {
+    font-size: 0.9rem;
+    color: $text-primary;
+    font-weight: 500;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid $border;
+}
+
+.modal-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: $radius-md;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: $transition;
+    border: none;
+
+    &.cancel-btn {
+        background-color: $bg-main;
+        color: $text-secondary;
+
+        &:hover {
+            background-color: rgba($primary, 0.1);
+            color: $text-primary;
+        }
+    }
+
+    &.save-btn {
+        background: linear-gradient(to right, $primary, $primary-hover);
+        color: white;
+
+        &:hover {
+            background: linear-gradient(to right, $primary-hover, $primary);
+            transform: translateY(-1px);
+            box-shadow: $shadow-md;
+        }
+
+        &:active {
+            transform: translateY(0);
+        }
+    }
+}
+
+// 不同布局样式
+.main-content.default {
+    grid-template-columns: 300px 1fr 300px;
+}
+
+.main-content.compact {
+    grid-template-columns: 250px 1fr 250px;
+    gap: 10px;
+}
+
+.main-content.expanded {
+    grid-template-columns: 1fr;
 }
 </style>
