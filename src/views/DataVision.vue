@@ -123,12 +123,11 @@ const goBackHome = () => {
 // ==============================================
 // 左侧1：当日温度变化（独立图表，纯温度折线）
 // ==============================================
-const initDayTempChart = (tempData) => {
+const initDayTempChart = (area) => {
     const myChart = echarts.init(dayTempChart.value);
     chartInstances.dayTemp = myChart;
-    const timeData = ['0:00', '1:00', '2:00', '3:00', '4:00', '5:00', '6:00', '7:00', '8:00', '9:00',
-        '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00',
-    ];
+    const timeData = ['6:00', '8:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'];
+    const tempData = [15, 18, 22, 26, 29, 27, 24, 21, 18]; // 温度数据(℃)
 
     myChart.setOption({
         grid: { top: '15%', bottom: '15%', left: '12%', right: '5%' },
@@ -151,7 +150,7 @@ const initDayTempChart = (tempData) => {
             name: '温度',
             type: 'line',
             smooth: true,
-            data: tempData.map(item => item.temperature),
+            data: tempData,
             lineStyle: { color: '#00e08f', width: 2 },
             areaStyle: { color: 'rgba(0,224,143,0.2)' },
             itemStyle: { color: '#00e08f' },
@@ -170,12 +169,11 @@ const initDayTempChart = (tempData) => {
 // ==============================================
 // 左侧2：当日湿度变化（独立图表，纯湿度折线）
 // ==============================================
-const initDayHumidityChart = (humidityData) => {
+const initDayHumidityChart = () => {
     const myChart = echarts.init(dayHumidityChart.value);
     chartInstances.dayHumidity = myChart;
-    const timeData = ['0:00', '1:00', '2:00', '3:00', '4:00', '5:00', '6:00', '7:00', '8:00', '9:00',
-        '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00',
-    ];
+    const timeData = ['6:00', '8:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'];
+    const humidityData = [68, 62, 55, 48, 45, 50, 58, 65, 70]; // 湿度数据(%RH)
 
     myChart.setOption({
         grid: { top: '15%', bottom: '15%', left: '12%', right: '5%' },
@@ -198,7 +196,7 @@ const initDayHumidityChart = (humidityData) => {
             name: '湿度',
             type: 'line',
             smooth: true,
-            data: humidityData.map(item => item.humidity),
+            data: humidityData,
             lineStyle: { color: '#86f7c8', width: 2 },
             areaStyle: { color: 'rgba(134,247,200,0.2)' },
             itemStyle: { color: '#86f7c8' },
@@ -496,12 +494,12 @@ const initCropTypeChart = () => {
 
 
 
-import { getDayTemHum } from '@/axios/data'
-
 onMounted(() => {
     updateTime();
     setInterval(updateTime, 1000);
-
+    // 左侧独立图表
+    initDayTempChart();
+    initDayHumidityChart();
     // 中间&右侧
     initApiResponseTimeChart();
     initApiCallCountChart();
@@ -510,12 +508,6 @@ onMounted(() => {
         console.log(res)
         diseaData.value = res.data // 数据赋值完成
         initTop5DiseaseChart() // 关键：数据就绪后，再初始化渲染图表
-    })
-
-    getDayTemHum("济宁").then(res => {
-        console.log(res)
-        initDayTempChart(res.data.temperature)
-        initDayHumidityChart(res.data.humidity)
     })
     init7dTrendChart();
     initDiagnoseTimeChart();
