@@ -43,7 +43,7 @@
 </template>
 
 <script setup>
-import { computed, ref, nextTick, watch, onMounted } from 'vue'
+import { computed, ref, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { marked } from 'marked'
 
@@ -57,8 +57,9 @@ const getStepConfig = (type) => {
     const configs = {
         // 思考结果
         think: { title: '思考汇总结果', icon: '💡', color: '#059669' },
-
+        img_think: { title: '多模态分析', icon: '📷', color: '#059669' },
         img_find: { title: '多模态分析结果', icon: '📷', color: '#059669' },
+        analyze_result: { title: '正在分析中', icon: '✨', color: '#6B7280' },
         safe_notice: { title: '安全防护要求', icon: '🛡️', color: '#F59E0B' },
         pesticide: { title: '精准用药方案', icon: '💊', color: '#10B981' },
         field_manage: { title: '田间管理建议', icon: '🚜', color: '#3B82F6' },
@@ -76,13 +77,59 @@ const formatTime = (ts) => {
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-// 自动滚动
+// 自动滚动到底部（增强版）
 const scrollToBottom = () => {
     if (messageList.value) {
-        messageList.value.scrollTop = messageList.value.scrollHeight
+        // 使用setTimeout确保DOM完全更新
+        setTimeout(() => {
+            if (messageList.value) {
+                // 使用scrollIntoView确保元素可见
+                const lastMessage = messageList.value.lastElementChild
+                if (lastMessage) {
+                    lastMessage.scrollIntoView({ behavior: 'smooth', block: 'end' })
+                }
+            }
+        }, 0)
     }
 }
+
+// 监听消息列表变化（添加新消息时）
 watch(() => messages.value, () => nextTick(scrollToBottom), { deep: true })
+
+// 监听最后一条消息的步骤变化（农业AI流式更新时）
+watch(
+    () => {
+        const lastMsg = messages.value[messages.value.length - 1]
+        return lastMsg?.steps ? JSON.stringify(lastMsg.steps) : ''
+    },
+    () => {
+        // 流式更新时，立即滚动到底部，确保用户能看到最新内容
+        nextTick(() => scrollToBottom())
+    }
+)
+
+// 使用MutationObserver监听DOM变化，确保流式内容自动滚动
+let observer
+onMounted(() => {
+    if (messageList.value) {
+        observer = new MutationObserver(() => {
+            // DOM变化时滚动到底部
+            scrollToBottom()
+        })
+        observer.observe(messageList.value, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+            characterDataOldValue: true
+        })
+    }
+})
+
+onUnmounted(() => {
+    if (observer) {
+        observer.disconnect()
+    }
+})
 </script>
 
 <style lang="scss" scoped>

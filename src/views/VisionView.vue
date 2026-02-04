@@ -397,7 +397,7 @@ const handleFileChange = (e) => {
 // 文件上传处理
 const handleFileUpload = (file) => {
   const allowedTypes = ['image/jpeg', 'image/png']
-  const maxSize = 5 * 1024 * 1024
+  const maxSize = 20 * 1024 * 1024
 
   if (!allowedTypes.includes(file.type)) {
     alert('仅支持上传 JPG/PNG 格式的图片！')
@@ -405,7 +405,7 @@ const handleFileUpload = (file) => {
   }
 
   if (file.size > maxSize) {
-    alert('图片大小不能超过 5MB！')
+    alert('图片大小不能超过 10MB！')
     return
   }
 

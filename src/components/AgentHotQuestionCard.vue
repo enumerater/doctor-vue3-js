@@ -20,8 +20,8 @@ const router = useRouter()
 // Agent专用的复杂问题列表
 const agentQuestions = [
     { id: 1, content: '玉米锈病怎么治' },
-    { id: 2, content: '结合近7天的气象数据和土壤监测报告，为我的草莓大棚制定精准灌溉和施肥计划' },
-    { id: 3, content: '分析我农场近3年的作物产量数据，识别影响产量的关键因素并提供优化建议' },
+    { id: 2, content: '玉米这是什么病怎么治疗' },
+    { id: 3, content: '葡萄这是什么病怎么治疗' },
 ]
 
 function handleQuestionClick(content) {

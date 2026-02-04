@@ -36,7 +36,7 @@
 <script setup>
 import { useChatStore } from '@/stores/chat'
 import { useSidebarStore } from '@/stores/sidebar'
-import { computed, watch, onMounted, ref, nextTick } from 'vue'
+import { computed, watch, onMounted, onUnmounted, ref, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 // 核心新增：导入marked库解析Markdown
 import { marked } from 'marked'
@@ -153,10 +153,19 @@ const loadHistoryMessages = async () => {
   }
 }
 
-// 自动滚动到底部
+// 自动滚动到底部（增强版）
 const scrollToBottom = () => {
   if (messageList.value) {
-    messageList.value.scrollTop = messageList.value.scrollHeight
+    // 使用setTimeout确保DOM完全更新
+    setTimeout(() => {
+      if (messageList.value) {
+        // 使用scrollIntoView确保元素可见
+        const lastMessage = messageList.value.lastElementChild
+        if (lastMessage) {
+          lastMessage.scrollIntoView({ behavior: 'smooth', block: 'end' })
+        }
+      }
+    }, 0)
   }
 }
 
@@ -175,16 +184,33 @@ watch(
     return lastMsg?.messageContent || ''
   },
   () => {
-    // 流式更新时，延迟滚动，避免过于频繁
-    setTimeout(() => {
-      nextTick(() => scrollToBottom())
-    }, 100)
+    // 流式更新时，立即滚动到底部，确保用户能看到最新内容
+    nextTick(() => scrollToBottom())
   },
 )
 
-// 组件挂载 + 路由参数变化监听
+// 使用MutationObserver监听DOM变化，确保流式内容自动滚动
+let observer
 onMounted(() => {
   loadHistoryMessages()
+  if (messageList.value) {
+    observer = new MutationObserver(() => {
+      // DOM变化时滚动到底部
+      scrollToBottom()
+    })
+    observer.observe(messageList.value, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      characterDataOldValue: true
+    })
+  }
+})
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect()
+  }
 })
 
 watch(

@@ -205,7 +205,7 @@ const handleImageUpload = async (e) => {
   try {
     // 验证文件类型和大小
     const allowedTypes = ['image/jpeg', 'image/png']
-    const maxSize = 5 * 1024 * 1024
+    const maxSize = 10 * 1024 * 1024
 
     if (!allowedTypes.includes(file.type)) {
       alert('仅支持上传 JPG/PNG 格式的图片！')
@@ -213,7 +213,7 @@ const handleImageUpload = async (e) => {
     }
 
     if (file.size > maxSize) {
-      alert('图片大小不能超过 5MB！')
+      alert('图片大小不能超过 10MB！')
       return
     }
 
