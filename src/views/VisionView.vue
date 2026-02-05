@@ -88,7 +88,7 @@
 
           <!-- 可视化结果区域 -->
           <div class="visual-result">
-            <!-- 病害基本信息卡片 -->
+            <!-- 健康状态或病害基本信息卡片 -->
             <div class="result-card-item basic-info">
               <div class="info-header">
                 <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -98,25 +98,46 @@
                   <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round" />
                 </svg>
-                <h3 class="info-title">病害基本信息</h3>
+                <h3 class="info-title">{{ structuredResult.hasDisease ? '病害基本信息' : '健康状态' }}</h3>
               </div>
               <div class="info-content">
                 <div class="info-row">
                   <label>作物类型：</label>
                   <span class="value crop-type">{{ selectedCrop }}</span>
                 </div>
-                <div class="info-row">
+
+                <!-- 健康状态显示 -->
+                <div v-if="!structuredResult.hasDisease" class="info-row healthy-info">
+                  <label>健康状态：</label>
+                  <span class="value healthy-status">
+                    <svg class="healthy-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                      <path
+                        d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    健康
+                  </span>
+                </div>
+                <div v-if="!structuredResult.hasDisease" class="info-row">
+                  <label>健康描述：</label>
+                  <span class="value healthy-desc">{{ structuredResult.healthyDesc }}</span>
+                </div>
+
+                <!-- 病害信息显示 -->
+                <div v-if="structuredResult.hasDisease" class="info-row">
                   <label>病害名称：</label>
                   <span class="value disease-name">{{ structuredResult.diseaseName }}</span>
                 </div>
-                <div class="info-row confidence-row">
+                <div v-if="structuredResult.hasDisease" class="info-row confidence-row">
                   <label>识别置信度：</label>
                   <div class="confidence-wrapper">
                     <div class="confidence-bar" :style="{ width: structuredResult.confidence + '%' }"></div>
                     <span class="confidence-value">{{ structuredResult.confidence }}%</span>
                   </div>
                 </div>
-                <div class="info-row">
+                <div v-if="structuredResult.hasDisease" class="info-row">
                   <label>病害等级：</label>
                   <span class="value severity-tag" :class="getSeverityClass(structuredResult.severity)">
                     {{ structuredResult.severity }}
@@ -126,7 +147,7 @@
             </div>
 
             <!-- 病害症状描述 -->
-            <div class="result-card-item symptoms">
+            <div v-if="structuredResult.hasDisease" class="result-card-item symptoms">
               <div class="info-header">
                 <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
@@ -147,7 +168,7 @@
             </div>
 
             <!-- 防治方法 -->
-            <div class="result-card-item prevention">
+            <div v-if="structuredResult.hasDisease" class="result-card-item prevention">
               <div class="info-header">
                 <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
@@ -184,7 +205,8 @@
             </div>
 
             <!-- 注意事项 -->
-            <div class="result-card-item notes" v-if="structuredResult.notes && structuredResult.notes.length">
+            <div v-if="structuredResult.hasDisease && structuredResult.notes && structuredResult.notes.length"
+              class="result-card-item notes">
               <div class="info-header">
                 <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
@@ -566,8 +588,8 @@ const detectDisease = async () => {
     let resultData = null
     try {
       resultData = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
-      // 验证是否为结构化数据
-      if (resultData.diseaseName && resultData.confidence) {
+      // 验证是否为结构化数据：检查hasDisease字段是否存在（新的核心标识）
+      if (resultData.hasDisease !== undefined) {
         structuredResult.value = resultData
         visionStore.completeTask(resultData)
       } else {
@@ -660,6 +682,32 @@ onBeforeUnmount(() => {
   font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   color: $text-primary;
   position: relative;
+}
+
+// 健康状态样式
+.healthy-info {
+  display: flex;
+  align-items: center;
+}
+
+.healthy-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #10B981;
+  /* 绿色 */
+  font-weight: 500;
+}
+
+.healthy-icon {
+  width: 20px;
+  height: 20px;
+  fill: #10B981;
+}
+
+.healthy-desc {
+  color: $text-secondary;
+  line-height: 1.5;
 }
 
 // 导航栏
