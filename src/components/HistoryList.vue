@@ -5,26 +5,22 @@
         <van-empty description="暂无对话历史记录" icon="clock-o" class="empty-custom" />
       </div>
 
-      <div
-        class="history-item"
-        :class="{ active: item.id === sidebarStore.activeItemId }"
-        v-for="item in sidebarStore.filteredHistory"
-        :key="item.id"
-        @click="sidebarStore.selectHistoryItem(item.sessionId, item.sessionType)"
-      >
+      <div class="history-item" :class="{
+        active: item.id === sidebarStore.activeItemId,
+        'is-agent': item.sessionType === 'agent'
+      }" v-for="item in sidebarStore.filteredHistory" :key="item.id"
+        @click="sidebarStore.selectHistoryItem(item.sessionId, item.sessionType)">
         <van-badge dot v-if="item.unread" class="unread-dot" />
+
+        <!-- Agent标识图标 -->
+        <van-icon v-if="item.sessionType === 'agent'" name="leaf" class="agent-badge" />
 
         <div class="item-main">
           <h3 class="item-title">{{ item.sessionTitle }}</h3>
           <div class="item-footer">
             <span class="item-time">{{ item.lastChatTime }}</span>
-            <van-button
-              size="mini"
-              type="text"
-              icon="delete"
-              class="delete-btn"
-              @click.stop="sidebarStore.deleteHistoryItem(item.id)"
-            />
+            <van-button size="mini" type="text" icon="delete" class="delete-btn"
+              @click.stop="sidebarStore.deleteHistoryItem(item.id)" />
           </div>
         </div>
       </div>
@@ -64,6 +60,7 @@ onMounted(() => {
         color: $text-secondary;
         font-size: 0.875rem;
       }
+
       .van-empty__image {
         .van-icon {
           color: $secondary;
@@ -92,13 +89,43 @@ onMounted(() => {
       box-shadow: $shadow-sm;
     }
 
+    // Agent对话样式
+    &.is-agent {
+      border-left: 3px solid #34c759;
+      background: linear-gradient(to right, rgba(52, 199, 89, 0.05), transparent);
+
+      &:hover {
+        background: linear-gradient(to right, rgba(52, 199, 89, 0.1), rgba(232, 245, 233, 0.5));
+      }
+
+      &.active {
+        background: linear-gradient(to right, rgba(52, 199, 89, 0.12), $primary-light);
+        border-color: rgba(52, 199, 89, 0.4);
+      }
+
+      .item-title {
+        color: #2e7d32;
+      }
+    }
+
     .unread-dot {
       position: absolute;
       top: 0.75rem;
       right: 1rem;
     }
 
+    .agent-badge {
+      position: absolute;
+      top: 0.75rem;
+      left: 0.5rem;
+      font-size: 1rem;
+      color: #34c759;
+      filter: drop-shadow(0 0 3px rgba(52, 199, 89, 0.3));
+    }
+
     .item-main {
+      padding-left: 0;
+
       .item-title {
         margin: 0 0 0.25rem 0;
         font-size: 0.9375rem;
@@ -106,29 +133,35 @@ onMounted(() => {
         font-weight: 500;
         line-height: 1.4;
       }
+    }
 
-      .item-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    // Agent模式时，给标题留出空间
+    &.is-agent .item-main {
+      padding-left: 1.5rem;
+    }
 
-        .item-time {
-          font-size: 0.75rem;
-          color: $text-tertiary;
-        }
+    .item-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
 
-        .delete-btn {
-          color: $text-tertiary;
-          transition: $transition-fast;
+      .item-time {
+        font-size: 0.75rem;
+        color: $text-tertiary;
+      }
 
-          &:hover {
-            color: #e53e3e;
-          }
+      .delete-btn {
+        color: $text-tertiary;
+        transition: $transition-fast;
+
+        &:hover {
+          color: #e53e3e;
         }
       }
     }
   }
 }
+
 
 .history-content::-webkit-scrollbar {
   width: 4px;

@@ -117,6 +117,9 @@ export const useSidebarStore = defineStore('sidebar', {
       const userId = localStorage.getItem('id')
 
       try {
+        // 重置 Agent 模式为普通对话模式
+        this.isAgricultureAgent = false
+
         await updateSesssionId({ userId })
 
         const userRes = await getUser({ id: userId })
