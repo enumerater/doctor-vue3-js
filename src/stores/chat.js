@@ -84,7 +84,8 @@ export const useChatStore = defineStore('chat', {
             sessionTitle: trimmedContent.substring(0, 20),
             sessionId: fullSessionId,
           })
-          // 两种对话模式都不自动刷新侧边栏
+          // 创建会话成功后，立即刷新侧边栏历史记录
+          await sidebarStore.refreshHistory()
         } catch (err) {
           console.warn('创建会话失败', err)
         }
