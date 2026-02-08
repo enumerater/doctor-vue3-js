@@ -8,6 +8,8 @@ export const useChatStore = defineStore('chat', {
     chatMessages: [], // 当前会话的消息列表
     currentRobotMsgIndex: -1, // 机器人消息索引
     inputValue: '', // 输入框内容
+    autoSendPending: false, // 从弹窗传递到Agent时自动发送标志
+    pendingTransferImageUrl: '', // 待传递的图片URL
   }),
   actions: {
     setCurrentSessionId(sessionId) {
@@ -25,6 +27,10 @@ export const useChatStore = defineStore('chat', {
     },
     handleHotQuestionClick(question) {
       this.setInputValue(question)
+    },
+    clearAutoSend() {
+      this.autoSendPending = false
+      this.pendingTransferImageUrl = ''
     },
 
     async fetchMessages(sessionId) {

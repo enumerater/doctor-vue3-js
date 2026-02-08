@@ -95,7 +95,7 @@
 
 <script setup>
 import { storeToRefs } from 'pinia'
-import { onMounted, ref, onBeforeUnmount } from 'vue'
+import { onMounted, ref, onBeforeUnmount, watch, nextTick } from 'vue'
 import Sidebar from '@/views/SidebarView.vue'
 import { useSidebarStore } from '@/stores/sidebar'
 import { useChatStore } from '@/stores/chat'
@@ -165,8 +165,8 @@ let visionTimer = null
 onMounted(async () => {
   // 只准备会话，不创建会话记录（避免空会话出现在历史记录）
   // 真正的会话会在用户发送第一条消息时创建
-  // 但是，如果当前已经在chatDetail页面，就不需要准备新会话（避免清空刚加载的消息）
-  if (router.currentRoute.value.name !== 'chatDetail') {
+  // 但是，如果当前已经在chatDetail页面，或者有待自动发送的消息（从弹窗传递过来），就不需要准备新会话
+  if (router.currentRoute.value.name !== 'chatDetail' && !chatStore.autoSendPending) {
     await sidebarStore.prepareConversation()
   }
   checkIsPC()
@@ -186,6 +186,26 @@ onBeforeUnmount(() => {
     clearInterval(visionTimer)
   }
 })
+
+// 监听从弹窗传递到Agent模式的自动发送
+watch(
+  () => chatStore.autoSendPending,
+  async (pending) => {
+    if (pending && sidebarStore.isAgricultureAgent) {
+      await nextTick()
+      // 如果有待传递的图片，加入上传列表
+      if (chatStore.pendingTransferImageUrl) {
+        uploadedImages.value = [chatStore.pendingTransferImageUrl]
+      }
+      // 等待路由过渡完成后发送
+      setTimeout(async () => {
+        await sendMessage()
+        chatStore.clearAutoSend()
+      }, 300)
+    }
+  },
+  { immediate: true },
+)
 
 const { inputValue } = storeToRefs(chatStore)
 const TOKEN = localStorage.getItem('token')

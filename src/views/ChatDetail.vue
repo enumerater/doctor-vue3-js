@@ -25,11 +25,21 @@
           </div>
           <!-- 核心修改：用v-html渲染解析后的Markdown -->
           <div class="bubble-content" v-html="parseMarkdown(msg.messageContent)"></div>
+          <!-- 深入分析按钮：仅机器人消息且有内容时显示 -->
+          <div v-if="msg.messageRole === '1' && msg.messageContent" class="deep-analyze-btn"
+            @click="openAgentPopup(msg)">
+            🌿 深入分析
+          </div>
           <!-- 原生JS格式化时间：无dayjs依赖 -->
           <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
         </div>
       </div>
     </div>
+
+    <!-- Agent分析弹窗 -->
+    <AgentTransferPopup v-model:visible="showAgentPopup" source="chat"
+      :chatContent="selectedMessageForAgent?.messageContent || ''" :defaultPrompt="agentDefaultPrompt"
+      @confirm="handleAgentTransferConfirm" />
   </div>
 </template>
 
@@ -40,6 +50,7 @@ import { computed, watch, onMounted, onUnmounted, ref, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 // 核心新增：导入marked库解析Markdown
 import { marked } from 'marked'
+import AgentTransferPopup from '@/components/AgentTransferPopup.vue'
 
 // 配置marked（适配聊天场景）
 marked.setOptions({
@@ -53,6 +64,31 @@ const chatStore = useChatStore()
 const sidebarStore = useSidebarStore()
 const route = useRoute()
 const messageList = ref(null) // 消息列表ref：用于自动滚动到底部
+
+// Agent分析弹窗相关
+const showAgentPopup = ref(false)
+const selectedMessageForAgent = ref(null)
+
+const openAgentPopup = (msg) => {
+  selectedMessageForAgent.value = msg
+  showAgentPopup.value = true
+}
+
+const agentDefaultPrompt = computed(() => {
+  if (!selectedMessageForAgent.value) return ''
+  const content = selectedMessageForAgent.value.messageContent || ''
+  const truncated = content.length > 500 ? content.substring(0, 500) + '...' : content
+  return `请对以下内容进行深入的农业专家分析：\n\n${truncated}\n\n请从病害诊断、用药方案、田间管理等方面给出详细建议。`
+})
+
+const handleAgentTransferConfirm = async ({ prompt }) => {
+  showAgentPopup.value = false
+  try {
+    await sidebarStore.transferToAgent(prompt, null)
+  } catch (err) {
+    console.error('传递到Agent失败：', err)
+  }
+}
 
 // 计算属性：获取聊天消息
 const messages = computed(() => {
@@ -523,6 +559,33 @@ $bubble-radius: $radius-lg;
   .bubble-content:hover {
     box-shadow: $shadow-md;
     transform: translateY(-1px);
+  }
+}
+
+// 深入分析按钮
+.deep-analyze-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  color: $primary;
+  background-color: $primary-light;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: $transition;
+  border: 1px solid transparent;
+
+  .robot-message & {
+    align-self: flex-start;
+  }
+
+  &:hover {
+    background-color: rgba(56, 142, 60, 0.15);
+    border-color: rgba(56, 142, 60, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(56, 142, 60, 0.15);
   }
 }
 

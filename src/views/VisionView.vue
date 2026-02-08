@@ -231,6 +231,10 @@
             <div class="markdown-content" v-html="renderedMarkdown"></div>
           </div>
 
+          <button class="agent-analyze-btn" v-if="structuredResult?.hasDisease || markdownResult"
+            @click="showAgentPopup = true">
+            🌿 发送至Agent深入分析
+          </button>
           <button class="reset-btn" @click="resetAll">重新检测</button>
         </div>
       </section>
@@ -240,6 +244,10 @@
         <div class="result-card">
           <h2 class="card-title">识别结果</h2>
           <div class="markdown-content" v-html="renderedMarkdown"></div>
+          <button class="agent-analyze-btn" v-if="structuredResult?.hasDisease || markdownResult"
+            @click="showAgentPopup = true">
+            🌿 发送至Agent深入分析
+          </button>
           <button class="reset-btn" @click="resetAll">重新检测</button>
         </div>
       </section>
@@ -285,6 +293,12 @@
         </div>
       </div>
     </div>
+
+    <!-- Agent分析弹窗 -->
+    <AgentTransferPopup v-model:visible="showAgentPopup" source="vision" :cropType="selectedCrop"
+      :diseaseName="structuredResult?.diseaseName || ''" :severity="structuredResult?.severity || ''"
+      :confidence="structuredResult?.confidence || 0" :imageUrl="visionStore.currentTask?.imageUrl || ''"
+      :thumbnailUrl="uploadedImage" :defaultPrompt="visionAgentPrompt" @confirm="handleAgentTransferConfirm" />
   </div>
 </template>
 
@@ -293,7 +307,9 @@ import { upload } from '@/axios/oss'
 import { ref, computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useVisionStore } from '@/stores/vision'
+import { useSidebarStore } from '@/stores/sidebar'
 import { marked } from 'marked'
+import AgentTransferPopup from '@/components/AgentTransferPopup.vue'
 
 // 配置 marked
 marked.setOptions({
@@ -304,6 +320,7 @@ marked.setOptions({
 // 路由实例
 const router = useRouter()
 const visionStore = useVisionStore()
+const sidebarStore = useSidebarStore()
 
 // 响应式数据
 const fileInput = ref(null)
@@ -331,6 +348,7 @@ const detectingElapsedTime = ref(0) // 已用时间（秒）
 const detectingTimer = ref(null) // 计时器
 const showNotification = ref(false) // 显示通知
 const notificationMessage = ref('') // 通知消息
+const showAgentPopup = ref(false) // Agent分析弹窗
 
 // 从store恢复状态
 const restoreFromStore = () => {
@@ -383,6 +401,36 @@ const renderedMarkdown = computed(() => {
   if (!markdownResult.value) return ''
   return marked.parse(markdownResult.value)
 })
+
+// Agent分析的默认提示词
+const visionAgentPrompt = computed(() => {
+  const r = structuredResult.value
+  if (r && r.hasDisease) {
+    return (
+      `我在${selectedCrop.value}上发现了${r.diseaseName}，严重程度为${r.severity}，置信度${r.confidence}%。` +
+      `主要症状：${(r.symptoms || []).join('、')}。` +
+      `请帮我进行深入分析，给出详细的防治方案和田间管理建议。`
+    )
+  }
+  if (markdownResult.value) {
+    const truncated =
+      markdownResult.value.length > 500
+        ? markdownResult.value.substring(0, 500) + '...'
+        : markdownResult.value
+    return `请对以下图片识别结果进行深入分析：\n\n${truncated}\n\n请给出详细的防治方案和田间管理建议。`
+  }
+  return ''
+})
+
+// 处理Agent分析弹窗确认
+const handleAgentTransferConfirm = async ({ prompt, imageUrl }) => {
+  showAgentPopup.value = false
+  try {
+    await sidebarStore.transferToAgent(prompt, imageUrl)
+  } catch (err) {
+    showTaskNotification('传递到Agent失败，请重试')
+  }
+}
 
 // 作物列表
 const cropList = ref([
@@ -605,6 +653,13 @@ const detectDisease = async () => {
 
     // 识别成功，显示通知
     showTaskNotification('识别完成！结果已更新')
+
+    // 有病害时自动弹出Agent分析弹窗
+    if (structuredResult.value && structuredResult.value.hasDisease) {
+      setTimeout(() => {
+        showAgentPopup.value = true
+      }, 1500)
+    }
 
     // 滚动到结果区域
     setTimeout(() => {
@@ -1361,6 +1416,31 @@ onBeforeUnmount(() => {
     pre code {
       background: none;
       padding: 0;
+    }
+  }
+
+  // Agent分析按钮
+  .agent-analyze-btn {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: none;
+    border-radius: $radius-md;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: $transition;
+    background: linear-gradient(135deg, $primary, $primary-hover);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.3px;
+    margin-bottom: 0.75rem;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(56, 142, 60, 0.3);
     }
   }
 

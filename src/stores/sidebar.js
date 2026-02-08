@@ -139,5 +139,25 @@ export const useSidebarStore = defineStore('sidebar', {
     setAgricultureAgent(enabled) {
       this.isAgricultureAgent = enabled
     },
+    // 从视觉识别/对话结果传递到Agent模式
+    async transferToAgent(promptText, imageUrl = null) {
+      const chatStore = useChatStore()
+      try {
+        // 1. 开启Agent模式
+        this.isAgricultureAgent = true
+        // 2. 准备新会话
+        await this.prepareConversation()
+        // 3. 设置待发送内容
+        chatStore.setInputValue(promptText)
+        chatStore.pendingTransferImageUrl = imageUrl || ''
+        chatStore.autoSendPending = true
+        // 4. 导航到Agent首页（HomeView的watcher会自动触发发送）
+        router.push({ name: 'agent' })
+      } catch (err) {
+        console.error('传递到Agent失败：', err)
+        chatStore.clearAutoSend()
+        throw err
+      }
+    },
   },
 })
