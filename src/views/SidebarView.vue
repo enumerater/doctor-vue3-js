@@ -77,16 +77,14 @@ const handleAgentFunction = (type) => {
       router.push({ name: 'vision' })
       break
     case 'agriculture':
-      // 切换农业Agent模式
-      sidebarStore.toggleAgricultureAgent()
-
-      if (sidebarStore.isAgricultureAgent) {
-        // 如果开启了农业Agent模式，导航到Agent专用页面
+      // 开启农业Agent模式
+      sidebarStore.setAgricultureAgent(true)
+      // 生成新的sessionId（关键修复）
+      sidebarStore.prepareConversation().then(() => {
+        // 导航到Agent专用页面
         router.push({ name: 'agent' })
-      } else {
-        // 如果关闭了农业Agent模式，导航回普通聊天页面
-        router.push({ name: 'chatBegin' })
-      }
+        sidebarStore.closeLeft()
+      })
       break
     default:
       break

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { getMessage } from '@/axios/chat'
+import { getMessage, saveAgentMessage } from '@/axios/chat'
 import { createSession } from '@/axios/session'
 import { useSidebarStore } from './sidebar'
 export const useChatStore = defineStore('chat', {
@@ -43,17 +43,21 @@ export const useChatStore = defineStore('chat', {
             let messageContent = msg.messageContent || msg.content || ''
             let steps = []
 
-            // 尝试解析历史记录中的 Agent 结构
-            // 假设历史记录存的是最终生成的 JSON 字符串或者是特定格式
-            try {
-              // 如果内容本身就是 JSON，解析它来还原 steps
-              const parsed = JSON.parse(messageContent)
-              if (parsed.steps) {
-                steps = parsed.steps
-                messageContent = parsed.finalContent || ''
+            // 如果是Agent消息（messageRole为'1'且包含steps数据）
+            if (msg.messageRole === '1' && msg.agentData) {
+              // 后端返回的Agent消息格式：{ agentData: { steps: [...], finalContent: '...' } }
+              try {
+                if (typeof msg.agentData === 'string') {
+                  const parsed = JSON.parse(msg.agentData)
+                  steps = parsed.steps || []
+                  messageContent = parsed.finalContent || ''
+                } else {
+                  steps = msg.agentData.steps || []
+                  messageContent = msg.agentData.finalContent || ''
+                }
+              } catch (e) {
+                console.warn('解析Agent数据失败', e)
               }
-            } catch (e) {
-              /* 普通文本 */
             }
 
             return {
@@ -76,13 +80,14 @@ export const useChatStore = defineStore('chat', {
       this.clearInputValue()
       const sidebarStore = useSidebarStore()
       const fullSessionId = `${userId}${sessionId}`
-      // 只有正常对话才创建会话记录，agent对话不保存到侧边栏历史
-      if (this.chatMessages.length === 0 && sessionId && !sidebarStore.isAgricultureAgent) {
+      // 第一条消息时创建会话记录，区分普通对话和Agent对话
+      if (this.chatMessages.length === 0 && sessionId) {
         try {
           await createSession({
             userId,
             sessionTitle: trimmedContent.substring(0, 20),
             sessionId: fullSessionId,
+            sessionType: sidebarStore.isAgricultureAgent ? 'agent' : 'chat', // 新增：会话类型
           })
           // 创建会话成功后，立即刷新侧边栏历史记录
           await sidebarStore.refreshHistory()
@@ -188,6 +193,27 @@ export const useChatStore = defineStore('chat', {
             else {
               currentMsg.messageContent += chunk
             }
+          }
+        }
+
+        // 流式响应结束后，如果是Agent模式，保存完整消息到后端
+        if (sidebarStore.isAgricultureAgent && this.currentRobotMsgIndex >= 0) {
+          const robotMsg = this.chatMessages[this.currentRobotMsgIndex]
+          const userMsg = this.chatMessages[this.currentRobotMsgIndex - 1]
+          const fullSessionId = `${userId}${sessionId}`
+
+          try {
+            await saveAgentMessage({
+              sessionId: fullSessionId,
+              userMessage: userMsg.messageContent,
+              robotMessage: {
+                steps: robotMsg.steps,
+                finalContent: robotMsg.messageContent,
+              },
+            })
+            console.log('Agent消息保存成功')
+          } catch (err) {
+            console.warn('Agent消息保存失败', err)
           }
         }
       } catch (error) {

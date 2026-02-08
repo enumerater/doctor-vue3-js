@@ -57,7 +57,7 @@ export const useSidebarStore = defineStore('sidebar', {
         throw err
       }
     },
-    async selectHistoryItem(sessionId) {
+    async selectHistoryItem(sessionId, sessionType = 'chat') {
       const chatStore = useChatStore()
       const userId = localStorage.getItem('id')
 
@@ -74,10 +74,22 @@ export const useSidebarStore = defineStore('sidebar', {
       // 3. 更新 localStorage 中的 sessionId
       localStorage.setItem('sessionId', partialSessionId)
 
-      router.push({
-        name: 'chatDetail',
-        params: { sessionId: sessionId },
-      })
+      // 4. 根据会话类型跳转到不同页面
+      if (sessionType === 'agent') {
+        // Agent对话跳转到AgentDetil页面
+        this.isAgricultureAgent = true
+        router.push({
+          name: 'agentDetil',
+          params: { sessionId: sessionId },
+        })
+      } else {
+        // 普通对话跳转到ChatDetail页面
+        this.isAgricultureAgent = false
+        router.push({
+          name: 'chatDetail',
+          params: { sessionId: sessionId },
+        })
+      }
       this.closeLeft()
     },
     // 准备新对话：只更新 sessionId，不创建会话记录（避免空会话出现在历史记录）

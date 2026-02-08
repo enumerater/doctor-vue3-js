@@ -16,6 +16,15 @@ export const getMessage = (sessionId) => {
   })
 }
 
+// 新增：保存Agent消息（包含steps数据）
+export const saveAgentMessage = (data) => {
+  return request({
+    url: '/message/agent',
+    method: 'post',
+    data,
+  })
+}
+
 export const imageChat = (params) => {
   // 解构参数，兜底空值
   const { url = '', cropType = '' } = params || {}

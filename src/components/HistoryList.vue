@@ -10,7 +10,7 @@
         :class="{ active: item.id === sidebarStore.activeItemId }"
         v-for="item in sidebarStore.filteredHistory"
         :key="item.id"
-        @click="sidebarStore.selectHistoryItem(item.sessionId)"
+        @click="sidebarStore.selectHistoryItem(item.sessionId, item.sessionType)"
       >
         <van-badge dot v-if="item.unread" class="unread-dot" />
 
