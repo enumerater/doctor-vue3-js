@@ -118,7 +118,7 @@ export const useChatStore = defineStore('chat', {
       try {
         const sidebarStore = (await import('@/stores/sidebar')).useSidebarStore()
         const apiPath = sidebarStore.isAgricultureAgent
-          ? '/agent/agriculture-agent'
+          ? '/agent/agriculture-agent-v2'
           : '/chat/memory'
         const url = new URL(`http://localhost:8080${apiPath}`)
         url.searchParams.append('prompt', content)

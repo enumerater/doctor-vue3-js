@@ -56,15 +56,15 @@ const messages = computed(() => chatStore.chatMessages)
 const getStepConfig = (type) => {
     const configs = {
         // 思考结果
-        think: { title: '思考汇总结果', icon: '💡', color: '#059669' },
-        img_think: { title: '多模态分析', icon: '📷', color: '#059669' },
-        img_find: { title: '多模态分析结果', icon: '📷', color: '#059669' },
-        analyze_result: { title: '正在分析中', icon: '✨', color: '#6B7280' },
-        safe_notice: { title: '安全防护要求', icon: '🛡️', color: '#F59E0B' },
-        pesticide: { title: '精准用药方案', icon: '💊', color: '#10B981' },
-        field_manage: { title: '田间管理建议', icon: '🚜', color: '#3B82F6' },
-        final_result: { title: '诊断总结报告', icon: '📋', color: '#059669' },
-        default: { title: '分析结果', icon: '✨', color: '#6B7280' }
+        think: { title: '思考汇总结果', icon: '', color: '#059669' },
+        img_think: { title: '多模态分析', icon: '', color: '#059669' },
+        img_find: { title: '多模态分析结果', icon: '', color: '#059669' },
+        analyze_result: { title: '正在分析中', icon: '', color: '#6B7280' },
+        safe_notice: { title: '安全防护要求', icon: '', color: '#F59E0B' },
+        pesticide: { title: '精准用药方案', icon: '', color: '#10B981' },
+        field_manage: { title: '田间管理建议', icon: '', color: '#3B82F6' },
+        final_result: { title: '诊断总结报告', icon: '', color: '#059669' },
+        default: { title: '分析结果', icon: '', color: '#6B7280' }
     }
     return configs[type] || configs.default
 }
