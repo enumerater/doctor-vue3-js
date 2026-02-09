@@ -2,12 +2,7 @@
   <div class="config-editor">
     <!-- Select Existing Config -->
     <div v-if="!selectedConfig" class="select-config">
-      <van-field
-        label="选择配置"
-        placeholder="选择要编辑的配置"
-        input-align="right"
-        @click="showSelector = true"
-      >
+      <van-field label="选择配置" placeholder="选择要编辑的配置" input-align="right" @click="showSelector = true">
         <template #input>
           <span v-if="selectedConfig" class="selected-text">
             {{ selectedConfig.name }}
@@ -16,23 +11,14 @@
         </template>
       </van-field>
 
-      <van-popup
-        v-model:show="showSelector"
-        position="bottom"
-        :style="{ height: '50vh' }"
-      >
+      <van-popup v-model:show="showSelector" position="bottom" :style="{ height: '50vh' }">
         <div class="config-picker">
           <div class="picker-header">
             <h3>选择配置</h3>
             <van-icon name="close" @click="showSelector = false" />
           </div>
           <van-radio-group v-model="selectedConfigId" direction="vertical">
-            <van-radio
-              v-for="config in editableConfigs"
-              :key="config.id"
-              :name="config.id"
-              class="config-radio"
-            >
+            <van-radio v-for="config in editableConfigs" :key="config.id" :name="config.id" class="config-radio">
               <div class="radio-content">
                 <div class="radio-name">{{ config.name }}</div>
                 <div class="radio-desc">{{ config.description }}</div>
@@ -48,20 +34,9 @@
       <!-- Basic Info -->
       <div class="form-section">
         <h3 class="section-title">基本信息</h3>
-        <van-field
-          v-model="formData.name"
-          label="配置名称"
-          placeholder="输入配置名称"
-          clearable
-        />
-        <van-field
-          v-model="formData.description"
-          label="配置描述"
-          placeholder="输入配置描述"
-          type="textarea"
-          rows="2"
-          clearable
-        />
+        <van-field v-model="formData.name" label="配置名称" placeholder="输入配置名称" clearable />
+        <van-field v-model="formData.description" label="配置描述" placeholder="输入配置描述" type="textarea" rows="2"
+          clearable />
       </div>
 
       <!-- System Prompt Section -->
@@ -73,24 +48,14 @@
       <!-- Agent Business Parameters Section -->
       <AgentParamSection v-model="formData.agentConfig" />
 
-      <!-- Advanced Configuration Section -->
-      <AdvancedConfigSection v-model="formData.advancedConfig" />
+
 
       <!-- Action Buttons -->
       <div class="form-actions">
-        <van-button
-          block
-          plain
-          @click="cancelEdit"
-        >
+        <van-button block plain @click="cancelEdit">
           取消
         </van-button>
-        <van-button
-          block
-          type="primary"
-          loading={isSubmitting}
-          @click="saveChanges"
-        >
+        <van-button block type="primary" loading={isSubmitting} @click="saveChanges">
           保存更改
         </van-button>
       </div>
@@ -105,7 +70,7 @@ import { showToast } from 'vant'
 import SystemPromptSection from './SystemPromptSection.vue'
 import ResponseParamSection from './ResponseParamSection.vue'
 import AgentParamSection from './AgentParamSection.vue'
-import AdvancedConfigSection from './AdvancedConfigSection.vue'
+
 
 const agentConfigStore = useAgentConfigStore()
 
@@ -148,14 +113,6 @@ function getDefaultFormData() {
       enablePesticideAdvice: true,
       maxSteps: 5,
       outputFormat: 'detailed'
-    },
-    advancedConfig: {
-      enableCaching: true,
-      cacheExpireMins: 60,
-      enableRetry: true,
-      maxRetries: 3,
-      retryDelayMs: 1000,
-      timeoutSeconds: 60
     }
   }
 }

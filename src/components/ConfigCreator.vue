@@ -4,21 +4,9 @@
       <!-- Basic Info -->
       <div class="form-section">
         <h3 class="section-title">基本信息</h3>
-        <van-field
-          v-model="formData.name"
-          label="配置名称"
-          placeholder="输入配置名称"
-          clearable
-          required
-        />
-        <van-field
-          v-model="formData.description"
-          label="配置描述"
-          placeholder="输入配置描述"
-          type="textarea"
-          rows="2"
-          clearable
-        />
+        <van-field v-model="formData.name" label="配置名称" placeholder="输入配置名称" clearable required />
+        <van-field v-model="formData.description" label="配置描述" placeholder="输入配置描述" type="textarea" rows="2"
+          clearable />
         <van-field name="switch" label="设为默认配置">
           <template #input>
             <van-switch v-model="formData.isDefault" size="20" />
@@ -35,24 +23,14 @@
       <!-- Agent Business Parameters Section -->
       <AgentParamSection v-model="formData.agentConfig" />
 
-      <!-- Advanced Configuration Section -->
-      <AdvancedConfigSection v-model="formData.advancedConfig" />
+
 
       <!-- Action Buttons -->
       <div class="form-actions">
-        <van-button
-          block
-          plain
-          @click="resetForm"
-        >
+        <van-button block plain @click="resetForm">
           重置
         </van-button>
-        <van-button
-          block
-          type="primary"
-          :loading="isSubmitting"
-          @click="createConfig"
-        >
+        <van-button block type="primary" :loading="isSubmitting" @click="createConfig">
           创建配置
         </van-button>
       </div>
@@ -67,7 +45,7 @@ import { showToast } from 'vant'
 import SystemPromptSection from './SystemPromptSection.vue'
 import ResponseParamSection from './ResponseParamSection.vue'
 import AgentParamSection from './AgentParamSection.vue'
-import AdvancedConfigSection from './AdvancedConfigSection.vue'
+
 
 const agentConfigStore = useAgentConfigStore()
 const isSubmitting = ref(false)
@@ -100,14 +78,6 @@ function getDefaultFormData() {
       enablePesticideAdvice: true,
       maxSteps: 5,
       outputFormat: 'detailed'
-    },
-    advancedConfig: {
-      enableCaching: true,
-      cacheExpireMins: 60,
-      enableRetry: true,
-      maxRetries: 3,
-      retryDelayMs: 1000,
-      timeoutSeconds: 60
     }
   }
 }

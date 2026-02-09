@@ -3,15 +3,12 @@
     <div class="form-section">
       <h3 class="section-title">响应参数</h3>
 
-      <!-- Temperature -->
+      <!-- 简化的温度控制 -->
       <div class="param-group">
         <div class="param-header">
-          <label class="label">温度 (Temperature)</label>
-          <span class="value">{{ modelValue.temperature.toFixed(2) }}</span>
+          <label class="label">回答风格</label>
         </div>
-        <p class="description">控制输出的随机性。0表示完全确定，1表示最大随机性</p>
-        <van-slider :model-value="modelValue.temperature" min="0" max="1" step="0.05" bar-height="4px"
-          @update:model-value="updateParam('temperature', $event)" />
+        <p class="description">选择AI回答的风格特点</p>
         <div class="preset-buttons">
           <van-button v-for="(preset, key) in temperaturePresets" :key="key" size="small" plain
             :type="modelValue.temperature === preset.value ? 'primary' : 'default'"
@@ -21,67 +18,29 @@
         </div>
       </div>
 
-      <!-- Max Tokens -->
+      <!-- 输出长度控制 -->
       <div class="param-group">
-        <label class="label">最大输出长度 (Max Tokens)</label>
-        <p class="description">限制单次响应的最大长度，值越大响应越完整但消耗更多资源</p>
-        <van-field :model-value="modelValue.maxTokens" type="number" placeholder="100-4000" input-align="right"
-          @update:model-value="updateTokens">
-          <template #input>
-            <span class="field-value">{{ modelValue.maxTokens }}</span>
-          </template>
-        </van-field>
-        <van-stepper :model-value="modelValue.maxTokens" min="100" max="4000" step="100" button-size="32"
-          input-width="60px" @update:model-value="updateParam('maxTokens', $event)" />
-      </div>
-
-      <!-- Top P -->
-      <div class="param-group">
-        <div class="param-header">
-          <label class="label">Top P (核采样)</label>
-          <span class="value">{{ modelValue.topP.toFixed(2) }}</span>
+        <label class="label">回答长度</label>
+        <p class="description">选择AI回答的详细程度</p>
+        <div class="preset-buttons">
+          <van-button size="small" plain :type="modelValue.maxTokens === 1000 ? 'primary' : 'default'"
+            @click="updateParam('maxTokens', 1000)">
+            简洁
+          </van-button>
+          <van-button size="small" plain :type="modelValue.maxTokens === 2000 ? 'primary' : 'default'"
+            @click="updateParam('maxTokens', 2000)">
+            适中
+          </van-button>
+          <van-button size="small" plain :type="modelValue.maxTokens === 4000 ? 'primary' : 'default'"
+            @click="updateParam('maxTokens', 4000)">
+            详细
+          </van-button>
         </div>
-        <p class="description">选择概率最高的单词，值越小输出越保守</p>
-        <van-slider :model-value="modelValue.topP" min="0" max="1" step="0.05" bar-height="4px"
-          @update:model-value="updateParam('topP', $event)" />
-      </div>
-
-      <!-- Top K -->
-      <div class="param-group">
-        <div class="param-header">
-          <label class="label">Top K</label>
-          <span class="value">{{ modelValue.topK }}</span>
-        </div>
-        <p class="description">从最可能的K个单词中随机选择，越小越保守</p>
-        <van-slider :model-value="modelValue.topK" min="1" max="100" step="1" bar-height="4px"
-          @update:model-value="updateParam('topK', $event)" />
-      </div>
-
-      <!-- Frequency Penalty -->
-      <div class="param-group">
-        <div class="param-header">
-          <label class="label">频率惩罚</label>
-          <span class="value">{{ modelValue.frequencyPenalty.toFixed(2) }}</span>
-        </div>
-        <p class="description">降低已出现单词的概率，防止重复</p>
-        <van-slider :model-value="modelValue.frequencyPenalty" min="-2" max="2" step="0.1" bar-height="4px"
-          @update:model-value="updateParam('frequencyPenalty', $event)" />
-      </div>
-
-      <!-- Presence Penalty -->
-      <div class="param-group">
-        <div class="param-header">
-          <label class="label">存在惩罚</label>
-          <span class="value">{{ modelValue.presencePenalty.toFixed(2) }}</span>
-        </div>
-        <p class="description">降低任何已出现单词的概率</p>
-        <van-slider :model-value="modelValue.presencePenalty" min="-2" max="2" step="0.1" bar-height="4px"
-          @update:model-value="updateParam('presencePenalty', $event)" />
       </div>
 
       <!-- Preset Configurations -->
       <div class="preset-configs">
-        <h4>预设配置</h4>
+        <h4>推荐配置</h4>
         <div class="config-buttons">
           <van-button v-for="preset in parameterPresets" :key="preset.id" plain @click="applyPreset(preset)">
             {{ preset.name }}
@@ -175,12 +134,6 @@ const updateParam = (key, value) => {
   })
 }
 
-const updateTokens = (value) => {
-  const num = parseInt(value) || 100
-  const clamped = Math.max(100, Math.min(4000, num))
-  updateParam('maxTokens', clamped)
-}
-
 // 关键修改3：使用props.modelValue替代modelValue.value
 const applyPreset = (preset) => {
   emit('update:modelValue', {
@@ -256,23 +209,7 @@ const applyPreset = (preset) => {
         line-height: 1.4;
       }
 
-      :deep(.van-slider) {
-        margin-bottom: 12px;
-      }
 
-      :deep(.van-field) {
-        padding: 0;
-        margin-bottom: 12px;
-
-        .field-value {
-          font-weight: 600;
-          color: $primary;
-        }
-      }
-
-      :deep(.van-stepper) {
-        margin-bottom: 0;
-      }
 
       .preset-buttons {
         display: flex;
