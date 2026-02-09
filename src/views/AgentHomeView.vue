@@ -1,14 +1,59 @@
 <template>
     <div class="agent-begin-container">
+        <!-- 配置按钮 -->
+        <div class="config-btn-wrapper">
+            <van-button
+                round
+                plain
+                type="primary"
+                icon="setting-o"
+                size="small"
+                @click="openConfigPanel"
+            >
+                Agent设置
+            </van-button>
+        </div>
+
         <LogoSection class="logo-section" title="Agent小农" subtitle="专业农业智能助手" altText="Agent小农" />
         <!-- Agent专用热门问题卡片 -->
         <AgentHotQuestionCard class="hot-question-card" />
+
+        <!-- 配置面板弹窗 -->
+        <van-popup
+            v-model:show="showConfigPanel"
+            position="right"
+            :style="{ width: '85%', height: '100%' }"
+        >
+            <AgentConfigPanel />
+        </van-popup>
     </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import LogoSection from '@/components/LogoSection.vue'
 import AgentHotQuestionCard from '@/components/AgentHotQuestionCard.vue'
+import AgentConfigPanel from '@/components/AgentConfigPanel.vue'
+import { useAgentConfigStore } from '@/stores/agentConfig'
+
+const agentConfigStore = useAgentConfigStore()
+
+const showConfigPanel = computed({
+    get() {
+        return agentConfigStore.showConfigPanel
+    },
+    set(value) {
+        if (value) {
+            agentConfigStore.openConfigPanel()
+        } else {
+            agentConfigStore.closeConfigPanel()
+        }
+    }
+})
+
+const openConfigPanel = () => {
+    agentConfigStore.openConfigPanel()
+}
 </script>
 
 <style lang="scss" scoped>
@@ -26,6 +71,19 @@ import AgentHotQuestionCard from '@/components/AgentHotQuestionCard.vue'
     box-sizing: border-box;
     background-color: $bg-main;
     overflow: hidden;
+    position: relative;
+}
+
+// 配置按钮包装
+.config-btn-wrapper {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 10;
+
+    :deep(.van-button) {
+        font-size: 12px;
+    }
 }
 
 // Logo区域样式：适配绿色系 + 优化排版
