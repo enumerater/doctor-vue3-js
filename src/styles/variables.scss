@@ -1,41 +1,42 @@
-// Chat小农 全局设计变量 ==========
-// 主色：农业绿
-$primary: #388e3c;
-$primary-light: #e8f5e9;
-$default-bg: #e8f5e9;
-$primary-hover: #2e7d32;
-$secondary: #66bb6a;
+// Chat小农 全局设计变量 - 有机农场主题 ==========
+// 主色：自然农业绿
+$primary: #4a9b5e;
+$primary-light: #edf7f0;
+$default-bg: #f0f7f2;
+$primary-hover: #3d8550;
+$secondary: #78c48f;
 
 // 文字
-$text-primary: #2d3748;
-$text-secondary: #718096;
-$text-tertiary: #a0aec0;
+$text-primary: #2c3e35;
+$text-secondary: #5f6f65;
+$text-tertiary: #8b9a91;
 
 // 背景与边框
-$bg-main: #f8f9fa;
+$bg-main: #fafcfb;
 $bg-card: #ffffff;
-$border: #e2e8f0;
+$border: #e5ede8;
 
-// 阴影
-$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
-$shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-$shadow-lg: 0 6px 16px rgba(0, 0, 0, 0.12);
+// 阴影 - 更柔和、更有层次感
+$shadow-sm: 0 2px 12px rgba(74, 155, 94, 0.08);
+$shadow-md: 0 6px 20px rgba(74, 155, 94, 0.12);
+$shadow-lg: 0 12px 32px rgba(74, 155, 94, 0.16);
 $float-shadow:
-  0 6px 16px rgba(56, 142, 60, 0.08),
-  0 2px 4px rgba(0, 0, 0, 0.04);
+  0 8px 24px rgba(74, 155, 94, 0.12),
+  0 3px 8px rgba(0, 0, 0, 0.06);
 
-// 圆角
-$radius-sm: 8px;
-$radius-md: 12px;
-$radius-lg: 16px;
-$radius-xl: 20px;
+// 圆角 - 更圆润、有机
+$radius-sm: 12px;
+$radius-md: 16px;
+$radius-lg: 20px;
+$radius-xl: 28px;
 
-// 动画
-$transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-$transition-fast: all 0.2s ease;
+// 动画 - 更流畅、有弹性
+$transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+$transition-fast: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-smooth: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 
-// 字体
-$font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+// 字体 - 更温暖的字体栈
+$font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
 
 // 严重程度色（病害等级等）
 $severity-mild: #48bb78;

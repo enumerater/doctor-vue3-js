@@ -8,11 +8,14 @@
 
     <!-- 聊天消息列表：修复滚动 + 自动滚动到底部 -->
     <div class="message-list" ref="messageList">
-      <div v-for="(msg, index) in messages" :key="msg.id || index" class="message-item" :class="{
-        'user-message': msg.messageRole === '0',
-        'robot-message': msg.messageRole === '1',
-        'image-message': msg.isImageMessage,
-      }">
+      <div v-for="(msg, index) in messages" :key="msg.id || index"
+           class="message-item"
+           :class="{
+             'user-message': msg.messageRole === '0',
+             'robot-message': msg.messageRole === '1',
+             'image-message': msg.isImageMessage,
+           }"
+           :style="{ animationDelay: `${index * 0.05}s` }">
         <!-- 移除所有头像相关代码 -->
 
         <!-- 消息气泡：美化样式 + 自适应宽度 + Markdown渲染 -->
@@ -28,7 +31,8 @@
           <!-- 深入分析按钮：仅机器人消息且有内容时显示 -->
           <div v-if="msg.messageRole === '1' && msg.messageContent" class="deep-analyze-btn"
             @click="openAgentPopup(msg)">
-            🌿 深入分析
+            <span class="analyze-icon">🌿</span>
+            <span class="analyze-text">深入分析</span>
           </div>
           <!-- 原生JS格式化时间：无dayjs依赖 -->
           <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
@@ -262,6 +266,27 @@ watch(
 // 使用全局 variables.scss；气泡圆角用 $radius-lg 更柔和
 $bubble-radius: $radius-lg;
 
+// 关键帧动画
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bubbleFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
 // 全局穿透：禁用页面整体滚动
 :deep(html),
 :deep(body) {
@@ -275,11 +300,11 @@ $bubble-radius: $radius-lg;
   width: 100%;
   height: 100%; // 继承父容器（main-content）的高度，而非100vh
   box-sizing: border-box;
-  padding: 1rem;
-  background-color: $bg-main;
+  padding: 1.25rem;
+  background: linear-gradient(180deg, $bg-main 0%, #f5faf7 100%);
   overflow: hidden; // 禁用容器本身滚动
   position: relative;
-  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: $font-family;
 }
 
 // 原生空状态样式（适配绿色系）
@@ -352,10 +377,10 @@ $bubble-radius: $radius-lg;
 // 消息项：统一布局 + 间距（移除头像后调整间距）
 .message-item {
   display: flex;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
   align-items: flex-start; // 气泡顶部对齐
-  transition: $transition;
   width: 100%;
+  animation: messageSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 // 用户消息：右对齐
@@ -370,26 +395,34 @@ $bubble-radius: $radius-lg;
 
 // 消息气泡：核心美化（适配绿色系主题）
 .message-bubble {
-  max-width: 70%; // 限制气泡宽度，避免过宽
+  max-width: 75%; // 限制气泡宽度，避免过宽
   display: flex;
   flex-direction: column;
+  transition: $transition-smooth;
+
+  &:hover {
+    animation: bubbleFloat 1.5s ease-in-out infinite;
+  }
 
   .bubble-content {
-    padding: 0.75rem 1rem;
+    padding: 1rem 1.25rem;
     border-radius: $bubble-radius;
     line-height: 1.7;
     font-size: 0.9375rem;
     word-wrap: break-word;
-    box-shadow: $shadow-sm; // 轻微阴影，提升立体感
-    transition: $transition;
-    // 确保文本在气泡中可见
+    box-shadow: $shadow-sm;
+    transition: $transition-smooth;
     color: $text-primary;
-    background-color: #fff; // 默认背景色（机器人消息）
+    background-color: white;
 
     // 用户消息样式覆盖
     .user-message & {
-      background-color: $primary;
-      color: #fff;
+      background: linear-gradient(135deg, $primary, $secondary);
+      color: white;
+    }
+
+    &:hover {
+      box-shadow: $shadow-md;
     }
 
     // 核心新增：Markdown样式适配（气泡内）
@@ -566,26 +599,57 @@ $bubble-radius: $radius-lg;
 .deep-analyze-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 8px;
-  padding: 4px 12px;
-  font-size: 0.8rem;
-  color: $primary;
-  background-color: $primary-light;
-  border-radius: 12px;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  color: white;
+  background: linear-gradient(135deg, $primary, $secondary);
+  border-radius: 20px;
   cursor: pointer;
-  transition: $transition;
-  border: 1px solid transparent;
+  transition: $transition-smooth;
+  border: none;
+  position: relative;
+  overflow: hidden;
 
   .robot-message & {
     align-self: flex-start;
   }
 
+  .analyze-icon {
+    font-size: 1rem;
+    transition: $transition-fast;
+  }
+
+  .analyze-text {
+    font-weight: 500;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+
   &:hover {
-    background-color: rgba(56, 142, 60, 0.15);
-    border-color: rgba(56, 142, 60, 0.3);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(56, 142, 60, 0.15);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: $shadow-lg;
+
+    .analyze-icon {
+      transform: rotate(20deg) scale(1.2);
+    }
+  }
+
+  &:active::before {
+    width: 200px;
+    height: 200px;
   }
 }
 

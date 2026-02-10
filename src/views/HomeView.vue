@@ -19,23 +19,24 @@
     </div>
 
     <div class="nav-header">
-      <van-button icon="bars" type="default" size="small" class="menu-btn" @click="handleToggleSidebar" />
+      <button class="menu-btn" @click="handleToggleSidebar">
+        <span class="menu-text">菜单</span>
+      </button>
       <div class="header-right">
-        <!-- 图像识别任务状态图标 -->
+        <!-- 图像识别任务状态 -->
         <div v-if="visionStore.currentTask" class="vision-task-badge" :class="{
           'task-detecting': visionStore.hasActiveTask,
           'task-completed': visionStore.hasCompletedTask,
           'task-failed': visionStore.currentTask.status === 'failed',
         }" @click="goToVision">
-          <van-icon name="photo-o" class="badge-icon" />
           <span class="badge-text">{{ visionStore.taskStatusText }}</span>
           <span v-if="visionStore.hasActiveTask" class="badge-dot"></span>
           <!-- 取消识别按钮 -->
-          <van-icon v-if="visionStore.hasActiveTask" name="cross" class="cancel-icon"
-            @click.stop="visionStore.clearCurrentTask()" />
+          <button v-if="visionStore.hasActiveTask" class="cancel-btn"
+            @click.stop="visionStore.clearCurrentTask()">×</button>
           <!-- 清除完成任务按钮 -->
-          <van-icon v-else-if="visionStore.hasCompletedTask" name="cross" class="cancel-icon"
-            @click.stop="visionStore.clearCurrentTask()" />
+          <button v-else-if="visionStore.hasCompletedTask" class="cancel-btn"
+            @click.stop="visionStore.clearCurrentTask()">×</button>
         </div>
       </div>
     </div>
@@ -64,30 +65,30 @@
         <van-field v-model="chatStore.inputValue" placeholder="请输入您的问题" class="input-field"
           @keyup.enter="sendMessage" />
         <!-- 农业Agent模式下显示图片上传按钮 -->
-        <div v-if="sidebarStore.isAgricultureAgent" class="upload-btn-container" @click="triggerImageUpload">
-          <van-icon name="photo-o" class="upload-icon" />
-        </div>
-        <div class="send-btn-container" @click="sendMessage">✓</div>
-        <van-button class="fold-btn" icon="ellipsis" type="default" @click="isFunctionShow = !isFunctionShow" />
+        <button v-if="sidebarStore.isAgricultureAgent" class="upload-btn" @click="triggerImageUpload">
+          <span class="btn-text">图片</span>
+        </button>
+        <button class="send-btn" @click="sendMessage">
+          <span class="btn-text">发送</span>
+        </button>
+        <button class="fold-btn" @click="isFunctionShow = !isFunctionShow">
+          <span class="btn-text">更多</span>
+        </button>
         <!-- 隐藏的文件输入框 -->
         <input type="file" ref="imageInput" class="hidden-file-input" accept="image/jpeg,image/png"
           @change="handleImageUpload" />
       </div>
 
       <div class="function-area" :class="{ show: isFunctionShow }">
-        <!-- 仅绑定 active 类控制两种状态 -->
-        <van-button icon="lightbulb-o" type="default" class="function-btn" :class="{ active: functionStatus.netSearch }"
-          @click="netSearch">
+        <button class="function-btn" :class="{ active: functionStatus.netSearch }" @click="netSearch">
           联网搜索
-        </van-button>
-        <van-button icon="switch-o" type="default" class="function-btn" :class="{ active: functionStatus.switchModel }"
-          @click="switchModel">
+        </button>
+        <button class="function-btn" :class="{ active: functionStatus.switchModel }" @click="switchModel">
           模型切换
-        </van-button>
-        <van-button icon="setting-o" type="default" class="function-btn"
-          :class="{ active: functionStatus.moreSettings }" @click="moreSettings">
+        </button>
+        <button class="function-btn" :class="{ active: functionStatus.moreSettings }" @click="moreSettings">
           更多设置
-        </van-button>
+        </button>
       </div>
     </div>
   </div>
@@ -456,20 +457,49 @@ const sendMessage = async () => {
   }
 
   .menu-btn {
-    font-size: 18px;
-    color: $primary;
+    padding: 0.5rem 1rem;
     background-color: transparent;
-    border: none;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: $transition;
+    border: 2px solid $primary;
+    border-radius: $radius-md;
+    color: $primary;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: $transition-smooth;
+    position: relative;
+    overflow: hidden;
+
+    .menu-text {
+      position: relative;
+      z-index: 1;
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: $primary;
+      transition: left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
 
     &:hover {
-      background-color: $default-bg;
+      color: white;
+      border-color: $primary-hover;
+
+      &::before {
+        left: 0;
+      }
+
+      .menu-text {
+        color: white;
+      }
+    }
+
+    &:active {
+      transform: scale(0.95);
     }
   }
 
@@ -487,38 +517,45 @@ const sendMessage = async () => {
   .vision-task-badge {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
+    gap: 8px;
+    padding: 8px 16px;
     border-radius: 20px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 13px;
+    transition: $transition-smooth;
+    font-size: 0.875rem;
     position: relative;
-    background-color: rgba(56, 142, 60, 0.1);
+    background-color: rgba(74, 155, 94, 0.1);
     color: $primary;
-    border: 1px solid rgba(56, 142, 60, 0.2);
+    border: 2px solid rgba(74, 155, 94, 0.2);
 
-    .cancel-icon {
+    .cancel-btn {
       margin-left: 4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(229, 62, 62, 0.1);
       color: #e53e3e;
+      border: none;
       cursor: pointer;
-      font-size: 14px;
-      transition: all 0.2s ease;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: $transition-fast;
+      line-height: 1;
+      padding: 0;
 
       &:hover {
-        transform: scale(1.1);
-        color: #c53030;
+        background: #e53e3e;
+        color: white;
+        transform: scale(1.15) rotate(90deg);
       }
     }
 
     &:hover {
-      background-color: rgba(56, 142, 60, 0.15);
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(56, 142, 60, 0.2);
-    }
-
-    .badge-icon {
-      font-size: 16px;
+      background-color: rgba(74, 155, 94, 0.15);
+      transform: translateY(-2px);
+      box-shadow: $shadow-md;
     }
 
     .badge-text {
@@ -536,16 +573,16 @@ const sendMessage = async () => {
 
     // 识别中状态
     &.task-detecting {
-      background-color: rgba(56, 142, 60, 0.1);
+      background-color: rgba(74, 155, 94, 0.1);
       color: $primary;
-      border-color: rgba(56, 142, 60, 0.3);
+      border-color: rgba(74, 155, 94, 0.3);
     }
 
     // 已完成状态
     &.task-completed {
-      background-color: rgba(72, 187, 120, 0.1);
+      background-color: rgba(120, 196, 143, 0.1);
       color: #48bb78;
-      border-color: rgba(72, 187, 120, 0.3);
+      border-color: rgba(120, 196, 143, 0.3);
     }
 
     // 失败状态
@@ -645,12 +682,12 @@ const sendMessage = async () => {
 
 .input-field {
   flex: 1;
-  border-radius: 20px;
-  background-color: rgba(224, 230, 224, 0.95);
-  border: 1px solid rgba(56, 142, 60, 0.1);
-  padding: 0 0.75rem;
-  height: 42px;
-  transition: $transition;
+  border-radius: 24px;
+  background-color: white;
+  border: 2px solid $border;
+  padding: 0 1rem;
+  height: 48px;
+  transition: $transition-smooth;
   display: flex;
   align-items: center;
 
@@ -661,52 +698,105 @@ const sendMessage = async () => {
   }
 
   ::v-deep(.van-field__control) {
-    color: #2d3748;
+    color: $text-primary;
     padding: 0 !important;
     margin: 0 !important;
     height: 100%;
     line-height: 1 !important;
-    font-size: 14px;
+    font-size: 0.9375rem;
     background-color: transparent;
     display: flex;
     align-items: center;
   }
 
   ::v-deep(.van-field__placeholder) {
-    color: #718096;
+    color: $text-tertiary;
     opacity: 0.8;
     line-height: 1;
-    font-size: 13px;
+    font-size: 0.875rem;
   }
 
   &:focus-within {
-    border-color: rgba(56, 142, 60, 0.2);
+    border-color: $primary;
+    box-shadow: 0 0 0 3px rgba(74, 155, 94, 0.1);
+    transform: translateY(-1px);
   }
 }
 
-.action-btn,
+.upload-btn,
+.send-btn,
 .fold-btn {
-  border-radius: 50%;
-  border: none !important;
+  height: 48px;
+  padding: 0 1.25rem;
+  border-radius: 24px;
+  border: none;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: $transition-smooth;
+  position: relative;
+  overflow: hidden;
   flex-shrink: 0;
-  transition: $transition;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: $default-bg !important;
-  color: $primary !important;
+
+  .btn-text {
+    position: relative;
+    z-index: 1;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+
+  &:active::before {
+    width: 200px;
+    height: 200px;
+  }
 }
 
-.action-btn {
-  width: 40px;
-  height: 40px;
-  font-size: 18px;
+.upload-btn {
+  background: $primary-light;
+  color: $primary;
+
+  &:hover {
+    background: $primary;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+  }
+}
+
+.send-btn {
+  background: linear-gradient(135deg, $primary, $secondary);
+  color: white;
+
+  &:hover {
+    background: linear-gradient(135deg, $primary-hover, $primary);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: $shadow-lg;
+  }
+
+  &:active {
+    transform: translateY(0) scale(1);
+  }
 }
 
 .fold-btn {
-  width: 40px !important;
-  height: 40px !important;
-  padding: 0 !important;
+  background: $default-bg;
+  color: $primary;
+
+  &:hover {
+    background: $primary-light;
+    transform: scale(1.05);
+  }
 }
 
 .function-area {
@@ -721,29 +811,49 @@ const sendMessage = async () => {
     display: flex !important;
   }
 
-  // 功能按钮 仅两种状态：默认 + active选中
+  // 功能按钮
   .function-btn {
-    width: auto;
-    height: auto;
-    border-radius: 12px !important;
-    padding: 0.35rem 0.8rem;
-    gap: 0.25rem;
-    font-size: 13px;
+    padding: 0.625rem 1.25rem;
+    border-radius: $radius-md;
+    font-size: 0.875rem;
+    font-weight: 500;
     white-space: nowrap;
-    border: none !important;
-    transition: $transition;
-    // 1. 默认状态样式
-    background-color: $default-bg !important;
-    color: $primary !important;
+    border: 2px solid $border;
+    background-color: white;
+    color: $text-primary;
+    cursor: pointer;
+    transition: $transition-smooth;
+    position: relative;
+    overflow: hidden;
 
-    ::v-deep(.van-icon) {
-      font-size: 14px;
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, $primary, $secondary);
+      transition: left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
-    // 2. 选中状态样式（仅改背景和文字色）
+    &:hover {
+      border-color: $primary;
+      transform: translateY(-2px);
+      box-shadow: $shadow-sm;
+    }
+
+    // 选中状态
     &.active {
-      background-color: $primary !important;
-      color: #ffffff !important;
+      background: linear-gradient(135deg, $primary, $secondary);
+      color: white;
+      border-color: transparent;
+      transform: translateY(-2px);
+      box-shadow: $shadow-md;
+
+      &::before {
+        left: 0;
+      }
     }
   }
 }

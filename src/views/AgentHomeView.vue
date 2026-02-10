@@ -1,22 +1,15 @@
 <template>
     <div class="agent-begin-container">
         <!-- 配置按钮 -->
-        <div class="config-btn-wrapper">
-            <van-button
-                round
-                plain
-                type="primary"
-                icon="setting-o"
-                size="small"
-                @click="openConfigPanel"
-            >
+        <div class="config-btn-wrapper animate-fadeInDown">
+            <button class="config-btn" @click="openConfigPanel">
                 Agent设置
-            </van-button>
+            </button>
         </div>
 
-        <LogoSection class="logo-section" title="Agent小农" subtitle="专业农业智能助手" altText="Agent小农" />
+        <LogoSection class="logo-section animate-scaleIn" title="Agent小农" subtitle="专业农业智能助手" altText="Agent小农" />
         <!-- Agent专用热门问题卡片 -->
-        <AgentHotQuestionCard class="hot-question-card" />
+        <AgentHotQuestionCard class="hot-question-card animate-fadeInUp delay-200" />
 
         <!-- 配置面板弹窗 -->
         <van-popup
@@ -57,7 +50,7 @@ const openConfigPanel = () => {
 </script>
 
 <style lang="scss" scoped>
-// 使用 @/styles/variables.scss 全局变量
+@use '@/styles/animations.scss';
 
 // 核心容器：统一风格 + 优化布局
 .agent-begin-container {
@@ -67,9 +60,9 @@ const openConfigPanel = () => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 1.25rem;
+    padding: 1.5rem;
     box-sizing: border-box;
-    background-color: $bg-main;
+    background: linear-gradient(180deg, $bg-main 0%, #f5faf7 100%);
     overflow: hidden;
     position: relative;
 }
@@ -77,34 +70,69 @@ const openConfigPanel = () => {
 // 配置按钮包装
 .config-btn-wrapper {
     position: absolute;
-    top: 16px;
-    right: 16px;
+    top: 20px;
+    right: 20px;
     z-index: 10;
+}
 
-    :deep(.van-button) {
-        font-size: 12px;
+.config-btn {
+    padding: 0.625rem 1.25rem;
+    background: white;
+    border: 2px solid $primary;
+    border-radius: $radius-md;
+    color: $primary;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: $transition-smooth;
+    box-shadow: $shadow-sm;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, $primary, $secondary);
+      transition: left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    &:hover {
+      color: white;
+      border-color: transparent;
+      transform: translateY(-2px);
+      box-shadow: $shadow-md;
+
+      &::before {
+        left: 0;
+      }
+    }
+
+    &:active {
+      transform: translateY(0) scale(0.95);
     }
 }
 
 // Logo区域样式：适配绿色系 + 优化排版
 .logo-section {
-    margin-bottom: 2.5rem;
+    margin-bottom: 3rem;
     text-align: center;
-    transition: $transition;
 }
 
 // Agent热门问题卡片：核心美化（浮空+渐变+阴影）
 .hot-question-card {
     width: 100%;
     max-width: 31.25rem;
-    background: $bg-card;
-    border-radius: $radius-md;
+    background: white;
+    border-radius: $radius-lg;
     box-shadow: $float-shadow;
-    padding: 1.5rem;
+    padding: 2rem;
     box-sizing: border-box;
-    transform: translateY(-4px);
-    transition: $transition;
     position: relative;
+    overflow: hidden;
 
     &::before {
         content: '';
@@ -112,16 +140,16 @@ const openConfigPanel = () => {
         top: 0;
         left: 0;
         width: 100%;
-        height: 4px;
+        height: 5px;
         background: linear-gradient(90deg, $primary, $secondary);
-        border-radius: $radius-md $radius-md 0 0;
+        border-radius: $radius-lg $radius-lg 0 0;
     }
 
     &:hover {
         box-shadow:
-            0 8px 24px rgba(56, 142, 60, 0.12),
-            0 3px 6px rgba(0, 0, 0, 0.06);
-        transform: translateY(-6px);
+            0 12px 32px rgba(74, 155, 94, 0.15),
+            0 5px 10px rgba(0, 0, 0, 0.08);
+        transform: translateY(-4px);
     }
 }
 </style>
