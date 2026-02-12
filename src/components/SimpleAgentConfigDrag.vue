@@ -273,17 +273,26 @@ onMounted(async () => {
   }
 
   loadCurrentConfig()
-  initializeSkills()
+  await initializeSkills()
 })
 
 // 初始化Skills
-const initializeSkills = () => {
+const initializeSkills = async () => {
   const allSkills = [...registeredSkills]
   const enabledIds = formData.value.enabledSkillIds || []
 
   // 分离已启用和未启用的skills
   enabledSkillsList.value = allSkills.filter(s => enabledIds.includes(s.id))
   availableSkills.value = allSkills.filter(s => !enabledIds.includes(s.id))
+
+  // 更新skillsStore中的enabledSkillIds
+  skillsStore.enabledSkillIds = enabledIds
+
+  // 更新sidebarStore中的图片上传按钮状态
+  const { useSidebarStore } = await import('@/stores/sidebar')
+  const sidebarStore = useSidebarStore()
+  const hasImageSkill = enabledIds.includes('disease-recognition')
+  sidebarStore.setAgentImageUploadEnabled(hasImageSkill)
 }
 
 // 加载当前配置
@@ -342,14 +351,14 @@ const quickToggleSkill = (skill) => {
 }
 
 // 切换配置
-const onConfigSelect = ({ selectedOptions }) => {
+const onConfigSelect = async ({ selectedOptions }) => {
   const selectedConfig = selectedOptions[0]
   if (selectedConfig) {
-    agentConfigStore.switchConfig(selectedConfig.value)
+    await agentConfigStore.switchConfig(selectedConfig.value)
     loadCurrentConfig()
-    initializeSkills()
-    showConfigPicker.value = false
+    await initializeSkills()
 
+    showConfigPicker.value = false
     showToast({
       message: `已切换到「${selectedConfig.text}」`,
       position: 'top'
@@ -363,9 +372,9 @@ const openConfigManager = () => {
 }
 
 // 配置变化时重新加载
-const onConfigChanged = () => {
+const onConfigChanged = async () => {
   loadCurrentConfig()
-  initializeSkills()
+  await initializeSkills()
 }
 
 // 保存配置
@@ -414,11 +423,8 @@ const saveConfig = async () => {
       await skillsStore.disableSkills(toDisable)
     }
 
-    // 更新sidebarStore中的图片上传按钮状态
-    const { useSidebarStore } = await import('@/stores/sidebar')
-    const sidebarStore = useSidebarStore()
-    const hasImageSkill = skillsStore.isSkillEnabled('disease-recognition')
-    sidebarStore.setAgentImageUploadEnabled(hasImageSkill)
+    // 重新初始化技能状态，更新sidebarStore
+    await initializeSkills()
 
     showToast({
       message: '✅ 设置已保存',
