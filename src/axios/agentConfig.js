@@ -4,7 +4,7 @@ import request from '@/utils/requests'
 export const getAgentConfigs = () => {
   return request({
     url: '/agentConfig/list',
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -12,7 +12,7 @@ export const getAgentConfigs = () => {
 export const getAgentConfigDetail = (configId) => {
   return request({
     url: `/agentConfig/${configId}`,
-    method: 'get'
+    method: 'get',
   })
 }
 
@@ -21,7 +21,7 @@ export const createAgentConfig = (data) => {
   return request({
     url: '/agentConfig',
     method: 'post',
-    data
+    data,
   })
 }
 
@@ -30,7 +30,7 @@ export const updateAgentConfig = (configId, data) => {
   return request({
     url: `/agentConfig/${configId}`,
     method: 'put',
-    data
+    data,
   })
 }
 
@@ -38,7 +38,7 @@ export const updateAgentConfig = (configId, data) => {
 export const deleteAgentConfig = (configId) => {
   return request({
     url: `/agentConfig/${configId}`,
-    method: 'delete'
+    method: 'delete',
   })
 }
 
@@ -46,15 +46,15 @@ export const deleteAgentConfig = (configId) => {
 export const setDefaultConfig = (configId) => {
   return request({
     url: `/agentConfig/${configId}/setDefault`,
-    method: 'put'
+    method: 'put',
   })
 }
 
 // 复制配置
-export const duplicateConfig = configId => {
+export const duplicateConfig = (configId) => {
   return request({
     url: `/agentConfig/${configId}/duplicate`,
-    method: 'post'
+    method: 'post',
   })
 }
 
@@ -63,6 +63,17 @@ export const setSessionAgentConfig = (sessionId, configId) => {
   return request({
     url: `/session/${sessionId}/agentConfig`,
     method: 'put',
-    data: { configId }
+    data: { configId },
+  })
+}
+
+export const rename = (configId, name) => {
+  return request({
+    url: `/agentConfig/rename`,
+    method: 'get',
+    params: {
+      configId: configId,
+      name: name,
+    },
   })
 }

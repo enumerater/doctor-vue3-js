@@ -6,7 +6,7 @@ import request from '@/utils/requests'
  */
 export const getSkills = () => {
   return request({
-    url: '/api/skills',
+    url: '/skills',
     method: 'get',
   })
 }
@@ -19,7 +19,7 @@ export const getSkills = () => {
  */
 export const updateSkillStatus = (skillId, enabled) => {
   return request({
-    url: `/api/skills/${skillId}/status`,
+    url: `/skills/${skillId}/status`,
     method: 'put',
     data: { enabled },
   })
@@ -33,7 +33,7 @@ export const updateSkillStatus = (skillId, enabled) => {
  */
 export const executeSkill = (skillId, params) => {
   return request({
-    url: `/api/skills/${skillId}/execute`,
+    url: `/skills/${skillId}/execute`,
     method: 'post',
     data: params,
   })
@@ -47,7 +47,7 @@ export const executeSkill = (skillId, params) => {
  */
 export const getSkillHistory = (skillId, limit = 10) => {
   return request({
-    url: `/api/skills/${skillId}/history`,
+    url: `/skills/${skillId}/history`,
     method: 'get',
     params: { limit },
   })

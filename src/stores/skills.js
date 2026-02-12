@@ -1,9 +1,5 @@
 import { defineStore } from 'pinia'
-import {
-  getSkills,
-  updateSkillStatus,
-  executeSkill
-} from '@/axios/skills'
+import { getSkills, updateSkillStatus, executeSkill } from '@/axios/skills'
 
 export const useSkillsStore = defineStore('skills', {
   state: () => ({
@@ -17,28 +13,26 @@ export const useSkillsStore = defineStore('skills', {
     lastResult: null,
     // UI状态
     isLoading: false,
-    error: null
+    error: null,
   }),
 
   getters: {
     // 已启用的skills列表
     enabledSkills: (state) => {
-      return state.availableSkills.filter(skill =>
-        state.enabledSkillIds.includes(skill.id)
-      )
+      return state.availableSkills.filter((skill) => state.enabledSkillIds.includes(skill.id))
     },
 
     // 根据分类分组的skills
     skillsByCategory: (state) => {
       const grouped = {}
-      state.availableSkills.forEach(skill => {
+      state.availableSkills.forEach((skill) => {
         const category = skill.category || 'other'
         if (!grouped[category]) {
           grouped[category] = []
         }
         grouped[category].push({
           ...skill,
-          enabled: state.enabledSkillIds.includes(skill.id)
+          enabled: state.enabledSkillIds.includes(skill.id),
         })
       })
       return grouped
@@ -52,7 +46,7 @@ export const useSkillsStore = defineStore('skills', {
     // 某个skill是否已启用
     isSkillEnabled: (state) => (skillId) => {
       return state.enabledSkillIds.includes(skillId)
-    }
+    },
   },
 
   actions: {
@@ -61,6 +55,7 @@ export const useSkillsStore = defineStore('skills', {
       this.isLoading = true
       try {
         const response = await getSkills()
+        console.log('获取Skills成功:', response.data)
         this.availableSkills = response.data?.skills || []
         this.enabledSkillIds = response.data?.enabledSkillIds || []
         this.error = null
@@ -83,7 +78,7 @@ export const useSkillsStore = defineStore('skills', {
         if (newStatus) {
           this.enabledSkillIds.push(skillId)
         } else {
-          this.enabledSkillIds = this.enabledSkillIds.filter(id => id !== skillId)
+          this.enabledSkillIds = this.enabledSkillIds.filter((id) => id !== skillId)
         }
 
         this.error = null
@@ -115,7 +110,7 @@ export const useSkillsStore = defineStore('skills', {
         for (const skillId of skillIds) {
           if (this.enabledSkillIds.includes(skillId)) {
             await updateSkillStatus(skillId, false)
-            this.enabledSkillIds = this.enabledSkillIds.filter(id => id !== skillId)
+            this.enabledSkillIds = this.enabledSkillIds.filter((id) => id !== skillId)
           }
         }
       } catch (err) {
@@ -126,7 +121,7 @@ export const useSkillsStore = defineStore('skills', {
 
     // 执行skill
     async executeSkill(skillId, params = {}) {
-      const skill = this.availableSkills.find(s => s.id === skillId)
+      const skill = this.availableSkills.find((s) => s.id === skillId)
       if (!skill) {
         throw new Error('Skill不存在')
       }
@@ -142,7 +137,7 @@ export const useSkillsStore = defineStore('skills', {
           skillId,
           skillName: skill.name,
           result: response.data,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         }
         return response.data
       } catch (err) {
@@ -166,7 +161,7 @@ export const useSkillsStore = defineStore('skills', {
       this.executingSkills.clear()
       this.lastResult = null
       this.error = null
-    }
+    },
   },
 
   // 持久化配置
@@ -176,8 +171,8 @@ export const useSkillsStore = defineStore('skills', {
       {
         key: 'skills-store',
         storage: localStorage,
-        paths: ['enabledSkillIds']
-      }
-    ]
-  }
+        paths: ['enabledSkillIds'],
+      },
+    ],
+  },
 })

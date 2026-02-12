@@ -6,6 +6,7 @@ import {
   deleteAgentConfig,
   setDefaultConfig,
   duplicateConfig,
+  rename,
 } from '@/axios/agentConfig'
 
 export const useAgentConfigStore = defineStore('agentConfig', {
@@ -50,6 +51,20 @@ export const useAgentConfigStore = defineStore('agentConfig', {
   },
 
   actions: {
+    //改名字
+    async rename(configId, name) {
+      try {
+        await rename(configId, name)
+        const index = this.configs.findIndex((c) => c.id === configId)
+        if (index >= 0) {
+          this.configs[index].name = name
+        }
+      } catch (err) {
+        this.error = err.message
+        throw err
+      }
+    },
+
     // 初始化配置数据（核心修复：新增初始化方法）
     async initConfigData() {
       // 若本地无配置数据，强制拉取；也可改为每次初始化都拉取最新（根据业务需求）
@@ -63,7 +78,6 @@ export const useAgentConfigStore = defineStore('agentConfig', {
       this.isLoading = true
       try {
         const response = await getAgentConfigs()
-        console.log('获取Agent配置成功:==========', response.data)
         this.configs = response.data || []
 
         // 自动选中默认配置或第一个
@@ -74,7 +88,6 @@ export const useAgentConfigStore = defineStore('agentConfig', {
         this.error = null
       } catch (err) {
         this.error = err.message
-        console.error('获取Agent配置失败:', err)
       } finally {
         this.isLoading = false
       }
@@ -94,10 +107,6 @@ export const useAgentConfigStore = defineStore('agentConfig', {
 
     // 更新配置
     async updateConfig(configId, configData) {
-      console.log('cropTypes 类型:', typeof configData.cropTypes)
-      console.log('cropTypes 值:', configData.cropTypes)
-      console.log('enabledSkillIds 类型:', typeof configData.enabledSkillIds)
-
       try {
         const response = await updateAgentConfig(configId, configData)
         const index = this.configs.findIndex((c) => c.id === configId)

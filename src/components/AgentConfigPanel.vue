@@ -4,38 +4,21 @@
     <div class="panel-header">
       <div class="header-left">
         <h2>Agent 设置</h2>
-        <van-switch
-          v-model="useDragMode"
-          size="20"
-          active-color="#07c160"
-          class="mode-switch"
-        />
-        <span class="mode-label">{{ useDragMode ? '🎯 拖拽模式' : '📋 列表模式' }}</span>
       </div>
-      <van-icon
-        name="close"
-        size="24"
-        class="close-btn"
-        @click="closePanel"
-      />
+      <van-icon name="close" size="24" class="close-btn" @click="closePanel" />
     </div>
 
     <!-- 简化后的单页配置 -->
     <div class="config-content">
-      <SimpleAgentConfigDrag v-if="useDragMode" />
-      <SimpleAgentConfig v-else />
+      <SimpleAgentConfigDrag />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
 import { useAgentConfigStore } from '@/stores/agentConfig'
-import SimpleAgentConfig from './SimpleAgentConfig.vue'
 import SimpleAgentConfigDrag from './SimpleAgentConfigDrag.vue'
-
 const agentConfigStore = useAgentConfigStore()
-const useDragMode = ref(true) // 默认使用拖拽模式
 
 const closePanel = () => {
   agentConfigStore.closeConfigPanel()

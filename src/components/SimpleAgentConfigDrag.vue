@@ -64,34 +64,6 @@
         </div>
       </div>
 
-      <!-- 服务选择 - 可拖拽排序 -->
-      <div class="form-section">
-        <h3 class="section-title">🎯 需要什么帮助？</h3>
-        <p class="section-desc">拖动调整服务优先级，点击卡片切换启用状态</p>
-
-        <div class="service-drag-area">
-          <draggable v-model="services" item-key="id" :animation="200" ghost-class="ghost" handle=".drag-handle"
-            @start="onDragStart" @end="onDragEnd">
-            <template #item="{ element }">
-              <div class="service-card" :class="{ active: element.enabled, dragging: isDragging }"
-                @click="toggleService(element.id)">
-                <div class="card-left">
-                  <span class="drag-handle">⋮⋮</span>
-                  <span class="service-icon">{{ element.icon }}</span>
-                  <div class="service-info">
-                    <div class="service-title">{{ element.title }}</div>
-                    <div class="service-desc">{{ element.desc }}</div>
-                  </div>
-                </div>
-                <div class="card-right">
-                  <van-switch v-model="element.enabled" size="20" @click.stop />
-                </div>
-              </div>
-            </template>
-          </draggable>
-        </div>
-      </div>
-
       <!-- Skills拖拽区 -->
       <div class="form-section">
         <h3 class="section-title">✨ Skills技能配置</h3>
@@ -218,7 +190,6 @@ import { registeredSkills, skillCategories } from '@/skills'
 const agentConfigStore = useAgentConfigStore()
 const skillsStore = useSkillsStore()
 const isSaving = ref(false)
-const isDragging = ref(false)
 const advancedOpen = ref([])
 const expandedCategories = ref([])
 const showConfigPicker = ref(false)
@@ -235,31 +206,6 @@ const commonCrops = [
   { label: '苹果', value: 'apple', icon: '🍎' },
   { label: '葡萄', value: 'grape', icon: '🍇' }
 ]
-
-// 服务列表（可拖拽排序）
-const services = ref([
-  {
-    id: 'imageAnalysis',
-    title: '图片诊断',
-    desc: '上传作物照片，帮你看病',
-    icon: '📸',
-    enabled: true
-  },
-  {
-    id: 'fieldManagement',
-    title: '管理建议',
-    desc: '施肥、浇水、除草等日常管理',
-    icon: '🌿',
-    enabled: true
-  },
-  {
-    id: 'pesticideAdvice',
-    title: '用药方案',
-    desc: '推荐农药和使用方法',
-    icon: '💊',
-    enabled: true
-  }
-])
 
 // 表单数据
 const formData = ref({
@@ -355,43 +301,14 @@ const loadCurrentConfig = () => {
       customPrompt: currentConfig.customPrompt || '',
       enabledSkillIds: currentConfig.enabledSkillIds || skillsStore.enabledSkillIds || []
     }
-
-    // 同步服务状态
-    services.value[0].enabled = formData.value.enableImageAnalysis
-    services.value[1].enabled = formData.value.enableFieldManagement
-    services.value[2].enabled = formData.value.enablePesticideAdvice
   }
 }
-
-// 监听服务状态变化
-watch(services, (newServices) => {
-  formData.value.enableImageAnalysis = newServices[0].enabled
-  formData.value.enableFieldManagement = newServices[1].enabled
-  formData.value.enablePesticideAdvice = newServices[2].enabled
-}, { deep: true })
 
 // 监听enabledSkillsList变化
 watch(enabledSkillsList, (newList) => {
   formData.value.enabledSkillIds = newList.map(s => s.id)
 }, { deep: true })
 
-// 切换服务
-const toggleService = (serviceId) => {
-  const service = services.value.find(s => s.id === serviceId)
-  if (service) {
-    service.enabled = !service.enabled
-  }
-}
-
-// 拖拽开始
-const onDragStart = () => {
-  isDragging.value = true
-}
-
-// 拖拽结束
-const onDragEnd = () => {
-  isDragging.value = false
-}
 
 // Skill拖拽变化
 const onSkillChange = (evt) => {
@@ -463,29 +380,6 @@ const saveConfig = async () => {
 
   isSaving.value = true
   try {
-    // 构建配置对象
-    // const configData = {
-    //   name: agentConfigStore.currentConfig?.name || '我的农田配置',
-    //   province: formData.value.province,
-    //   city: formData.value.city,
-    //   cropTypes: formData.value.cropTypes,
-    //   growthStage: formData.value.growthStage,
-    //   enableImageAnalysis: formData.value.enableImageAnalysis,
-    //   enableFieldManagement: formData.value.enableFieldManagement,
-    //   enablePesticideAdvice: formData.value.enablePesticideAdvice,
-    //   customPrompt: formData.value.customPrompt,
-    //   enabledSkillIds: formData.value.enabledSkillIds,
-    //   systemPrompt: {
-    //     template: formData.value.customPrompt || '你是一个专业的农业助手',
-    //     language: 'zh'
-    //   },
-    //   agentConfig: {
-    //     cropTypes: formData.value.cropTypes,
-    //     enableImageAnalysis: formData.value.enableImageAnalysis,
-    //     enableFieldManagement: formData.value.enableFieldManagement,
-    //     enablePesticideAdvice: formData.value.enablePesticideAdvice
-    //   }
-    // }
 
     const configData = {
       name: agentConfigStore.currentConfig?.name || '我的农田配置',
@@ -508,7 +402,6 @@ const saveConfig = async () => {
       await agentConfigStore.createConfig({ ...configData, isDefault: true })
     }
 
-    // 同步更新skills状态
     const currentEnabledIds = skillsStore.enabledSkillIds
     const toEnable = formData.value.enabledSkillIds.filter(id => !currentEnabledIds.includes(id))
     const toDisable = currentEnabledIds.filter(id => !formData.value.enabledSkillIds.includes(id))
@@ -528,6 +421,7 @@ const saveConfig = async () => {
     // 关闭配置面板
     agentConfigStore.closeConfigPanel()
   } catch (err) {
+    console.error('保存配置失败:', err)
     showToast({
       message: '❌ 保存失败，请重试',
       position: 'top'

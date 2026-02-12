@@ -2,26 +2,14 @@
   <div v-if="enabledSkills.length > 0" class="skills-bar">
     <!-- 快捷技能按钮 -->
     <div class="skills-buttons">
-      <van-button
-        v-for="skill in enabledSkills"
-        :key="skill.id"
-        size="small"
-        plain
-        :icon="skill.icon"
-        :loading="isSkillExecuting(skill.id)"
-        @click="onSkillClick(skill)"
-      >
+      <van-button v-for="skill in enabledSkills" :key="skill.id" size="small" plain :icon="skill.icon"
+        :loading="isSkillExecuting(skill.id)" @click="onSkillClick(skill)">
         {{ skill.name }}
       </van-button>
     </div>
 
     <!-- Skill参数输入对话框 -->
-    <van-popup
-      v-model:show="showParamDialog"
-      position="bottom"
-      round
-      :style="{ maxHeight: '80%' }"
-    >
+    <van-popup v-model:show="showParamDialog" position="bottom" round :style="{ maxHeight: '80%' }">
       <div v-if="selectedSkill" class="param-dialog">
         <div class="dialog-header">
           <span class="skill-icon">{{ selectedSkill.icon }}</span>
@@ -34,46 +22,23 @@
 
           <!-- 动态参数表单 -->
           <div class="param-form">
-            <div
-              v-for="param in selectedSkill.params"
-              :key="param.name"
-              class="param-field"
-            >
+            <div v-for="param in selectedSkill.params" :key="param.name" class="param-field">
               <!-- 文本输入 -->
-              <van-field
-                v-if="param.type === 'text'"
-                v-model="paramValues[param.name]"
-                :label="param.description"
-                :placeholder="param.placeholder"
-                :required="param.required"
-              />
+              <van-field v-if="param.type === 'text'" v-model="paramValues[param.name]" :label="param.description"
+                :placeholder="param.placeholder" :required="param.required" />
 
               <!-- 数字输入 -->
-              <van-field
-                v-else-if="param.type === 'number'"
-                v-model.number="paramValues[param.name]"
-                type="number"
-                :label="param.description"
-                :placeholder="param.placeholder"
-                :required="param.required"
-              >
+              <van-field v-else-if="param.type === 'number'" v-model.number="paramValues[param.name]" type="number"
+                :label="param.description" :placeholder="param.placeholder" :required="param.required">
                 <template v-if="param.unit" #button>
                   <span class="unit-text">{{ param.unit }}</span>
                 </template>
               </van-field>
 
               <!-- 下拉选择 -->
-              <van-field
-                v-else-if="param.type === 'select'"
-                v-model="paramValues[param.name]"
-                readonly
-                clickable
-                :label="param.description"
-                :placeholder="param.placeholder || '请选择'"
-                :required="param.required"
-                right-icon="arrow-down"
-                @click="openSelectPicker(param)"
-              />
+              <van-field v-else-if="param.type === 'select'" v-model="paramValues[param.name]" readonly clickable
+                :label="param.description" :placeholder="param.placeholder || '请选择'" :required="param.required"
+                right-icon="arrow-down" @click="openSelectPicker(param)" />
 
               <!-- 文件上传 -->
               <div v-else-if="param.type === 'file'" class="file-field">
@@ -81,12 +46,8 @@
                   {{ param.description }}
                   <span v-if="param.required" class="required-mark">*</span>
                 </div>
-                <van-uploader
-                  v-model="paramValues[param.name]"
-                  :accept="param.accept"
-                  :max-count="1"
-                  :after-read="(file) => onFileRead(file, param)"
-                >
+                <van-uploader v-model="paramValues[param.name]" :accept="param.accept" :max-count="1"
+                  :after-read="(file) => onFileRead(file, param)">
                   <van-button icon="photograph" type="primary" size="small">
                     选择文件
                   </van-button>
@@ -94,16 +55,9 @@
               </div>
 
               <!-- 文本域 -->
-              <van-field
-                v-else-if="param.type === 'textarea'"
-                v-model="paramValues[param.name]"
-                type="textarea"
-                :label="param.description"
-                :placeholder="param.placeholder"
-                :required="param.required"
-                rows="3"
-                autosize
-              />
+              <van-field v-else-if="param.type === 'textarea'" v-model="paramValues[param.name]" type="textarea"
+                :label="param.description" :placeholder="param.placeholder" :required="param.required" rows="3"
+                autosize />
             </div>
           </div>
         </div>
@@ -118,20 +72,11 @@
 
     <!-- 选择器弹窗 -->
     <van-popup v-model:show="showSelectPicker" position="bottom" round>
-      <van-picker
-        :columns="selectOptions"
-        @confirm="onSelectConfirm"
-        @cancel="showSelectPicker = false"
-      />
+      <van-picker :columns="selectOptions" @confirm="onSelectConfirm" @cancel="showSelectPicker = false" />
     </van-popup>
 
     <!-- Skill执行结果展示 -->
-    <van-popup
-      v-model:show="showResultDialog"
-      position="center"
-      round
-      :style="{ width: '90%', maxHeight: '80%' }"
-    >
+    <van-popup v-model:show="showResultDialog" position="center" round :style="{ width: '90%', maxHeight: '80%' }">
       <div v-if="skillResult" class="result-dialog">
         <div class="result-header">
           <h3>{{ skillResult.skillName }}</h3>

@@ -31,7 +31,6 @@ export const useSidebarStore = defineStore('sidebar', {
       try {
         const res = await getAllSession()
         this.historyList = res.data || []
-        console.log('历史记录加载成功：', res.data)
         return res.data
       } catch (err) {
         console.error('加载历史记录失败：', err)

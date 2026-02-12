@@ -22,7 +22,7 @@
                 切换
               </van-button>
               <van-button size="small" icon="edit" @click="onRename(config)" />
-              <van-button size="small" icon="copy-o" @click="onDuplicate(config)" />
+              <van-button size="small" icon="replay" @click="onDuplicate(config)" />
               <van-button v-if="configs.length > 1" size="small" icon="delete-o" @click="onDelete(config)" />
             </div>
           </template>
@@ -132,10 +132,12 @@ const onSwitch = async (config) => {
 
 // 重命名配置
 const onRename = (config) => {
-  console.log('onRename========', config)
   renamingConfigId.value = config.id
   renameValue.value = config.name
   showRenameDialog.value = true
+
+  console.log('onRename========', renamingConfigId.value)
+  console.log('onRename========', renameValue.value)
 }
 
 const confirmRename = async () => {
@@ -148,9 +150,9 @@ const confirmRename = async () => {
   }
 
   try {
-    await agentConfigStore.updateConfig(renamingConfigId.value, {
-      name: renameValue.value.trim()
-    })
+    await agentConfigStore.rename(renamingConfigId.value,
+      renameValue.value.trim()
+    )
     showToast({
       message: '重命名成功',
       position: 'top'
