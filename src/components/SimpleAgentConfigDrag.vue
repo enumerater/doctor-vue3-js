@@ -299,6 +299,20 @@ const initializeSkills = async () => {
 const loadCurrentConfig = () => {
   const currentConfig = agentConfigStore.currentConfig
   if (currentConfig) {
+    let enabledSkillIds = []
+    try {
+      // 解析enabledSkillIds，它可能是JSON字符串或数组
+      if (typeof currentConfig.enabledSkillIds === 'string') {
+        enabledSkillIds = JSON.parse(currentConfig.enabledSkillIds || '[]')
+      } else if (Array.isArray(currentConfig.enabledSkillIds)) {
+        enabledSkillIds = currentConfig.enabledSkillIds
+      } else if (skillsStore.enabledSkillIds) {
+        enabledSkillIds = skillsStore.enabledSkillIds
+      }
+    } catch (e) {
+      enabledSkillIds = []
+    }
+
     formData.value = {
       province: currentConfig.province || '',
       city: currentConfig.city || '',
@@ -308,7 +322,7 @@ const loadCurrentConfig = () => {
       enableFieldManagement: currentConfig.enableFieldManagement ?? true,
       enablePesticideAdvice: currentConfig.enablePesticideAdvice ?? true,
       customPrompt: currentConfig.customPrompt || '',
-      enabledSkillIds: currentConfig.enabledSkillIds || skillsStore.enabledSkillIds || []
+      enabledSkillIds: enabledSkillIds
     }
   }
 }
@@ -412,7 +426,7 @@ const saveConfig = async () => {
       await agentConfigStore.createConfig({ ...configData, isDefault: true })
     }
 
-    const currentEnabledIds = skillsStore.enabledSkillIds
+    const currentEnabledIds = Array.isArray(skillsStore.enabledSkillIds) ? skillsStore.enabledSkillIds : []
     const toEnable = formData.value.enabledSkillIds.filter(id => !currentEnabledIds.includes(id))
     const toDisable = currentEnabledIds.filter(id => !formData.value.enabledSkillIds.includes(id))
 

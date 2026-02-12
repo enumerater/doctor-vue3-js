@@ -79,7 +79,6 @@ export const useAgentConfigStore = defineStore('agentConfig', {
       try {
         const response = await getAgentConfigs()
         this.configs = response.data || []
-
         // 自动选中默认配置或第一个
         if (this.configs.length > 0 && !this.currentConfigId) {
           const defaultConfig = this.configs.find((c) => c.isDefault)
@@ -107,6 +106,7 @@ export const useAgentConfigStore = defineStore('agentConfig', {
 
     // 更新配置
     async updateConfig(configId, configData) {
+      console.log('updateConfig', configId, configData)
       try {
         const response = await updateAgentConfig(configId, configData)
         const index = this.configs.findIndex((c) => c.id === configId)
