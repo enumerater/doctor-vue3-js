@@ -5,20 +5,9 @@
       <div class="form-section config-selector">
         <h3 class="section-title">当前配置</h3>
         <div class="selector-row">
-          <van-field
-            v-model="currentConfigName"
-            readonly
-            clickable
-            placeholder="选择配置"
-            right-icon="arrow-down"
-            @click="showConfigPicker = true"
-          />
-          <van-button
-            type="primary"
-            size="small"
-            icon="setting-o"
-            @click="openConfigManager"
-          >
+          <van-field v-model="currentConfigName" readonly clickable placeholder="选择配置" right-icon="arrow-down"
+            @click="showConfigPicker = true" />
+          <van-button type="primary" size="small" icon="setting-o" @click="openConfigManager">
             管理
           </van-button>
         </div>
@@ -32,16 +21,8 @@
         <!-- 所在地域 -->
         <div class="field-group">
           <label class="field-label">你在哪里种地？</label>
-          <van-field
-            v-model="formData.province"
-            placeholder="省份（如：山东省）"
-            clearable
-          />
-          <van-field
-            v-model="formData.city"
-            placeholder="城市（如：潍坊市）"
-            clearable
-          />
+          <van-field v-model="formData.province" placeholder="省份（如：山东省）" clearable />
+          <van-field v-model="formData.city" placeholder="城市（如：潍坊市）" clearable />
         </div>
 
         <!-- 种植作物 -->
@@ -49,12 +30,7 @@
           <label class="field-label">你种什么作物？</label>
           <van-checkbox-group v-model="formData.cropTypes">
             <div class="crop-grid">
-              <van-checkbox
-                v-for="crop in commonCrops"
-                :key="crop.value"
-                :name="crop.value"
-                shape="square"
-              >
+              <van-checkbox v-for="crop in commonCrops" :key="crop.value" :name="crop.value" shape="square">
                 {{ crop.label }}
               </van-checkbox>
             </div>
@@ -118,14 +94,8 @@
             <div class="advanced-content">
               <label class="field-label">智能体提示词（选填）</label>
               <p class="field-desc">给专业用户：自定义Agent的行为规则</p>
-              <van-field
-                v-model="formData.customPrompt"
-                type="textarea"
-                rows="4"
-                placeholder="例如：你是一个专注于病虫害防治的专家，回答要简洁明了..."
-                maxlength="500"
-                show-word-limit
-              />
+              <van-field v-model="formData.customPrompt" type="textarea" rows="4"
+                placeholder="例如：你是一个专注于病虫害防治的专家，回答要简洁明了..." maxlength="500" show-word-limit />
             </div>
           </van-collapse-item>
         </van-collapse>
@@ -137,21 +107,13 @@
         <p class="section-desc">选择你需要的技能模块</p>
 
         <div v-if="skillsByCategory" class="skills-config">
-          <div
-            v-for="(categorySkills, category) in skillsByCategory"
-            :key="category"
-            class="skill-category"
-          >
+          <div v-for="(categorySkills, category) in skillsByCategory" :key="category" class="skill-category">
             <div class="category-header">
               <span class="category-icon">{{ getCategoryInfo(category).icon }}</span>
               <span class="category-name">{{ getCategoryInfo(category).name }}</span>
             </div>
             <div class="skill-list">
-              <van-cell
-                v-for="skill in categorySkills"
-                :key="skill.id"
-                center
-              >
+              <van-cell v-for="skill in categorySkills" :key="skill.id" center>
                 <template #icon>
                   <span class="skill-icon">{{ skill.icon }}</span>
                 </template>
@@ -162,11 +124,8 @@
                   <span class="skill-desc">{{ skill.description }}</span>
                 </template>
                 <template #right-icon>
-                  <van-switch
-                    :model-value="formData.enabledSkillIds.includes(skill.id)"
-                    size="20"
-                    @update:model-value="toggleSkill(skill.id)"
-                  />
+                  <van-switch :model-value="formData.enabledSkillIds.includes(skill.id)" size="20"
+                    @update:model-value="toggleSkill(skill.id)" />
                 </template>
               </van-cell>
             </div>
@@ -184,18 +143,11 @@
 
     <!-- 配置选择器弹窗 -->
     <van-popup v-model:show="showConfigPicker" position="bottom" round>
-      <van-picker
-        :columns="configColumns"
-        @confirm="onConfigSelect"
-        @cancel="showConfigPicker = false"
-      />
+      <van-picker :columns="configColumns" @confirm="onConfigSelect" @cancel="showConfigPicker = false" />
     </van-popup>
 
     <!-- 配置管理弹窗 -->
-    <ConfigManager
-      v-model:show="showConfigManager"
-      @config-changed="onConfigChanged"
-    />
+    <ConfigManager v-model:show="showConfigManager" @config-changed="onConfigChanged" />
   </div>
 </template>
 
@@ -291,7 +243,7 @@ const loadCurrentConfig = () => {
     formData.value = {
       province: currentConfig.province || '',
       city: currentConfig.city || '',
-      cropTypes: currentConfig.cropTypes || [],
+      cropTypes: JSON.parse(currentConfig.cropTypes || '[]'),
       growthStage: currentConfig.growthStage || 'growing',
       enableImageAnalysis: currentConfig.enableImageAnalysis ?? true,
       enableFieldManagement: currentConfig.enableFieldManagement ?? true,
@@ -349,30 +301,47 @@ const saveConfig = async () => {
   isSaving.value = true
   try {
     // 构建简化的配置对象
+    // const configData = {
+    //   name: agentConfigStore.currentConfig?.name || '我的农田配置',
+    //   province: formData.value.province,
+    //   city: formData.value.city,
+    //   cropTypes: formData.value.cropTypes,
+    //   growthStage: formData.value.growthStage,
+    //   enableImageAnalysis: formData.value.enableImageAnalysis,
+    //   enableFieldManagement: formData.value.enableFieldManagement,
+    //   enablePesticideAdvice: formData.value.enablePesticideAdvice,
+    //   customPrompt: formData.value.customPrompt,
+    //   enabledSkillIds: formData.value.enabledSkillIds,
+    //   // 保留后端需要的字段，但用固定值
+    //   systemPrompt: {
+    //     template: formData.value.customPrompt || '你是一个专业的农业助手',
+    //     language: 'zh'
+    //   },
+    //   // 移除所有AI底层参数，后端使用默认值
+    //   agentConfig: {
+    //     cropTypes: formData.value.cropTypes,
+    //     enableImageAnalysis: formData.value.enableImageAnalysis,
+    //     enableFieldManagement: formData.value.enableFieldManagement,
+    //     enablePesticideAdvice: formData.value.enablePesticideAdvice
+    //   }
+    // }
+
+    // 修复后的完整代码
     const configData = {
       name: agentConfigStore.currentConfig?.name || '我的农田配置',
       province: formData.value.province,
       city: formData.value.city,
-      cropTypes: formData.value.cropTypes,
+      // 第一步：用 Array.from() 或 [...arr] 转普通数组，再序列化
+      cropTypes: JSON.stringify(Array.from(formData.value.cropTypes || [])),
       growthStage: formData.value.growthStage,
       enableImageAnalysis: formData.value.enableImageAnalysis,
       enableFieldManagement: formData.value.enableFieldManagement,
       enablePesticideAdvice: formData.value.enablePesticideAdvice,
       customPrompt: formData.value.customPrompt,
-      enabledSkillIds: formData.value.enabledSkillIds,
-      // 保留后端需要的字段，但用固定值
-      systemPrompt: {
-        template: formData.value.customPrompt || '你是一个专业的农业助手',
-        language: 'zh'
-      },
-      // 移除所有AI底层参数，后端使用默认值
-      agentConfig: {
-        cropTypes: formData.value.cropTypes,
-        enableImageAnalysis: formData.value.enableImageAnalysis,
-        enableFieldManagement: formData.value.enableFieldManagement,
-        enablePesticideAdvice: formData.value.enablePesticideAdvice
-      }
-    }
+      // 同理处理 enabledSkillIds
+      enabledSkillIds: JSON.stringify(Array.from(formData.value.enabledSkillIds || [])),
+    };
+
 
     // 如果当前有配置就更新，否则创建新的
     if (agentConfigStore.currentConfigId) {

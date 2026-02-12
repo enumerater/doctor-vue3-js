@@ -73,7 +73,7 @@ const visible = ref(props.show)
 const showRenameDialog = ref(false)
 const showCreateDialog = ref(false)
 const renameValue = ref('')
-const renamingConfigId = ref(null)
+const renamingConfigId = ref("")
 
 const createData = ref({
   name: '',
@@ -132,6 +132,7 @@ const onSwitch = async (config) => {
 
 // 重命名配置
 const onRename = (config) => {
+  console.log('onRename========', config)
   renamingConfigId.value = config.id
   renameValue.value = config.name
   showRenameDialog.value = true

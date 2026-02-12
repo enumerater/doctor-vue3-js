@@ -24,6 +24,8 @@ import { Popup } from 'vant'
 import { Badge } from 'vant'
 import { Empty } from 'vant'
 import { Card } from 'vant'
+import { Collapse, CollapseItem } from 'vant'
+import { Switch } from 'vant' // 新增Switch
 
 import 'vant/lib/index.css'
 // 导出一个注册函数，接收 app 实例（由 main.js 传递过来）
@@ -65,4 +67,7 @@ export function setupVant(app) {
   app.use(Badge)
   app.use(Empty)
   app.use(Card)
+  app.use(Collapse)
+  app.use(CollapseItem)
+  app.use(Switch) // 注册Switch组件
 }

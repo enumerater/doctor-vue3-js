@@ -347,7 +347,7 @@ const loadCurrentConfig = () => {
     formData.value = {
       province: currentConfig.province || '',
       city: currentConfig.city || '',
-      cropTypes: currentConfig.cropTypes || [],
+      cropTypes: JSON.parse(currentConfig.cropTypes || '[]'),
       growthStage: currentConfig.growthStage || 'growing',
       enableImageAnalysis: currentConfig.enableImageAnalysis ?? true,
       enableFieldManagement: currentConfig.enableFieldManagement ?? true,
@@ -464,28 +464,42 @@ const saveConfig = async () => {
   isSaving.value = true
   try {
     // 构建配置对象
+    // const configData = {
+    //   name: agentConfigStore.currentConfig?.name || '我的农田配置',
+    //   province: formData.value.province,
+    //   city: formData.value.city,
+    //   cropTypes: formData.value.cropTypes,
+    //   growthStage: formData.value.growthStage,
+    //   enableImageAnalysis: formData.value.enableImageAnalysis,
+    //   enableFieldManagement: formData.value.enableFieldManagement,
+    //   enablePesticideAdvice: formData.value.enablePesticideAdvice,
+    //   customPrompt: formData.value.customPrompt,
+    //   enabledSkillIds: formData.value.enabledSkillIds,
+    //   systemPrompt: {
+    //     template: formData.value.customPrompt || '你是一个专业的农业助手',
+    //     language: 'zh'
+    //   },
+    //   agentConfig: {
+    //     cropTypes: formData.value.cropTypes,
+    //     enableImageAnalysis: formData.value.enableImageAnalysis,
+    //     enableFieldManagement: formData.value.enableFieldManagement,
+    //     enablePesticideAdvice: formData.value.enablePesticideAdvice
+    //   }
+    // }
+
     const configData = {
       name: agentConfigStore.currentConfig?.name || '我的农田配置',
       province: formData.value.province,
       city: formData.value.city,
-      cropTypes: formData.value.cropTypes,
+      cropTypes: JSON.stringify(formData.value.cropTypes), // 数组类型
       growthStage: formData.value.growthStage,
       enableImageAnalysis: formData.value.enableImageAnalysis,
       enableFieldManagement: formData.value.enableFieldManagement,
       enablePesticideAdvice: formData.value.enablePesticideAdvice,
       customPrompt: formData.value.customPrompt,
-      enabledSkillIds: formData.value.enabledSkillIds,
-      systemPrompt: {
-        template: formData.value.customPrompt || '你是一个专业的农业助手',
-        language: 'zh'
-      },
-      agentConfig: {
-        cropTypes: formData.value.cropTypes,
-        enableImageAnalysis: formData.value.enableImageAnalysis,
-        enableFieldManagement: formData.value.enableFieldManagement,
-        enablePesticideAdvice: formData.value.enablePesticideAdvice
-      }
-    }
+      enabledSkillIds: JSON.stringify(formData.value.enabledSkillIds), // 数组类型
+    };
+
 
     // 更新或创建配置
     if (agentConfigStore.currentConfigId) {

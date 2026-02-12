@@ -5,7 +5,7 @@ import {
   updateAgentConfig,
   deleteAgentConfig,
   setDefaultConfig,
-  duplicateConfig
+  duplicateConfig,
 } from '@/axios/agentConfig'
 
 export const useAgentConfigStore = defineStore('agentConfig', {
@@ -25,39 +25,50 @@ export const useAgentConfigStore = defineStore('agentConfig', {
   getters: {
     // 当前选中的完整配置
     currentConfig: (state) => {
-      return state.configs.find(c => c.id === state.currentConfigId) ||
-             state.configs.find(c => c.isDefault) ||
-             state.configs[0]
+      return (
+        state.configs.find((c) => c.id === state.currentConfigId) ||
+        state.configs.find((c) => c.isDefault) ||
+        state.configs[0]
+      )
     },
 
     // 编辑中的配置
     editingConfig: (state) => {
-      return state.configs.find(c => c.id === state.editingConfigId)
+      return state.configs.find((c) => c.id === state.editingConfigId)
     },
 
     // 配置列表（UI展示）
     configList: (state) => {
-      return state.configs.map(c => ({
+      return state.configs.map((c) => ({
         id: c.id,
         name: c.name,
         description: c.description,
         isDefault: c.isDefault,
-        isActive: c.id === state.currentConfigId
+        isActive: c.id === state.currentConfigId,
       }))
-    }
+    },
   },
 
   actions: {
+    // 初始化配置数据（核心修复：新增初始化方法）
+    async initConfigData() {
+      // 若本地无配置数据，强制拉取；也可改为每次初始化都拉取最新（根据业务需求）
+      if (this.configs.length === 0) {
+        await this.fetchConfigs()
+      }
+    },
+
     // 获取用户的所有配置
     async fetchConfigs() {
       this.isLoading = true
       try {
         const response = await getAgentConfigs()
+        console.log('获取Agent配置成功:==========', response.data)
         this.configs = response.data || []
 
         // 自动选中默认配置或第一个
         if (this.configs.length > 0 && !this.currentConfigId) {
-          const defaultConfig = this.configs.find(c => c.isDefault)
+          const defaultConfig = this.configs.find((c) => c.isDefault)
           this.currentConfigId = defaultConfig?.id || this.configs[0].id
         }
         this.error = null
@@ -83,9 +94,13 @@ export const useAgentConfigStore = defineStore('agentConfig', {
 
     // 更新配置
     async updateConfig(configId, configData) {
+      console.log('cropTypes 类型:', typeof configData.cropTypes)
+      console.log('cropTypes 值:', configData.cropTypes)
+      console.log('enabledSkillIds 类型:', typeof configData.enabledSkillIds)
+
       try {
         const response = await updateAgentConfig(configId, configData)
-        const index = this.configs.findIndex(c => c.id === configId)
+        const index = this.configs.findIndex((c) => c.id === configId)
         if (index >= 0) {
           this.configs[index] = response.data
         }
@@ -100,7 +115,7 @@ export const useAgentConfigStore = defineStore('agentConfig', {
     async deleteConfig(configId) {
       try {
         await deleteAgentConfig(configId)
-        this.configs = this.configs.filter(c => c.id !== configId)
+        this.configs = this.configs.filter((c) => c.id !== configId)
 
         // 如果删除的是当前配置，切换到其他
         if (this.currentConfigId === configId) {
@@ -112,11 +127,19 @@ export const useAgentConfigStore = defineStore('agentConfig', {
       }
     },
 
-    // 切换配置
+    // 切换配置（核心修复：增加数据兜底检查）
     async switchConfig(configId) {
-      const config = this.configs.find(c => c.id === configId)
+      // 先检查配置列表是否为空，为空则先拉取数据
+      if (this.configs.length === 0) {
+        await this.fetchConfigs()
+      }
+      const config = this.configs.find((c) => c.id === configId)
       if (config) {
         this.currentConfigId = configId
+      } else {
+        // 若目标配置不存在，回退到默认/第一个配置
+        const defaultConfig = this.configs.find((c) => c.isDefault)
+        this.currentConfigId = defaultConfig?.id || this.configs[0]?.id || ''
       }
     },
 
@@ -125,7 +148,7 @@ export const useAgentConfigStore = defineStore('agentConfig', {
       try {
         await setDefaultConfig(configId)
         // 更新本地状态
-        this.configs.forEach(c => {
+        this.configs.forEach((c) => {
           c.isDefault = c.id === configId
         })
       } catch (err) {
@@ -169,7 +192,7 @@ export const useAgentConfigStore = defineStore('agentConfig', {
     // 关闭配置面板
     closeConfigPanel() {
       this.showConfigPanel = false
-    }
+    },
   },
 
   // 持久化配置
@@ -179,8 +202,8 @@ export const useAgentConfigStore = defineStore('agentConfig', {
       {
         key: 'agent-config-store',
         storage: localStorage,
-        paths: ['currentConfigId', 'configs']
-      }
-    ]
-  }
+        paths: ['currentConfigId', 'configs'],
+      },
+    ],
+  },
 })
