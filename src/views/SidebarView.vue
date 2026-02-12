@@ -53,12 +53,14 @@
 <script setup>
 import { useSidebarStore } from '@/stores/sidebar'
 import { useVisionStore } from '@/stores/vision'
+import { useSkillsStore } from '@/stores/skills'
 import { useRouter } from 'vue-router'
 import history from '@/components/HistoryList.vue'
 
 // 直接获取侧边栏store
 const sidebarStore = useSidebarStore()
 const visionStore = useVisionStore()
+const skillsStore = useSkillsStore()
 const router = useRouter()
 
 // Agent功能处理函数
@@ -79,6 +81,9 @@ const handleAgentFunction = (type) => {
     case 'agriculture':
       // 开启农业Agent模式
       sidebarStore.setAgricultureAgent(true)
+      // 检查是否启用了图片检测skill（disease-recognition）
+      const hasImageSkill = skillsStore.isSkillEnabled('disease-recognition')
+      sidebarStore.setAgentImageUploadEnabled(hasImageSkill)
       // 生成新的sessionId（关键修复）
       sidebarStore.prepareConversation().then(() => {
         // 导航到Agent专用页面

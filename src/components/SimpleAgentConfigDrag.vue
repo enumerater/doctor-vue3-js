@@ -349,6 +349,7 @@ const onConfigSelect = ({ selectedOptions }) => {
     loadCurrentConfig()
     initializeSkills()
     showConfigPicker.value = false
+
     showToast({
       message: `已切换到「${selectedConfig.text}」`,
       position: 'top'
@@ -412,6 +413,12 @@ const saveConfig = async () => {
     if (toDisable.length > 0) {
       await skillsStore.disableSkills(toDisable)
     }
+
+    // 更新sidebarStore中的图片上传按钮状态
+    const { useSidebarStore } = await import('@/stores/sidebar')
+    const sidebarStore = useSidebarStore()
+    const hasImageSkill = skillsStore.isSkillEnabled('disease-recognition')
+    sidebarStore.setAgentImageUploadEnabled(hasImageSkill)
 
     showToast({
       message: '✅ 设置已保存',

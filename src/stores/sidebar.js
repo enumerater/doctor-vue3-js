@@ -1,6 +1,7 @@
 // stores/sidebar.js
 import { defineStore } from 'pinia'
 import { useChatStore } from '@/stores/chat'
+import { useSkillsStore } from '@/stores/skills'
 import router from '@/router/index.js'
 import { getAllSession, deleteSession } from '@/axios/session'
 import { updateSesssionId, getUser } from '@/axios/user'
@@ -13,6 +14,7 @@ export const useSidebarStore = defineStore('sidebar', {
     searchKeyword: '',
     activeItemId: '',
     isAgricultureAgent: false, // 农业Agent模式开关
+    agentImageUploadEnabled: false, // Agent模式下图片上传按钮是否启用（基于skill配置）
   }),
   getters: {
     filteredHistory: (state) => {
@@ -77,6 +79,10 @@ export const useSidebarStore = defineStore('sidebar', {
       if (sessionType === 'agent') {
         // Agent对话跳转到AgentDetil页面
         this.isAgricultureAgent = true
+        // 检查是否启用了图片检测skill
+        const skillsStore = useSkillsStore()
+        const hasImageSkill = skillsStore.isSkillEnabled('disease-recognition')
+        this.agentImageUploadEnabled = hasImageSkill
         router.push({
           name: 'agentDetil',
           params: { sessionId: sessionId },
@@ -84,6 +90,7 @@ export const useSidebarStore = defineStore('sidebar', {
       } else {
         // 普通对话跳转到ChatDetail页面
         this.isAgricultureAgent = false
+        this.agentImageUploadEnabled = false
         router.push({
           name: 'chatDetail',
           params: { sessionId: sessionId },
@@ -118,6 +125,7 @@ export const useSidebarStore = defineStore('sidebar', {
       try {
         // 重置 Agent 模式为普通对话模式
         this.isAgricultureAgent = false
+        this.agentImageUploadEnabled = false
 
         await updateSesssionId({ userId })
 
@@ -143,22 +151,36 @@ export const useSidebarStore = defineStore('sidebar', {
     // 切换农业Agent模式
     toggleAgricultureAgent() {
       this.isAgricultureAgent = !this.isAgricultureAgent
-      // 如果开启农业Agent模式，确保使用农业相关的会话
+      // 如果开启农业Agent模式，检查是否启用了图片检测skill
       if (this.isAgricultureAgent) {
         const chatStore = useChatStore()
+        const skillsStore = useSkillsStore()
+        const hasImageSkill = skillsStore.isSkillEnabled('disease-recognition')
+        this.agentImageUploadEnabled = hasImageSkill
         chatStore.clearMessages()
+      } else {
+        // 关闭Agent模式时，也关闭图片上传按钮
+        this.agentImageUploadEnabled = false
       }
     },
     // 设置农业Agent模式
     setAgricultureAgent(enabled) {
       this.isAgricultureAgent = enabled
     },
+    // 设置Agent模式下图片上传按钮是否启用
+    setAgentImageUploadEnabled(enabled) {
+      this.agentImageUploadEnabled = enabled
+    },
     // 从视觉识别/对话结果传递到Agent模式
     async transferToAgent(promptText, imageUrl = null) {
       const chatStore = useChatStore()
+      const skillsStore = useSkillsStore()
       try {
         // 1. 开启Agent模式
         this.isAgricultureAgent = true
+        // 检查是否启用了图片检测skill
+        const hasImageSkill = skillsStore.isSkillEnabled('disease-recognition')
+        this.agentImageUploadEnabled = hasImageSkill
         // 2. 准备新会话
         await this.prepareConversation()
         // 3. 设置待发送内容

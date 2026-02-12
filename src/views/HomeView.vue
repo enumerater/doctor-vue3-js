@@ -47,7 +47,7 @@
 
     <div class="input-area" :class="{ 'with-sidebar': isPC }">
       <!-- 图片预览区域 -->
-      <div v-if="sidebarStore.isAgricultureAgent && uploadedImages.length > 0" class="image-preview-section">
+      <div v-if="sidebarStore.agentImageUploadEnabled && uploadedImages.length > 0" class="image-preview-section">
         <div class="preview-header">
           <span class="preview-title">已上传图片 ({{ uploadedImages.length }})</span>
           <span class="toggle-preview" @click="showImagePreview = !showImagePreview">
@@ -64,8 +64,8 @@
       <div class="input-row">
         <van-field v-model="chatStore.inputValue" placeholder="请输入您的问题" class="input-field"
           @keyup.enter="sendMessage" />
-        <!-- 农业Agent模式下显示图片上传按钮 -->
-        <button v-if="sidebarStore.isAgricultureAgent" class="upload-btn" @click="triggerImageUpload">
+        <!-- Agent模式下显示图片上传按钮（需要启用图片检测skill） -->
+        <button v-if="sidebarStore.agentImageUploadEnabled" class="upload-btn" @click="triggerImageUpload">
           <span class="btn-text">图片</span>
         </button>
         <button class="send-btn" @click="sendMessage">
