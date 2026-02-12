@@ -468,11 +468,19 @@ const saveConfig = async () => {
     flex-direction: column;
     gap: 20px;
 
+    @media (max-width: 768px) {
+      gap: 16px;
+    }
+
     .form-section {
       background: $bg-card;
       border-radius: $radius-lg;
       padding: 16px;
       border: 1px solid $border;
+
+      @media (max-width: 768px) {
+        padding: 14px;
+      }
 
       &.config-selector {
         .selector-row {
@@ -480,12 +488,22 @@ const saveConfig = async () => {
           gap: 8px;
           align-items: center;
 
+          @media (max-width: 768px) {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+          }
+
           :deep(.van-field) {
             flex: 1;
           }
 
           .van-button {
             flex-shrink: 0;
+
+            @media (max-width: 768px) {
+              width: 100%;
+            }
           }
         }
       }
@@ -495,6 +513,10 @@ const saveConfig = async () => {
         font-size: 16px;
         font-weight: 600;
         color: $text-primary;
+
+        @media (max-width: 768px) {
+          font-size: 15px;
+        }
       }
 
       .section-desc {
@@ -502,6 +524,11 @@ const saveConfig = async () => {
         font-size: 13px;
         color: $text-secondary;
         line-height: 1.4;
+
+        @media (max-width: 768px) {
+          font-size: 12px;
+          margin-bottom: 12px;
+        }
       }
 
       .field-group {
@@ -524,6 +551,11 @@ const saveConfig = async () => {
           grid-template-columns: repeat(2, 1fr);
           gap: 12px;
 
+          @media (max-width: 768px) {
+            grid-template-columns: 1fr;
+            gap: 8px;
+          }
+
           .crop-checkbox {
             :deep(.van-checkbox__label) {
               display: flex;
@@ -531,8 +563,16 @@ const saveConfig = async () => {
               gap: 6px;
               font-size: 14px;
 
+              @media (max-width: 768px) {
+                font-size: 13px;
+              }
+
               .crop-icon {
                 font-size: 18px;
+
+                @media (max-width: 768px) {
+                  font-size: 16px;
+                }
               }
             }
           }
@@ -543,6 +583,10 @@ const saveConfig = async () => {
           flex-direction: column;
           gap: 12px;
 
+          @media (max-width: 768px) {
+            gap: 8px;
+          }
+
           .stage-radio {
             :deep(.van-radio__label) {
               display: flex;
@@ -550,8 +594,17 @@ const saveConfig = async () => {
               gap: 8px;
               font-size: 14px;
 
+              @media (max-width: 768px) {
+                font-size: 13px;
+                gap: 6px;
+              }
+
               .stage-icon {
                 font-size: 18px;
+
+                @media (max-width: 768px) {
+                  font-size: 16px;
+                }
               }
             }
           }
@@ -645,6 +698,10 @@ const saveConfig = async () => {
         gap: 12px;
         margin-top: 12px;
 
+        @media (max-width: 768px) {
+          grid-template-columns: 1fr;
+        }
+
         .skills-pool,
         .skills-workspace {
           background: $bg-main;
@@ -652,6 +709,10 @@ const saveConfig = async () => {
           padding: 12px;
           min-height: 200px;
           border: 2px dashed $border;
+
+          @media (max-width: 768px) {
+            min-height: 180px;
+          }
 
           .pool-header,
           .workspace-header {
@@ -690,6 +751,10 @@ const saveConfig = async () => {
             flex-direction: column;
             gap: 8px;
             min-height: 150px;
+
+            @media (max-width: 768px) {
+              min-height: 130px;
+            }
 
             .skill-card {
               display: flex;
@@ -780,10 +845,18 @@ const saveConfig = async () => {
             height: 150px;
             color: $text-tertiary;
 
+            @media (max-width: 768px) {
+              height: 130px;
+            }
+
             .empty-icon {
               font-size: 40px;
               margin-bottom: 8px;
               opacity: 0.3;
+
+              @media (max-width: 768px) {
+                font-size: 32px;
+              }
             }
 
             .empty-text {
@@ -907,6 +980,10 @@ const saveConfig = async () => {
     .form-actions {
       margin-top: 8px;
 
+      @media (max-width: 768px) {
+        margin-top: 4px;
+      }
+
       .save-btn {
         height: 44px;
         font-size: 16px;
@@ -914,6 +991,11 @@ const saveConfig = async () => {
         border-radius: $radius-lg;
         box-shadow: 0 4px 12px rgba($primary, 0.2);
         transition: all 0.3s ease;
+
+        @media (max-width: 768px) {
+          height: 42px;
+          font-size: 15px;
+        }
 
         &:active {
           transform: scale(0.98);

@@ -46,6 +46,10 @@ const closePanel = () => {
     top: 0;
     z-index: 10;
 
+    @media (max-width: 768px) {
+      padding: 14px;
+    }
+
     .header-left {
       display: flex;
       align-items: center;
@@ -56,6 +60,10 @@ const closePanel = () => {
         font-size: 18px;
         font-weight: 600;
         color: $text-primary;
+
+        @media (max-width: 768px) {
+          font-size: 16px;
+        }
       }
 
       .mode-switch {
@@ -66,6 +74,10 @@ const closePanel = () => {
         font-size: 13px;
         color: $text-secondary;
         font-weight: 500;
+
+        @media (max-width: 768px) {
+          font-size: 12px;
+        }
       }
     }
 
@@ -73,6 +85,10 @@ const closePanel = () => {
       cursor: pointer;
       color: $text-secondary;
       transition: $transition;
+
+      @media (max-width: 768px) {
+        font-size: 22px;
+      }
 
       &:hover {
         color: $text-primary;
@@ -84,6 +100,10 @@ const closePanel = () => {
     flex: 1;
     overflow-y: auto;
     padding: 16px;
+
+    @media (max-width: 768px) {
+      padding: 12px;
+    }
   }
 }
 </style>

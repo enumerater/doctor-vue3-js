@@ -97,6 +97,7 @@ export const useChatStore = defineStore('chat', {
           // 如果是Agent模式，关联Agent配置到会话
           if (sidebarStore.isAgricultureAgent && agentConfigStore.currentConfig) {
             try {
+              console.log('关联Agent配置ID:', fullSessionId, agentConfigStore.currentConfig.id)
               await setSessionAgentConfig(fullSessionId, agentConfigStore.currentConfig.id)
             } catch (err) {
               console.warn('设置会话Agent配置失败', err)
@@ -134,7 +135,7 @@ export const useChatStore = defineStore('chat', {
         const agentConfigStore = (await import('@/stores/agentConfig')).useAgentConfigStore()
 
         const apiPath = sidebarStore.isAgricultureAgent
-          ? '/agent/agriculture-agent-v2'
+          ? '/agent/agriculture-agent'
           : '/chat/memory'
         const url = new URL(`http://localhost:8080${apiPath}`)
         url.searchParams.append('prompt', content)
@@ -251,4 +252,3 @@ export const useChatStore = defineStore('chat', {
     },
   },
 })
-
