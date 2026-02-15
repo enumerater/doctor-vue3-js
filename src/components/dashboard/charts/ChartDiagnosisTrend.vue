@@ -18,9 +18,10 @@ const store = useDashboardStore()
 const chartEl = ref(null)
 const { setOption } = useChart(chartEl)
 
-async function render() {
+async function render(targetSetOption) {
+  const so = targetSetOption || setOption
   const data = await getDiagnosisTrend(store.regionCode, store.timeRange)
-  setOption({
+  so({
     grid: { top: 30, bottom: 30, left: 40, right: 20 },
     legend: { top: 2, right: 0, textStyle: { fontSize: 10 } },
     xAxis: {

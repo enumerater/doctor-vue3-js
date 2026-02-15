@@ -18,9 +18,10 @@ const store = useDashboardStore()
 const chartEl = ref(null)
 const { setOption } = useChart(chartEl)
 
-async function render() {
+async function render(targetSetOption) {
+  const so = targetSetOption || setOption
   const data = await getCropDistribution(store.regionCode)
-  setOption({
+  so({
     series: [
       {
         type: 'pie',

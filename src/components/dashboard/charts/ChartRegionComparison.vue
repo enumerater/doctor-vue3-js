@@ -18,9 +18,10 @@ const store = useDashboardStore()
 const chartEl = ref(null)
 const { setOption } = useChart(chartEl)
 
-async function render() {
+async function render(targetSetOption) {
+  const so = targetSetOption || setOption
   const data = await getRegionCompare(store.regionCode, '', store.timeRange)
-  setOption({
+  so({
     legend: { bottom: 0, textStyle: { fontSize: 10, color: '#9CA3AF' } },
     radar: {
       indicator: data.dimensions.map((d) => ({ name: d, max: 100 })),

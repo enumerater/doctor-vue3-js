@@ -18,10 +18,11 @@ const store = useDashboardStore()
 const chartEl = ref(null)
 const { setOption } = useChart(chartEl)
 
-async function render() {
+async function render(targetSetOption) {
+  const so = targetSetOption || setOption
   const data = await getDiseaseHeatmap()
   const year = new Date().getFullYear()
-  setOption({
+  so({
     visualMap: {
       min: 0,
       max: 50,

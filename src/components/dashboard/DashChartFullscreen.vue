@@ -32,12 +32,9 @@ watch(
   async (fc) => {
     if (!fc) return
     await nextTick()
-    // 使用存储的 renderFn 重新渲染到大画布
     if (fc.renderFn) {
-      // renderFn 内部会调自己的 setOption，
-      // 但全屏需要用全屏的 chart，所以我们直接触发 resize
-      await nextTick()
-      resize()
+      // 传入全屏的 setOption，让图表渲染到全屏画布
+      await fc.renderFn(setOption)
     }
   },
 )

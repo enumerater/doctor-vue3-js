@@ -18,9 +18,10 @@ const store = useDashboardStore()
 const chartEl = ref(null)
 const { setOption } = useChart(chartEl)
 
-async function render() {
+async function render(targetSetOption) {
+  const so = targetSetOption || setOption
   const data = await getHumidityData()
-  setOption({
+  so({
     grid: { top: 20, bottom: 30, left: 40, right: 20 },
     xAxis: {
       type: 'category',

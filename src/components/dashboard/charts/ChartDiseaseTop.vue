@@ -18,9 +18,10 @@ const store = useDashboardStore()
 const chartEl = ref(null)
 const { setOption } = useChart(chartEl)
 
-async function render() {
+async function render(targetSetOption) {
+  const so = targetSetOption || setOption
   const data = await getDiseaseTop()
-  setOption({
+  so({
     grid: { top: 10, bottom: 10, left: '35%', right: '10%' },
     xAxis: { show: false },
     yAxis: {

@@ -44,6 +44,8 @@ export function useChart(elRef, opts = {}) {
 
   function init() {
     if (!elRef.value) return
+    // 避免重复初始化同一个 DOM 元素（防止 watcher nextTick 与 onMounted 竞争）
+    if (chart.value && !chart.value.isDisposed() && chart.value.getDom() === elRef.value) return
     if (chart.value) chart.value.dispose()
     chart.value = echarts.init(elRef.value, 'dashHorizon', {
       renderer: opts.renderer || 'canvas',

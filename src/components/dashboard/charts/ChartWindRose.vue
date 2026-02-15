@@ -18,9 +18,10 @@ const store = useDashboardStore()
 const chartEl = ref(null)
 const { setOption } = useChart(chartEl)
 
-async function render() {
+async function render(targetSetOption) {
+  const so = targetSetOption || setOption
   const data = await getWindRose()
-  setOption({
+  so({
     angleAxis: {
       type: 'category',
       data: data.map((d) => d.label),

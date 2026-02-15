@@ -18,10 +18,11 @@ const store = useDashboardStore()
 const chartEl = ref(null)
 const { setOption } = useChart(chartEl)
 
-async function render() {
+async function render(targetSetOption) {
+  const so = targetSetOption || setOption
   const data = await getPriceIndex(null, store.timeRange)
   const weeks = data[0]?.data.map((_, i) => `第${i + 1}周`) || []
-  setOption({
+  so({
     grid: { top: 30, bottom: 30, left: 40, right: 20 },
     legend: { top: 2, right: 0, textStyle: { fontSize: 10 } },
     xAxis: {
