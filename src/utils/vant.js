@@ -26,6 +26,7 @@ import { Empty } from 'vant'
 import { Card } from 'vant'
 import { Collapse, CollapseItem } from 'vant'
 import { Switch } from 'vant' // 新增Switch
+import { Popover } from 'vant' // 新增Popover（消息操作更多菜单）
 
 import 'vant/lib/index.css'
 // 导出一个注册函数，接收 app 实例（由 main.js 传递过来）
@@ -70,4 +71,5 @@ export function setupVant(app) {
   app.use(Collapse)
   app.use(CollapseItem)
   app.use(Switch) // 注册Switch组件
+  app.use(Popover) // 注册Popover组件
 }

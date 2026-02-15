@@ -28,11 +28,40 @@
           </div>
           <!-- 核心修改：用v-html渲染解析后的Markdown -->
           <div class="bubble-content" v-html="parseMarkdown(msg.messageContent)"></div>
-          <!-- 深入分析按钮：仅机器人消息且有内容时显示 -->
-          <div v-if="msg.messageRole === '1' && msg.messageContent" class="deep-analyze-btn"
-            @click="openAgentPopup(msg)">
-            <span class="analyze-icon">🌿</span>
-            <span class="analyze-text">深入分析</span>
+          <!-- 消息操作栏：仅机器人消息显示 -->
+          <div v-if="msg.messageRole === '1' && msg.messageContent" class="msg-actions">
+            <span class="action-btn" @click="openAgentPopup(msg)" title="深入分析">
+              <span class="analyze-icon-mini">🌿</span>
+              <span class="action-label">深入分析</span>
+            </span>
+            <span class="action-btn" @click="handleCopy(msg)" title="复制">
+              <van-icon name="records" />
+              <span class="action-label">复制</span>
+            </span>
+            <span class="action-btn" @click="handleRegenerate(msg, index)" title="重新生成">
+              <van-icon name="replay" />
+              <span class="action-label">重新生成</span>
+            </span>
+            <span class="action-btn" :class="{ 'is-reading': readingMsgId === msg.id }" @click="handleReadAloud(msg)" title="朗读">
+              <van-icon :name="readingMsgId === msg.id ? 'pause-circle-o' : 'volume-o'" />
+              <span class="action-label">{{ readingMsgId === msg.id ? '停止' : '朗读' }}</span>
+            </span>
+            <span class="action-btn" :class="{ active: likedMsgIds.has(msg.id) }" @click="handleLike(msg)" title="喜欢">
+              <van-icon :name="likedMsgIds.has(msg.id) ? 'good-job' : 'good-job-o'" />
+            </span>
+            <span class="action-btn dislike-btn" :class="{ active: dislikedMsgIds.has(msg.id) }" @click="handleDislike(msg)" title="不喜欢">
+              <van-icon :name="dislikedMsgIds.has(msg.id) ? 'good-job' : 'good-job-o'" />
+            </span>
+            <span class="action-btn" @click="handleForward(msg)" title="转发">
+              <van-icon name="share-o" />
+            </span>
+            <van-popover v-model:show="moreMenuVisible[msg.id]" :actions="moreActions" @select="(action) => onMoreSelect(action, msg)" placement="top" theme="dark">
+              <template #reference>
+                <span class="action-btn" title="更多">
+                  <van-icon name="ellipsis" />
+                </span>
+              </template>
+            </van-popover>
           </div>
           <!-- 原生JS格式化时间：无dayjs依赖 -->
           <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
@@ -50,11 +79,12 @@
 <script setup>
 import { useChatStore } from '@/stores/chat'
 import { useSidebarStore } from '@/stores/sidebar'
-import { computed, watch, onMounted, onUnmounted, ref, nextTick } from 'vue'
+import { computed, watch, onMounted, onUnmounted, ref, reactive, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 // 核心新增：导入marked库解析Markdown
 import { marked } from 'marked'
 import AgentTransferPopup from '@/components/AgentTransferPopup.vue'
+import { showToast, showConfirmDialog } from 'vant'
 
 // 配置marked（适配聊天场景）
 marked.setOptions({
@@ -91,6 +121,156 @@ const handleAgentTransferConfirm = async ({ prompt }) => {
     await sidebarStore.transferToAgent(prompt, null)
   } catch (err) {
     console.error('传递到Agent失败：', err)
+  }
+}
+
+// ========== 消息操作栏相关 ==========
+const likedMsgIds = ref(new Set())
+const dislikedMsgIds = ref(new Set())
+const moreMenuVisible = reactive({})
+const readingMsgId = ref(null)
+
+// 更多菜单选项
+const moreActions = [
+  { text: '转化为文档', value: 'toDoc' },
+  { text: '收藏', value: 'collect' },
+  { text: '反馈', value: 'feedback' },
+  { text: '举报', value: 'report' },
+  { text: '删除', value: 'delete' },
+]
+
+// 复制消息文本
+const handleCopy = async (msg) => {
+  try {
+    const text = msg.messageContent || ''
+    await navigator.clipboard.writeText(text)
+    showToast('已复制')
+  } catch {
+    // 降级方案
+    const textarea = document.createElement('textarea')
+    textarea.value = msg.messageContent || ''
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+    showToast('已复制')
+  }
+}
+
+// 重新生成
+const handleRegenerate = (msg, index) => {
+  // 找到该机器人消息之前的用户消息
+  let userMsg = null
+  for (let i = index - 1; i >= 0; i--) {
+    if (messages.value[i].messageRole === '0') {
+      userMsg = messages.value[i]
+      break
+    }
+  }
+  if (userMsg && userMsg.messageContent) {
+    const userId = localStorage.getItem('id')
+    const sessionId = route.params.sessionId
+    const partialSessionId = sessionId.startsWith(userId)
+      ? sessionId.substring(userId.length)
+      : sessionId
+    const TOKEN = localStorage.getItem('token') || ''
+    chatStore.sendMessage(userMsg.messageContent, null, userId, partialSessionId, TOKEN)
+  } else {
+    showToast('未找到对应的用户消息')
+  }
+}
+
+// 朗读 / 停止朗读
+const handleReadAloud = (msg) => {
+  const synth = window.speechSynthesis
+  if (!synth) {
+    showToast('当前浏览器不支持语音朗读')
+    return
+  }
+  // 正在朗读该消息则停止
+  if (readingMsgId.value === msg.id) {
+    synth.cancel()
+    readingMsgId.value = null
+    return
+  }
+  // 停止之前的朗读
+  synth.cancel()
+  const utterance = new SpeechSynthesisUtterance(msg.messageContent || '')
+  utterance.lang = 'zh-CN'
+  utterance.onend = () => { readingMsgId.value = null }
+  utterance.onerror = () => { readingMsgId.value = null }
+  readingMsgId.value = msg.id
+  synth.speak(utterance)
+}
+
+// 喜欢（与不喜欢互斥）
+const handleLike = (msg) => {
+  if (likedMsgIds.value.has(msg.id)) {
+    likedMsgIds.value.delete(msg.id)
+  } else {
+    likedMsgIds.value.add(msg.id)
+    dislikedMsgIds.value.delete(msg.id)
+  }
+}
+
+// 不喜欢（与喜欢互斥）
+const handleDislike = (msg) => {
+  if (dislikedMsgIds.value.has(msg.id)) {
+    dislikedMsgIds.value.delete(msg.id)
+  } else {
+    dislikedMsgIds.value.add(msg.id)
+    likedMsgIds.value.delete(msg.id)
+  }
+}
+
+// 转发
+const handleForward = async (msg) => {
+  const text = msg.messageContent || ''
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'AI回复', text })
+    } catch {
+      // 用户取消分享，忽略
+    }
+  } else {
+    // 不支持 Web Share API，降级为复制
+    try {
+      await navigator.clipboard.writeText(text)
+      showToast('已复制内容，可粘贴转发')
+    } catch {
+      showToast('转发功能暂不可用')
+    }
+  }
+}
+
+// 更多菜单选择
+const onMoreSelect = (action, msg) => {
+  switch (action.value) {
+    case 'delete':
+      showConfirmDialog({ title: '确认删除', message: '确定要删除这条消息吗？' })
+        .then(() => {
+          const idx = chatStore.chatMessages.findIndex(m => m.id === msg.id)
+          if (idx !== -1) {
+            chatStore.chatMessages.splice(idx, 1)
+            showToast('已删除')
+          }
+        })
+        .catch(() => {})
+      break
+    case 'toDoc':
+      showToast('转化为文档功能开发中')
+      break
+    case 'collect':
+      showToast('收藏功能开发中')
+      break
+    case 'feedback':
+      showToast('反馈功能开发中')
+      break
+    case 'report':
+      showToast('举报功能开发中')
+      break
   }
 }
 
@@ -595,61 +775,67 @@ $bubble-radius: $radius-lg;
   }
 }
 
-// 深入分析按钮
-.deep-analyze-btn {
-  display: inline-flex;
+// 消息操作栏
+.msg-actions {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 10px;
-  padding: 8px 16px;
-  font-size: 0.875rem;
-  color: white;
-  background: linear-gradient(135deg, $primary, $secondary);
-  border-radius: 20px;
-  cursor: pointer;
-  transition: $transition-smooth;
-  border: none;
-  position: relative;
-  overflow: hidden;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 8px;
+  padding: 4px 0;
 
-  .robot-message & {
-    align-self: flex-start;
-  }
-
-  .analyze-icon {
-    font-size: 1rem;
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    color: $text-tertiary;
+    border-radius: 14px;
+    cursor: pointer;
     transition: $transition-fast;
-  }
+    user-select: none;
+    white-space: nowrap;
 
-  .analyze-text {
-    font-weight: 500;
-  }
+    .van-icon {
+      font-size: 15px;
+    }
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
-  }
+    &:hover {
+      color: $primary;
+      background-color: $primary-light;
+    }
 
-  &:hover {
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: $shadow-lg;
+    &:active {
+      transform: scale(0.92);
+    }
 
-    .analyze-icon {
-      transform: rotate(20deg) scale(1.2);
+    &.active {
+      color: $primary;
+    }
+
+    &.is-reading {
+      color: $primary;
+      background-color: $primary-light;
     }
   }
 
-  &:active::before {
-    width: 200px;
-    height: 200px;
+  // 不喜欢按钮图标翻转
+  .dislike-btn .van-icon {
+    display: inline-block;
+    transform: rotate(180deg);
+  }
+
+  // 深入分析小图标
+  .analyze-icon-mini {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .action-label {
+    @media (max-width: 480px) {
+      display: none;
+    }
   }
 }
 
