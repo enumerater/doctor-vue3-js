@@ -1,7 +1,7 @@
 import { shallowRef, onUnmounted } from 'vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
 
-const AMAP_KEY = ''
+const AMAP_KEY = '7983d4f184c7e6bb01292e449c0586f4'
 const AMAP_VERSION = '2.0'
 
 /**
