@@ -129,7 +129,7 @@ const tabs = [
   flex: 1;
   padding: 12px;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .chart-grid {
@@ -138,6 +138,7 @@ const tabs = [
   grid-template-rows: 1fr 1fr;
   gap: 12px;
   height: 100%;
+  min-height: 240px;
 }
 
 // Tab 切换动画

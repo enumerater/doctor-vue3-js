@@ -74,6 +74,8 @@ onUnmounted(() => clearInterval(timer))
   border-bottom: 1px solid $dash-border;
   flex-shrink: 0;
   gap: 12px;
+  position: relative;
+  z-index: 20;
 }
 
 .header-left {
