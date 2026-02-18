@@ -39,6 +39,24 @@
     <!-- 分割线 -->
     <van-divider class="sidebar-divider" />
 
+    <!-- 功能模块区域 -->
+    <div class="sidebar-agent">
+      <div class="agent-title">功能模块</div>
+      <div class="agent-list">
+        <div class="agent-item" @click="handleFeatureNav('knowledge')">
+          <van-icon name="bookmark-o" class="agent-icon" />
+          <span class="agent-text">病害知识库</span>
+        </div>
+        <div class="agent-item" @click="handleFeatureNav('farm')">
+          <van-icon name="shop-o" class="agent-icon" />
+          <span class="agent-text">我的农场</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分割线 -->
+    <van-divider class="sidebar-divider" />
+
     <!-- 历史记录区域 -->
     <div class="sidebar-history">
       <div class="history-title">历史记录</div>
@@ -94,6 +112,12 @@ const handleAgentFunction = (type) => {
     default:
       break
   }
+}
+
+// 功能模块导航
+const handleFeatureNav = (module) => {
+  router.push({ name: module })
+  sidebarStore.closeLeft()
 }
 </script>
 

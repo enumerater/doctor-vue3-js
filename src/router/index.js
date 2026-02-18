@@ -22,6 +22,71 @@ const router = createRouter({
       component: () => import('@/views/DataVision.vue'),
       meta: { title: '数据管理' },
     },
+
+    // ====== 病害知识库 ======
+    {
+      path: '/knowledge',
+      name: 'knowledge',
+      component: () => import('@/views/knowledge/KnowledgeIndex.vue'),
+      meta: { title: '病害知识库' },
+    },
+    {
+      path: '/knowledge/crop/:cropName',
+      name: 'knowledgeCrop',
+      component: () => import('@/views/knowledge/KnowledgeCropList.vue'),
+      meta: { title: '作物病害' },
+    },
+    {
+      path: '/knowledge/disease/:diseaseId',
+      name: 'knowledgeDetail',
+      component: () => import('@/views/knowledge/KnowledgeDetail.vue'),
+      meta: { title: '病害详情' },
+    },
+    {
+      path: '/knowledge/search',
+      name: 'knowledgeSearch',
+      component: () => import('@/views/knowledge/KnowledgeSearch.vue'),
+      meta: { title: '搜索病害' },
+    },
+
+    // ====== 农田地块管理 ======
+    {
+      path: '/farm',
+      name: 'farm',
+      component: () => import('@/views/farm/FarmIndex.vue'),
+      meta: { title: '我的农场' },
+    },
+    {
+      path: '/farm/create',
+      name: 'farmCreate',
+      component: () => import('@/views/farm/FarmCreate.vue'),
+      meta: { title: '创建农场' },
+    },
+    {
+      path: '/farm/:farmId',
+      name: 'farmDetail',
+      component: () => import('@/views/farm/FarmDetail.vue'),
+      meta: { title: '农场详情' },
+    },
+    {
+      path: '/farm/:farmId/plot/create',
+      name: 'plotCreate',
+      component: () => import('@/views/farm/PlotCreate.vue'),
+      meta: { title: '添加地块' },
+    },
+    {
+      path: '/farm/:farmId/plot/:plotId',
+      name: 'plotDetail',
+      component: () => import('@/views/farm/PlotDetail.vue'),
+      meta: { title: '地块详情' },
+    },
+    {
+      path: '/farm/:farmId/plot/:plotId/edit',
+      name: 'plotEdit',
+      component: () => import('@/views/farm/PlotEdit.vue'),
+      meta: { title: '编辑地块' },
+    },
+
     {
       path: '/home',
       component: () => import('@/views/HomeView.vue'),
