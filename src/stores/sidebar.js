@@ -75,27 +75,20 @@ export const useSidebarStore = defineStore('sidebar', {
       // 3. 更新 localStorage 中的 sessionId
       localStorage.setItem('sessionId', partialSessionId)
 
-      // 4. 根据会话类型跳转到不同页面
+      // 4. Set agent mode based on session type, navigate to unified chatDetail
       if (sessionType === 'agent') {
-        // Agent对话跳转到AgentDetil页面
         this.isAgricultureAgent = true
-        // 检查是否启用了图片检测skill
         const skillsStore = useSkillsStore()
         const hasImageSkill = skillsStore.isSkillEnabled('disease-recognition')
         this.agentImageUploadEnabled = hasImageSkill
-        router.push({
-          name: 'agentDetail',
-          params: { sessionId: sessionId },
-        })
       } else {
-        // 普通对话跳转到ChatDetail页面
         this.isAgricultureAgent = false
         this.agentImageUploadEnabled = false
-        router.push({
-          name: 'chatDetail',
-          params: { sessionId: sessionId },
-        })
       }
+      router.push({
+        name: 'chatDetail',
+        params: { sessionId: sessionId },
+      })
       this.closeLeft()
     },
     // 准备新对话：只更新 sessionId，不创建会话记录（避免空会话出现在历史记录）
@@ -187,8 +180,8 @@ export const useSidebarStore = defineStore('sidebar', {
         chatStore.setInputValue(promptText)
         chatStore.pendingTransferImageUrl = imageUrl || ''
         chatStore.autoSendPending = true
-        // 4. 导航到Agent首页（HomeView的watcher会自动触发发送）
-        router.push({ name: 'agentHome' })
+        // 4. 导航到ChatHome（watcher会自动触发发送）
+        router.push({ name: 'chatHome' })
       } catch (err) {
         console.error('传递到Agent失败：', err)
         chatStore.clearAutoSend()

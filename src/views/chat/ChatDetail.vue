@@ -1,14 +1,12 @@
 <script setup>
-// Phase 3 will properly migrate this view
-// For now, re-export the existing ChatDetail with an input area wrapper
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useChatStore } from '@/stores/chat'
 import { useSidebarStore } from '@/stores/sidebar'
-import { upload } from '@/axios/oss'
 import { marked } from 'marked'
 import AgentTransferPopup from '@/components/AgentTransferPopup.vue'
-import { Promotion, Upload } from '@element-plus/icons-vue'
+import ChatInputCard from '@/components/ChatInputCard.vue'
+import AgentSettingsInline from '@/components/AgentSettingsInline.vue'
 
 marked.setOptions({ breaks: true, gfm: true })
 
@@ -17,8 +15,26 @@ const sidebarStore = useSidebarStore()
 const route = useRoute()
 const router = useRouter()
 const messageList = ref(null)
+const chatInputCardRef = ref(null)
+const showAgentSettings = ref(false)
 
-// Agent分析弹窗
+// Agent step config (merged from AgentDetail)
+const getStepConfig = (type) => {
+  const configs = {
+    think: { title: '思考汇总结果', icon: '', color: '#059669' },
+    img_think: { title: '多模态分析', icon: '', color: '#059669' },
+    img_find: { title: '多模态分析结果', icon: '', color: '#059669' },
+    analyze_result: { title: '正在分析中', icon: '', color: '#6B7280' },
+    safe_notice: { title: '安全防护要求', icon: '', color: '#F59E0B' },
+    pesticide: { title: '精准用药方案', icon: '', color: '#10B981' },
+    field_manage: { title: '田间管理建议', icon: '', color: '#3B82F6' },
+    final_result: { title: '诊断总结报告', icon: '', color: '#059669' },
+    default: { title: '分析结果', icon: '', color: '#6B7280' },
+  }
+  return configs[type] || configs.default
+}
+
+// Agent analysis popup
 const showAgentPopup = ref(false)
 const selectedMessageForAgent = ref(null)
 
@@ -45,6 +61,11 @@ const handleAgentTransferConfirm = async ({ prompt }) => {
 
 const messages = computed(() => chatStore.chatMessages)
 
+// Check if message has agent steps
+const hasAgentSteps = (msg) => {
+  return msg.steps && msg.steps.length > 0
+}
+
 const parseMarkdown = (content) => {
   if (!content) return ''
   try { return marked.parse(content) } catch { return content }
@@ -57,11 +78,16 @@ const formatTime = (timeStr) => {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
-// 消息操作
+const getImagesFromMessage = (msg) => {
+  if (!msg.imageUrls) return []
+  if (Array.isArray(msg.imageUrls)) return msg.imageUrls
+  try { return JSON.parse(msg.imageUrls) } catch { return [] }
+}
+
+// Message actions
 const likedMsgIds = ref(new Set())
 const dislikedMsgIds = ref(new Set())
 const readingMsgId = ref(null)
-const moreMenuVisible = reactive({})
 
 const handleCopy = async (msg) => {
   try {
@@ -112,39 +138,19 @@ const handleDislike = (msg) => {
   dislikedMsgIds.value.has(msg.id) ? dislikedMsgIds.value.delete(msg.id) : (dislikedMsgIds.value.add(msg.id), likedMsgIds.value.delete(msg.id))
 }
 
-// 输入区域
-const imageInput = ref(null)
-const uploadedImages = ref([])
-const triggerImageUpload = () => { imageInput.value?.click() }
-
-const handleImageUpload = async (e) => {
-  const file = e.target.files[0]
-  if (!file) return
-  try {
-    if (!['image/jpeg', 'image/png'].includes(file.type)) { ElMessage.warning('仅支持 JPG/PNG'); return }
-    if (file.size > 10 * 1024 * 1024) { ElMessage.warning('图片不能超过10MB'); return }
-    const res = await upload(file)
-    uploadedImages.value.push(res.data.url)
-    if (imageInput.value) imageInput.value.value = ''
-  } catch { ElMessage.error('图片上传失败') }
-}
-
-const removeImage = (index) => { uploadedImages.value.splice(index, 1) }
-
-const sendMessage = async () => {
-  const content = (chatStore.inputValue || '').trim()
-  if (!content && uploadedImages.value.length === 0) return
+// Send message via ChatInputCard
+const handleSend = (content, images) => {
   const userId = localStorage.getItem('id')
   let stored = String(chatStore.currentSessionId || localStorage.getItem('sessionId') || '')
   let partial = stored.startsWith(userId) ? stored.substring(userId.length) : stored
   const full = `${userId}${partial}`
   chatStore.setCurrentSessionId(full)
-  await chatStore.prepareMessage(content, userId, partial)
-  chatStore.startStreaming(content, uploadedImages.value, userId, partial, localStorage.getItem('token')).catch(console.error)
-  uploadedImages.value = []
+  chatStore.prepareMessage(content, userId, partial).then(() => {
+    chatStore.startStreaming(content, images, userId, partial, localStorage.getItem('token')).catch(console.error)
+  })
 }
 
-// 加载历史消息
+// Load history messages
 let isLoading = false
 const loadHistory = async () => {
   if (isLoading) return
@@ -174,6 +180,14 @@ const scrollToBottom = () => {
 
 watch(() => messages.value.length, () => nextTick(scrollToBottom))
 watch(() => { const l = messages.value[messages.value.length - 1]; return l?.messageContent || '' }, () => nextTick(scrollToBottom))
+// Also watch agent steps changes for auto-scroll
+watch(
+  () => {
+    const lastMsg = messages.value[messages.value.length - 1]
+    return lastMsg?.steps ? JSON.stringify(lastMsg.steps) : ''
+  },
+  () => nextTick(scrollToBottom),
+)
 
 let observer
 onMounted(() => {
@@ -201,73 +215,89 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
         class="message-item"
         :class="{ 'user-message': msg.messageRole === '0', 'robot-message': msg.messageRole === '1' }"
       >
-        <div class="message-bubble">
+        <!-- User message -->
+        <div v-if="msg.messageRole === '0'" class="message-bubble">
           <div v-if="msg.isImageMessage" class="image-preview-container">
             <div v-for="(imageUrl, imgIdx) in getImagesFromMessage(msg)" :key="imgIdx" class="img-item">
               <img :src="imageUrl" alt="上传图片" />
             </div>
           </div>
           <div class="bubble-content" v-html="parseMarkdown(msg.messageContent)"></div>
-
-          <div v-if="msg.messageRole === '1' && msg.messageContent" class="msg-actions">
-            <el-button text size="small" @click="openAgentPopup(msg)">🌿 深入分析</el-button>
-            <el-button text size="small" @click="handleCopy(msg)">复制</el-button>
-            <el-button text size="small" @click="handleRegenerate(msg, index)">重新生成</el-button>
-            <el-button text size="small" @click="handleReadAloud(msg)">
-              {{ readingMsgId === msg.id ? '停止' : '朗读' }}
-            </el-button>
-            <el-button
-              text size="small"
-              :type="likedMsgIds.has(msg.id) ? 'primary' : ''"
-              @click="handleLike(msg)"
-            >👍</el-button>
-            <el-button
-              text size="small"
-              :type="dislikedMsgIds.has(msg.id) ? 'danger' : ''"
-              @click="handleDislike(msg)"
-            >👎</el-button>
-          </div>
-
           <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
         </div>
+
+        <!-- Robot message: Agent chain timeline OR normal markdown -->
+        <template v-else>
+          <!-- Agent chain timeline -->
+          <div v-if="hasAgentSteps(msg)" class="agent-chain-wrapper">
+            <div class="chain-timeline">
+              <div
+                v-for="(step, sIdx) in msg.steps"
+                :key="sIdx"
+                :class="['step-node', `type-${step.type}`, { 'is-processing': step.status === 'processing' }]"
+              >
+                <div v-if="step.type === 'status'" class="status-line">
+                  <div class="node-dot"></div>
+                  <div class="status-text">{{ step.content }}</div>
+                  <div class="loading-spinner" v-if="step.status === 'processing'"></div>
+                </div>
+
+                <div v-else class="data-card">
+                  <div class="card-header">
+                    <span class="card-icon">{{ getStepConfig(step.type).icon }}</span>
+                    <span class="card-title">{{ getStepConfig(step.type).title }}</span>
+                  </div>
+                  <div class="card-body markdown-body" v-html="parseMarkdown(step.content)"></div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="msg.messageContent" class="msg-actions agent-actions">
+              <el-button text size="small" @click="handleCopy(msg)">复制</el-button>
+            </div>
+            <div class="message-time agent-time">{{ formatTime(msg.messageTime) }}</div>
+          </div>
+
+          <!-- Normal markdown bubble -->
+          <div v-else class="message-bubble">
+            <div class="bubble-content" v-html="parseMarkdown(msg.messageContent)"></div>
+
+            <div v-if="msg.messageContent" class="msg-actions">
+              <el-button text size="small" @click="openAgentPopup(msg)">深入分析</el-button>
+              <el-button text size="small" @click="handleCopy(msg)">复制</el-button>
+              <el-button text size="small" @click="handleRegenerate(msg, index)">重新生成</el-button>
+              <el-button text size="small" @click="handleReadAloud(msg)">
+                {{ readingMsgId === msg.id ? '停止' : '朗读' }}
+              </el-button>
+              <el-button
+                text size="small"
+                :type="likedMsgIds.has(msg.id) ? 'primary' : ''"
+                @click="handleLike(msg)"
+              >👍</el-button>
+              <el-button
+                text size="small"
+                :type="dislikedMsgIds.has(msg.id) ? 'danger' : ''"
+                @click="handleDislike(msg)"
+              >👎</el-button>
+            </div>
+
+            <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
+          </div>
+        </template>
       </div>
     </div>
 
-    <!-- 输入区域 -->
-    <div class="input-area">
-      <div v-if="uploadedImages.length > 0" class="preview-row">
-        <div v-for="(url, i) in uploadedImages" :key="i" class="preview-thumb">
-          <img :src="url" />
-          <span class="remove" @click="removeImage(i)">×</span>
-        </div>
-      </div>
-      <div class="input-row">
-        <el-input
-          v-model="chatStore.inputValue"
-          placeholder="请输入您的问题..."
-          @keyup.enter="sendMessage"
-          clearable
-          size="large"
-        />
-        <el-button
-          v-if="sidebarStore.agentImageUploadEnabled"
-          @click="triggerImageUpload"
-          circle
-          size="large"
-        >
-          <el-icon><Upload /></el-icon>
-        </el-button>
-        <el-button
-          type="primary"
-          @click="sendMessage"
-          :disabled="!chatStore.inputValue?.trim() && uploadedImages.length === 0"
-          circle
-          size="large"
-        >
-          <el-icon><Promotion /></el-icon>
-        </el-button>
-        <input type="file" ref="imageInput" style="display:none" accept="image/jpeg,image/png" @change="handleImageUpload" />
-      </div>
+    <!-- Input area -->
+    <div class="input-wrapper">
+      <AgentSettingsInline
+        :visible="showAgentSettings"
+        @close="showAgentSettings = false"
+      />
+      <ChatInputCard
+        ref="chatInputCardRef"
+        @send="handleSend"
+        @toggle-settings="showAgentSettings = !showAgentSettings"
+      />
     </div>
 
     <AgentTransferPopup
@@ -281,6 +311,9 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
 </template>
 
 <style lang="scss" scoped>
+$primary-green: #059669;
+$border-light: rgba(5, 150, 105, 0.1);
+
 .chat-detail-page {
   display: flex;
   flex-direction: column;
@@ -399,53 +432,121 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
   }
 }
 
-.input-area {
+// Agent chain timeline styles (merged from AgentDetail)
+.agent-chain-wrapper {
+  align-self: flex-start;
+  width: 90%;
+  max-width: 600px;
+
+  .chain-timeline {
+    position: relative;
+    padding-left: 1.5rem;
+    border-left: 2px dashed rgba($primary-green, 0.2);
+    margin-left: 0.5rem;
+  }
+}
+
+.step-node {
+  position: relative;
+  margin-bottom: 1rem;
+
+  .status-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #6b7280;
+
+    .node-dot {
+      position: absolute;
+      left: -1.5rem;
+      width: 10px;
+      height: 10px;
+      background: white;
+      border: 2px solid $primary-green;
+      border-radius: 50%;
+      transform: translateX(-40%);
+      z-index: 2;
+    }
+  }
+
+  .data-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid $border-light;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    transition: transform 0.2s;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-header {
+      padding: 8px 12px;
+      background: rgba($primary-green, 0.03);
+      border-bottom: 1px solid $border-light;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .card-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #374151;
+      }
+    }
+
+    .card-body {
+      padding: 12px;
+      font-size: 0.93rem;
+      line-height: 1.6;
+      color: #1f2937;
+    }
+  }
+}
+
+.type-final_result .data-card {
+  border: 1.5px solid rgba($primary-green, 0.4);
+
+  .card-header {
+    background: rgba($primary-green, 0.08);
+  }
+}
+
+.loading-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #e5e7eb;
+  border-top-color: $primary-green;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.agent-time {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 0.5rem;
+}
+
+.agent-actions {
+  margin-top: 8px;
+}
+
+// Input wrapper
+.input-wrapper {
   padding: 12px 20px;
-  background: #fff;
-  border-top: 1px solid $border;
+  background: $bg-main;
 
   @include mobile {
     padding: 8px 12px;
     padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   }
-}
-
-.preview-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-
-  .preview-thumb {
-    position: relative;
-    width: 56px;
-    height: 56px;
-    border-radius: 8px;
-    overflow: hidden;
-
-    img { width: 100%; height: 100%; object-fit: cover; }
-
-    .remove {
-      position: absolute;
-      top: -4px;
-      right: -4px;
-      width: 18px;
-      height: 18px;
-      background: $danger;
-      color: #fff;
-      border-radius: 50%;
-      @include flex-center;
-      font-size: 12px;
-      cursor: pointer;
-    }
-  }
-}
-
-.input-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  .el-input { flex: 1; }
 }
 
 @keyframes fadeInUp {

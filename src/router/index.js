@@ -37,17 +37,14 @@ const router = createRouter({
           component: () => import('@/views/chat/ChatDetail.vue'),
           meta: { title: '对话详情' },
         },
+        // Agent routes redirect to unified chat
         {
           path: 'agent',
-          name: 'agentHome',
-          component: () => import('@/views/chat/AgentHome.vue'),
-          meta: { title: 'Agent小农' },
+          redirect: '/chat',
         },
         {
           path: 'agent/:sessionId',
-          name: 'agentDetail',
-          component: () => import('@/views/chat/AgentDetail.vue'),
-          meta: { title: 'Agent详情' },
+          redirect: (to) => `/chat/${to.params.sessionId}`,
         },
 
         // ====== 图像诊断 ======
