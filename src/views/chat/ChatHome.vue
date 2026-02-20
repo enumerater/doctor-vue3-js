@@ -1,112 +1,64 @@
 <template>
   <div class="chat-home">
-    <!-- PC: sidebar -->
-    <div class="chat-sidebar" v-if="!isMobile">
-      <div class="sidebar-header">
-        <el-button type="primary" @click="handleNewChat" class="new-chat-btn" round>
-          新建对话
-        </el-button>
-      </div>
-      <div class="sidebar-search">
-        <el-input
-          v-model="sidebarStore.searchKeyword"
-          placeholder="搜索对话..."
-          prefix-icon="Search"
-          clearable
-          size="default"
-        />
-      </div>
-      <div class="history-list">
-        <HistoryList />
-      </div>
-    </div>
-
-    <!-- Mobile: history drawer -->
-    <el-drawer
-      v-if="isMobile"
-      v-model="showHistory"
-      direction="ltr"
-      size="75%"
-      :show-close="false"
-    >
-      <template #header>
-        <el-button type="primary" @click="handleNewChat" round size="small">新建对话</el-button>
-      </template>
-      <HistoryList />
-    </el-drawer>
-
-    <!-- Main content -->
-    <div class="chat-main">
-      <!-- Mobile: toolbar -->
-      <div class="mobile-toolbar" v-if="isMobile">
-        <el-button text @click="showHistory = true">
-          <el-icon><List /></el-icon>
-          历史记录
-        </el-button>
+    <!-- Content area -->
+    <div class="chat-content" ref="chatContentRef">
+      <!-- Empty state -->
+      <div v-if="chatStore.chatMessages.length === 0" class="empty-state">
+        <template v-if="sidebarStore.isAgricultureAgent">
+          <LogoSection class="logo-section" title="Agent小农" subtitle="专业农业智能助手" altText="Agent小农" />
+          <AgentHotQuestionCard class="hot-question-card" />
+        </template>
+        <template v-else>
+          <div class="empty-icon">💬</div>
+          <div class="empty-title">开始一段新对话</div>
+          <div class="empty-desc">向AI助手提问关于农业种植、病害诊断的问题</div>
+        </template>
       </div>
 
-      <!-- Content area -->
-      <div class="chat-content" ref="chatContentRef">
-        <!-- Empty state -->
-        <div v-if="chatStore.chatMessages.length === 0" class="empty-state">
-          <template v-if="sidebarStore.isAgricultureAgent">
-            <LogoSection class="logo-section" title="Agent小农" subtitle="专业农业智能助手" altText="Agent小农" />
-            <AgentHotQuestionCard class="hot-question-card" />
-          </template>
-          <template v-else>
-            <div class="empty-icon">💬</div>
-            <div class="empty-title">开始一段新对话</div>
-            <div class="empty-desc">向AI助手提问关于农业种植、病害诊断的问题</div>
-          </template>
-        </div>
-
-        <!-- Message list -->
-        <div v-else class="message-list">
-          <div
-            v-for="(msg, index) in chatStore.chatMessages"
-            :key="msg.id || index"
-            class="message-item"
-            :class="{
-              'user-message': msg.messageRole === '0',
-              'robot-message': msg.messageRole === '1',
-            }"
-          >
-            <div class="message-bubble">
-              <div class="bubble-content" v-html="parseMarkdown(msg.messageContent)"></div>
-              <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
-            </div>
+      <!-- Message list -->
+      <div v-else class="message-list">
+        <div
+          v-for="(msg, index) in chatStore.chatMessages"
+          :key="msg.id || index"
+          class="message-item"
+          :class="{
+            'user-message': msg.messageRole === '0',
+            'robot-message': msg.messageRole === '1',
+          }"
+        >
+          <div class="message-bubble">
+            <div class="bubble-content" v-html="parseMarkdown(msg.messageContent)"></div>
+            <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Input area -->
-      <div class="input-wrapper">
-        <AgentSettingsInline
-          :visible="showAgentSettings"
-          @close="showAgentSettings = false"
-        />
-        <ChatInputCard
-          ref="chatInputCardRef"
-          @send="sendMessage"
-          @toggle-settings="showAgentSettings = !showAgentSettings"
-        />
-      </div>
+    <!-- Input area -->
+    <div class="input-wrapper">
+      <AgentSettingsInline
+        :visible="showAgentSettings"
+        @close="showAgentSettings = false"
+      />
+      <ChatInputCard
+        ref="chatInputCardRef"
+        @send="sendMessage"
+        @toggle-settings="showAgentSettings = !showAgentSettings"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, onMounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useSidebarStore } from '@/stores/sidebar'
 import { useChatStore } from '@/stores/chat'
 import { marked } from 'marked'
-import HistoryList from '@/components/HistoryList.vue'
 import ChatInputCard from '@/components/ChatInputCard.vue'
 import AgentSettingsInline from '@/components/AgentSettingsInline.vue'
 import LogoSection from '@/components/LogoSection.vue'
 import AgentHotQuestionCard from '@/components/AgentHotQuestionCard.vue'
-import { List } from '@element-plus/icons-vue'
 
 marked.setOptions({ breaks: true, gfm: true })
 
@@ -115,28 +67,14 @@ const route = useRoute()
 const sidebarStore = useSidebarStore()
 const chatStore = useChatStore()
 
-const isMobile = ref(window.innerWidth <= 768)
-const showHistory = ref(false)
 const showAgentSettings = ref(false)
 const chatContentRef = ref(null)
 const chatInputCardRef = ref(null)
 
-const checkMobile = () => {
-  isMobile.value = window.innerWidth <= 768
-}
-
 onMounted(async () => {
-  checkMobile()
-  window.addEventListener('resize', checkMobile)
-
   if (!chatStore.autoSendPending) {
     await sidebarStore.prepareConversation()
   }
-  await sidebarStore.fetchHistoryList()
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', checkMobile)
 })
 
 // Auto-send (transferred from other pages)
@@ -159,14 +97,6 @@ watch(
   },
   { immediate: true },
 )
-
-const handleNewChat = async () => {
-  sidebarStore.isAgricultureAgent = false
-  sidebarStore.agentImageUploadEnabled = false
-  await sidebarStore.prepareConversation()
-  chatStore.clearMessages()
-  showHistory.value = false
-}
 
 const parseMarkdown = (content) => {
   if (!content) return ''
@@ -210,54 +140,9 @@ const sendMessage = async (content, images = []) => {
 <style lang="scss" scoped>
 .chat-home {
   display: flex;
+  flex-direction: column;
   height: 100%;
   overflow: hidden;
-}
-
-.chat-sidebar {
-  width: 280px;
-  border-right: 1px solid $border;
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  overflow: hidden;
-
-  .sidebar-header {
-    padding: 16px;
-    display: flex;
-    gap: 8px;
-
-    .new-chat-btn {
-      flex: 1;
-    }
-  }
-
-  .sidebar-search {
-    padding: 0 16px 12px;
-  }
-
-  .history-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0 8px;
-  }
-}
-
-.chat-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
-}
-
-.mobile-toolbar {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 16px;
-  border-bottom: 1px solid $border;
-  background: #fff;
 }
 
 .chat-content {
@@ -323,7 +208,7 @@ const sendMessage = async (content, images = []) => {
 }
 
 .message-list {
-  max-width: 700px;
+  max-width: 800px;
   margin: 0 auto;
 }
 

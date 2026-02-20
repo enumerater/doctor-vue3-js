@@ -27,15 +27,22 @@ const router = createRouter({
         // ====== 对话 ======
         {
           path: 'chat',
-          name: 'chatHome',
-          component: () => import('@/views/chat/ChatHome.vue'),
+          component: () => import('@/views/chat/ChatLayout.vue'),
           meta: { title: 'AI对话' },
-        },
-        {
-          path: 'chat/:sessionId',
-          name: 'chatDetail',
-          component: () => import('@/views/chat/ChatDetail.vue'),
-          meta: { title: '对话详情' },
+          children: [
+            {
+              path: '',
+              name: 'chatHome',
+              component: () => import('@/views/chat/ChatHome.vue'),
+              meta: { title: 'AI对话' },
+            },
+            {
+              path: ':sessionId',
+              name: 'chatDetail',
+              component: () => import('@/views/chat/ChatDetail.vue'),
+              meta: { title: '对话详情' },
+            },
+          ],
         },
         // Agent routes redirect to unified chat
         {

@@ -204,6 +204,7 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
 <template>
   <div class="chat-detail-page">
     <div class="chat-messages" ref="messageList">
+      <div class="message-list-inner">
       <div class="empty-state" v-if="messages.length === 0">
         <div class="empty-icon">💬</div>
         <div class="empty-text">暂无聊天记录，开始提问吧</div>
@@ -285,10 +286,12 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
           </div>
         </template>
       </div>
+      </div>
     </div>
 
     <!-- Input area -->
     <div class="input-wrapper">
+      <div class="input-inner">
       <AgentSettingsInline
         :visible="showAgentSettings"
         @close="showAgentSettings = false"
@@ -298,6 +301,7 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
         @send="handleSend"
         @toggle-settings="showAgentSettings = !showAgentSettings"
       />
+      </div>
     </div>
 
     <AgentTransferPopup
@@ -325,13 +329,16 @@ $border-light: rgba(5, 150, 105, 0.1);
   flex: 1;
   overflow-y: auto;
   padding: 20px;
-  max-width: 700px;
-  margin: 0 auto;
   width: 100%;
 
   @include mobile {
     padding: 12px;
   }
+}
+
+.message-list-inner {
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .empty-state {
@@ -547,6 +554,11 @@ $border-light: rgba(5, 150, 105, 0.1);
     padding: 8px 12px;
     padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   }
+}
+
+.input-inner {
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 @keyframes fadeInUp {

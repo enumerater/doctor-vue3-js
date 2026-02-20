@@ -89,7 +89,6 @@ export const useSidebarStore = defineStore('sidebar', {
         name: 'chatDetail',
         params: { sessionId: sessionId },
       })
-      this.closeLeft()
     },
     // 准备新对话：只更新 sessionId，不创建会话记录（避免空会话出现在历史记录）
     async prepareConversation() {
