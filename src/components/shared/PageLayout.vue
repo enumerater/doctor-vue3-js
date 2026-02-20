@@ -42,6 +42,9 @@ const goBack = () => {
 </script>
 
 <style lang="scss" scoped>
+@use "sass:color";
+
+
 .page-container {
   min-height: 100vh;
   background: $bg-main;
@@ -81,7 +84,7 @@ const goBack = () => {
   flex-shrink: 0;
 
   &:hover {
-    background: darken(#edf7f0, 5%);
+    background: color.adjust(#edf7f0, $lightness: -5%);
   }
 
   .back-icon {

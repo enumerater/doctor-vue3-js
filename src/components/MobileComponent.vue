@@ -2,24 +2,11 @@
   <div class="mobile-login-form">
     <van-form @submit="onSubmit">
       <van-cell-group inset class="form-group">
-        <van-field
-          v-model="username"
-          name="username"
-          label="手机号"
-          placeholder="请输入手机号"
-          :rules="[{ required: true, message: '请输入手机号' }]"
-          class="form-field"
-        />
+        <van-field v-model="username" name="username" label="手机号" placeholder="请输入手机号"
+          :rules="[{ required: true, message: '请输入手机号' }]" class="form-field" />
         <div class="key-field-row">
-          <van-field
-            v-model="key"
-            type="digit"
-            name="code"
-            label="验证码"
-            placeholder="请输入验证码"
-            :rules="[{ required: true, message: '请输入验证码' }]"
-            class="form-field code-field"
-          />
+          <van-field v-model="key" type="digit" name="code" label="验证码" placeholder="请输入验证码"
+            :rules="[{ required: true, message: '请输入验证码' }]" class="form-field code-field" />
           <span class="get-key" @click="getCode">获取验证码</span>
         </div>
         <van-checkbox v-model="checked" class="agree">
@@ -54,6 +41,13 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { showToast } from 'vant'
+import { useUserStore } from '@/stores/user'
+
+const router = useRouter()
+const store = useUserStore()
+const route = useRoute()
 
 const username = ref('')
 const key = ref('')
@@ -63,8 +57,26 @@ function getCode() {
   // 预留：调用获取验证码接口
 }
 
-function onSubmit() {
-  console.log('phone:', username.value, 'code:', key.value)
+async function onSubmit() {
+  if (!checked.value) return showToast('请勾选我已同意')
+  // 预留：调用验证码登录接口
+  // 模拟登录成功响应
+  const res = {
+    data: {
+      token: 'mock-token-' + Date.now(),
+      username: username.value,
+      id: 'mock-id',
+      sessionId: 'mock-session-' + Date.now(),
+    }
+  }
+  store.setUser({
+    token: res.data.token,
+    username: res.data.username,
+    id: res.data.id,
+    sessionId: res.data.sessionId,
+  })
+  router.push(route.query.returnUrl || '/home/begin')
+  showToast('登录成功')
 }
 </script>
 

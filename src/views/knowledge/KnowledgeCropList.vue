@@ -6,12 +6,8 @@
       </div>
 
       <div class="disease-list" v-if="store.currentCropDiseases.length > 0">
-        <DiseaseCard
-          v-for="disease in store.currentCropDiseases"
-          :key="disease.id"
-          :disease="disease"
-          @click="goDetail(disease)"
-        />
+        <DiseaseCard v-for="disease in store.currentCropDiseases" :key="disease.id" :disease="disease"
+          @click="goDetail(disease)" />
       </div>
 
       <van-loading v-else-if="store.loading" class="loading-center" />

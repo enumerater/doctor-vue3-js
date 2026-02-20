@@ -75,11 +75,25 @@ const categoryIcon = computed(() => {
   justify-content: center;
   font-size: 20px;
 
-  &.cat-fungal { background: #f0fdf4; }
-  &.cat-bacterial { background: #fef3c7; }
-  &.cat-viral { background: #fce7f3; }
-  &.cat-pest { background: #fef9c3; }
-  &.cat-physio { background: #e0f2fe; }
+  &.cat-fungal {
+    background: #f0fdf4;
+  }
+
+  &.cat-bacterial {
+    background: #fef3c7;
+  }
+
+  &.cat-viral {
+    background: #fce7f3;
+  }
+
+  &.cat-pest {
+    background: #fef9c3;
+  }
+
+  &.cat-physio {
+    background: #e0f2fe;
+  }
 }
 
 .card-body {
@@ -110,9 +124,20 @@ const categoryIcon = computed(() => {
   border-radius: 10px;
   font-weight: 500;
 
-  &.severity-轻 { background: #dcfce7; color: #166534; }
-  &.severity-中 { background: #fef3c7; color: #92400e; }
-  &.severity-重 { background: #fee2e2; color: #991b1b; }
+  &.severity-轻 {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  &.severity-中 {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &.severity-重 {
+    background: #fee2e2;
+    color: #991b1b;
+  }
 }
 
 .card-meta {

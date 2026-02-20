@@ -2,14 +2,8 @@
   <PageLayout title="病害知识库" :showBack="true">
     <div class="knowledge-index">
       <!-- 搜索栏 -->
-      <van-search
-        v-model="searchVal"
-        placeholder="搜索病害名称、作物、类型..."
-        shape="round"
-        @search="handleSearch"
-        @click-input="goSearch"
-        class="search-bar"
-      />
+      <van-search v-model="searchVal" placeholder="搜索病害名称、作物、类型..." shape="round" @search="handleSearch"
+        @click-input="goSearch" class="search-bar" />
 
       <!-- 季节风险提示 -->
       <div v-if="store.seasonalRisks.length > 0" class="risk-banner">
@@ -18,12 +12,8 @@
           <span class="risk-title">当季病害预警</span>
         </div>
         <div class="risk-list">
-          <div
-            v-for="risk in store.seasonalRisks"
-            :key="risk.diseaseId"
-            class="risk-item"
-            @click="goDetail(risk.diseaseId)"
-          >
+          <div v-for="risk in store.seasonalRisks" :key="risk.diseaseId" class="risk-item"
+            @click="goDetail(risk.diseaseId)">
             <div class="risk-name">
               <span class="risk-crop">{{ risk.cropName }}</span>
               {{ risk.diseaseName }}
@@ -37,12 +27,7 @@
       <div class="crop-section">
         <h3 class="section-title">按作物浏览</h3>
         <div class="crop-grid" v-if="store.crops.length > 0">
-          <div
-            v-for="crop in store.crops"
-            :key="crop.name"
-            class="crop-card"
-            @click="goCropList(crop.name)"
-          >
+          <div v-for="crop in store.crops" :key="crop.name" class="crop-card" @click="goCropList(crop.name)">
             <span class="crop-icon">{{ crop.icon }}</span>
             <span class="crop-name">{{ crop.name }}</span>
             <span class="crop-count">{{ crop.diseaseCount }}种病害</span>
@@ -117,7 +102,9 @@ const goDetail = (diseaseId) => {
   margin-bottom: 10px;
 }
 
-.risk-icon { font-size: 16px; }
+.risk-icon {
+  font-size: 16px;
+}
 
 .risk-title {
   font-size: 14px;
@@ -138,7 +125,9 @@ const goDetail = (diseaseId) => {
   cursor: pointer;
   transition: $transition-fast;
 
-  &:active { transform: scale(0.98); }
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 .risk-name {

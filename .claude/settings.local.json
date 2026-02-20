@@ -8,7 +8,11 @@
       "Bash(npm install:*)",
       "Bash(find:*)",
       "Bash(npx vite:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(cmd //c \"dir E:\\\\work\\\\ /b\")",
+      "Bash(cmd //c \"dir E:\\\\work\\\\front\\\\ /b\")",
+      "Bash(cmd //c \"dir E:\\\\work\\\\front\\\\doctor-v3-js-b\\\\ /b\")",
+      "Bash(cmd //c \"dir E:\\\\work\\\\java_code\\\\ /b\")"
     ]
   }
 }
