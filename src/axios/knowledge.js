@@ -408,7 +408,29 @@ export const getDiseasesByCrop = (cropName, page = 1, pageSize = 20) =>
 export const getDiseaseDetail = (diseaseId) => {
   return safeRequest({ url: `/knowledge/disease/${diseaseId}`, method: 'get' }, () =>
     mockDiseaseDetail(diseaseId),
-  )
+  ).then((data) => {
+    if (!data) return data
+    // 如果后端返回扁平字段，转换为前端所需的嵌套结构
+    if (data.symptomsText && !data.symptoms) {
+      data.symptoms = { text: data.symptomsText, images: [] }
+    }
+    if (data.conditionsTemperature && !data.conditions) {
+      data.conditions = {
+        temperature: data.conditionsTemperature,
+        humidity: data.conditionsHumidity,
+        season: data.conditionsSeason,
+        stage: data.conditionsStage,
+      }
+    }
+    if (data.preventionAgricultural && !data.prevention) {
+      data.prevention = {
+        agricultural: data.preventionAgricultural,
+        chemical: data.preventionChemical,
+        biological: data.preventionBiological,
+      }
+    }
+    return data
+  })
 }
 
 export const searchDiseases = (keyword) =>
