@@ -57,6 +57,16 @@ function generateId(prefix) {
 }
 
 // ====== 字段适配 ======
+function normalizePlot(plot) {
+  if (!plot) return plot
+  if (plot.plotStagePOList && !plot.stageHistory) {
+    plot.stageHistory = plot.plotStagePOList
+    delete plot.plotStagePOList
+  }
+  if (!plot.stageHistory) plot.stageHistory = []
+  return plot
+}
+
 function normalizeFarm(farm) {
   if (!farm) return farm
   if (farm.plot && !farm.plots) {
@@ -64,6 +74,7 @@ function normalizeFarm(farm) {
     delete farm.plot
   }
   if (!farm.plots) farm.plots = []
+  farm.plots = farm.plots.map(normalizePlot)
   return farm
 }
 
@@ -124,12 +135,14 @@ export const createPlot = (farmId, data) =>
     return plot
   })
 
-export const getPlotDetail = (farmId, plotId) =>
-  safeRequest({ url: `/farm/${farmId}/plot/${plotId}`, method: 'get' }, () => {
+export const getPlotDetail = async (farmId, plotId) => {
+  const plot = await safeRequest({ url: `/farm/${farmId}/plot/${plotId}`, method: 'get' }, () => {
     const farm = mockFarms.find((f) => f.id === farmId)
     if (!farm) return null
     return farm.plots.find((p) => p.id === plotId) || null
   })
+  return normalizePlot(plot)
+}
 
 export const updatePlot = (farmId, plotId, data) =>
   safeRequest({ url: `/farm/${farmId}/plot/${plotId}`, method: 'put', data }, () => {
