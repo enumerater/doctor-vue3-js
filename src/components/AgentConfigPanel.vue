@@ -5,7 +5,9 @@
       <div class="header-left">
         <h2>Agent 设置</h2>
       </div>
-      <van-icon name="close" size="24" class="close-btn" @click="closePanel" />
+      <el-icon :size="24" class="close-btn" @click="closePanel">
+        <Close />
+      </el-icon>
     </div>
 
     <!-- 简化后的单页配置 -->
@@ -16,6 +18,7 @@
 </template>
 
 <script setup>
+import { Close } from '@element-plus/icons-vue'
 import { useAgentConfigStore } from '@/stores/agentConfig'
 import SimpleAgentConfigDrag from './SimpleAgentConfigDrag.vue'
 const agentConfigStore = useAgentConfigStore()

@@ -5,11 +5,15 @@
       <div class="form-section config-selector">
         <h3 class="section-title">当前配置</h3>
         <div class="selector-row">
-          <van-field v-model="currentConfigName" readonly clickable placeholder="选择配置" right-icon="arrow-down"
-            @click="showConfigPicker = true" />
-          <van-button type="primary" size="small" icon="setting-o" @click="openConfigManager">
+          <el-select v-model="selectedConfigId" placeholder="选择配置" class="config-select"
+            @change="onConfigSelect">
+            <el-option v-for="config in configColumns" :key="config.value" :label="config.text"
+              :value="config.value" />
+          </el-select>
+          <el-button type="primary" size="small" @click="openConfigManager">
+            <el-icon><Setting /></el-icon>
             管理
-          </van-button>
+          </el-button>
         </div>
       </div>
 
@@ -21,46 +25,46 @@
         <!-- 所在地域 -->
         <div class="field-group">
           <label class="field-label">📍 你在哪里种地？</label>
-          <van-field v-model="formData.province" placeholder="省份（如：山东省）" clearable />
-          <van-field v-model="formData.city" placeholder="城市（如：潍坊市）" clearable />
+          <el-input v-model="formData.province" placeholder="省份（如：山东省）" clearable class="field-input" />
+          <el-input v-model="formData.city" placeholder="城市（如：潍坊市）" clearable class="field-input" />
         </div>
 
         <!-- 种植作物 -->
         <div class="field-group">
           <label class="field-label">🌾 你种什么作物？</label>
-          <van-checkbox-group v-model="formData.cropTypes">
+          <el-checkbox-group v-model="formData.cropTypes">
             <div class="crop-grid">
-              <van-checkbox v-for="crop in commonCrops" :key="crop.value" :name="crop.value" shape="square"
+              <el-checkbox v-for="crop in commonCrops" :key="crop.value" :value="crop.value"
                 class="crop-checkbox">
                 <span class="crop-icon">{{ crop.icon }}</span>
                 <span>{{ crop.label }}</span>
-              </van-checkbox>
+              </el-checkbox>
             </div>
-          </van-checkbox-group>
+          </el-checkbox-group>
         </div>
 
         <!-- 作物生长阶段 -->
         <div class="field-group">
           <label class="field-label">📅 现在是什么阶段？</label>
-          <van-radio-group v-model="formData.growthStage">
+          <el-radio-group v-model="formData.growthStage">
             <div class="stage-list">
-              <van-radio name="seeding" class="stage-radio">
+              <el-radio value="seeding" class="stage-radio">
                 <span class="stage-icon">🌱</span> 播种期
-              </van-radio>
-              <van-radio name="growing" class="stage-radio">
+              </el-radio>
+              <el-radio value="growing" class="stage-radio">
                 <span class="stage-icon">🌿</span> 生长期
-              </van-radio>
-              <van-radio name="flowering" class="stage-radio">
+              </el-radio>
+              <el-radio value="flowering" class="stage-radio">
                 <span class="stage-icon">🌸</span> 开花期
-              </van-radio>
-              <van-radio name="fruiting" class="stage-radio">
+              </el-radio>
+              <el-radio value="fruiting" class="stage-radio">
                 <span class="stage-icon">🍎</span> 结果期
-              </van-radio>
-              <van-radio name="mature" class="stage-radio">
+              </el-radio>
+              <el-radio value="mature" class="stage-radio">
                 <span class="stage-icon">✨</span> 成熟期
-              </van-radio>
+              </el-radio>
             </div>
-          </van-radio-group>
+          </el-radio-group>
         </div>
       </div>
 
@@ -118,8 +122,8 @@
           </div>
 
           <!-- Skills按分类展示（折叠） -->
-          <van-collapse v-model="expandedCategories" class="category-collapse">
-            <van-collapse-item v-for="(categorySkills, category) in skillsByCategory" :key="category" :name="category">
+          <el-collapse v-model="expandedCategories" class="category-collapse">
+            <el-collapse-item v-for="(categorySkills, category) in skillsByCategory" :key="category" :name="category">
               <template #title>
                 <div class="category-title">
                   <span class="category-icon">{{ getCategoryInfo(category).icon }}</span>
@@ -135,42 +139,39 @@
                     <div class="skill-name">{{ skill.name }}</div>
                     <div class="skill-desc">{{ skill.description }}</div>
                   </div>
-                  <van-icon :name="isSkillEnabled(skill.id) ? 'success' : 'plus'"
-                    :class="isSkillEnabled(skill.id) ? 'icon-enabled' : 'icon-disabled'" />
+                  <el-icon :class="isSkillEnabled(skill.id) ? 'icon-enabled' : 'icon-disabled'" :size="20">
+                    <CircleCheckFilled v-if="isSkillEnabled(skill.id)" />
+                    <CirclePlus v-else />
+                  </el-icon>
                 </div>
               </div>
-            </van-collapse-item>
-          </van-collapse>
+            </el-collapse-item>
+          </el-collapse>
         </div>
       </div>
 
       <!-- 高级选项 -->
       <div class="form-section">
-        <van-collapse v-model="advancedOpen">
-          <van-collapse-item title="⚙️ 高级选项" name="advanced">
+        <el-collapse v-model="advancedOpen">
+          <el-collapse-item title="⚙️ 高级选项" name="advanced">
             <div class="advanced-content">
               <label class="field-label">智能体提示词（选填）</label>
               <p class="field-desc">给专业用户：自定义Agent的行为规则</p>
-              <van-field v-model="formData.customPrompt" type="textarea" rows="4"
+              <el-input v-model="formData.customPrompt" type="textarea" :rows="4"
                 placeholder="例如：你是一个专注于病虫害防治的专家，回答要简洁明了..." maxlength="500" show-word-limit />
             </div>
-          </van-collapse-item>
-        </van-collapse>
+          </el-collapse-item>
+        </el-collapse>
       </div>
 
       <!-- 保存按钮 -->
       <div class="form-section">
         <div class="form-actions">
-          <van-button block type="primary" :loading="isSaving" class="save-btn" @click="saveConfig">
+          <el-button type="primary" :loading="isSaving" class="save-btn" @click="saveConfig">
             💾 保存设置
-          </van-button>
+          </el-button>
         </div>
       </div>
-
-      <!-- 配置选择器弹窗 -->
-      <van-popup v-model:show="showConfigPicker" position="bottom" round>
-        <van-picker :columns="configColumns" @confirm="onConfigSelect" @cancel="showConfigPicker = false" />
-      </van-popup>
 
       <!-- 配置管理弹窗 -->
       <ConfigManager v-model:show="showConfigManager" @config-changed="onConfigChanged" />
@@ -182,7 +183,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAgentConfigStore } from '@/stores/agentConfig'
 import { useSkillsStore } from '@/stores/skills'
-import { showToast } from 'vant'
+import { ElMessage } from 'element-plus'
+import { Setting, CircleCheckFilled, CirclePlus } from '@element-plus/icons-vue'
 import draggable from 'vuedraggable'
 import ConfigManager from './ConfigManager.vue'
 import { registeredSkills, skillCategories } from '@/skills'
@@ -192,8 +194,8 @@ const skillsStore = useSkillsStore()
 const isSaving = ref(false)
 const advancedOpen = ref([])
 const expandedCategories = ref([])
-const showConfigPicker = ref(false)
 const showConfigManager = ref(false)
+const selectedConfigId = ref(null)
 
 // 常见作物（添加icon）
 const commonCrops = [
@@ -324,6 +326,9 @@ const loadCurrentConfig = () => {
       customPrompt: currentConfig.customPrompt || '',
       enabledSkillIds: enabledSkillIds
     }
+
+    // 同步选中的配置ID
+    selectedConfigId.value = agentConfigStore.currentConfigId
   }
 }
 
@@ -364,19 +369,15 @@ const quickToggleSkill = (skill) => {
   }
 }
 
-// 切换配置
-const onConfigSelect = async ({ selectedOptions }) => {
-  const selectedConfig = selectedOptions[0]
-  if (selectedConfig) {
-    await agentConfigStore.switchConfig(selectedConfig.value)
+// 切换配置 (el-select change event provides the selected value directly)
+const onConfigSelect = async (configId) => {
+  if (configId) {
+    const selectedOption = configColumns.value.find(c => c.value === configId)
+    await agentConfigStore.switchConfig(configId)
     loadCurrentConfig()
     await initializeSkills()
 
-    showConfigPicker.value = false
-    showToast({
-      message: `已切换到「${selectedConfig.text}」`,
-      position: 'top'
-    })
+    ElMessage.success(`已切换到「${selectedOption?.text || ''}」`)
   }
 }
 
@@ -395,10 +396,7 @@ const onConfigChanged = async () => {
 const saveConfig = async () => {
   // 验证必填项
   if (formData.value.cropTypes.length === 0) {
-    showToast({
-      message: '请至少选择一种作物',
-      position: 'top'
-    })
+    ElMessage.warning('请至少选择一种作物')
     return
   }
 
@@ -440,19 +438,13 @@ const saveConfig = async () => {
     // 重新初始化技能状态，更新sidebarStore
     await initializeSkills()
 
-    showToast({
-      message: '✅ 设置已保存',
-      position: 'top'
-    })
+    ElMessage.success('设置已保存')
 
     // 关闭配置面板
     agentConfigStore.closeConfigPanel()
   } catch (err) {
     console.error('保存配置失败:', err)
-    showToast({
-      message: '❌ 保存失败，请重试',
-      position: 'top'
-    })
+    ElMessage.error('保存失败，请重试')
   } finally {
     isSaving.value = false
   }
@@ -468,7 +460,7 @@ const saveConfig = async () => {
     flex-direction: column;
     gap: 20px;
 
-    @media (max-width: 768px) {
+    @include mobile {
       gap: 16px;
     }
 
@@ -478,7 +470,7 @@ const saveConfig = async () => {
       padding: 16px;
       border: 1px solid $border;
 
-      @media (max-width: 768px) {
+      @include mobile {
         padding: 14px;
       }
 
@@ -488,20 +480,20 @@ const saveConfig = async () => {
           gap: 8px;
           align-items: center;
 
-          @media (max-width: 768px) {
+          @include mobile {
             flex-direction: column;
             align-items: stretch;
             gap: 12px;
           }
 
-          :deep(.van-field) {
+          .config-select {
             flex: 1;
           }
 
-          .van-button {
+          .el-button {
             flex-shrink: 0;
 
-            @media (max-width: 768px) {
+            @include mobile {
               width: 100%;
             }
           }
@@ -514,7 +506,7 @@ const saveConfig = async () => {
         font-weight: 600;
         color: $text-primary;
 
-        @media (max-width: 768px) {
+        @include mobile {
           font-size: 15px;
         }
       }
@@ -525,7 +517,7 @@ const saveConfig = async () => {
         color: $text-secondary;
         line-height: 1.4;
 
-        @media (max-width: 768px) {
+        @include mobile {
           font-size: 12px;
           margin-bottom: 12px;
         }
@@ -546,31 +538,39 @@ const saveConfig = async () => {
           margin-bottom: 8px;
         }
 
+        .field-input {
+          margin-bottom: 8px;
+
+          &:last-of-type {
+            margin-bottom: 0;
+          }
+        }
+
         .crop-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
           gap: 12px;
 
-          @media (max-width: 768px) {
+          @include mobile {
             grid-template-columns: 1fr;
             gap: 8px;
           }
 
           .crop-checkbox {
-            :deep(.van-checkbox__label) {
-              display: flex;
+            :deep(.el-checkbox__label) {
+              display: inline-flex;
               align-items: center;
               gap: 6px;
               font-size: 14px;
 
-              @media (max-width: 768px) {
+              @include mobile {
                 font-size: 13px;
               }
 
               .crop-icon {
                 font-size: 18px;
 
-                @media (max-width: 768px) {
+                @include mobile {
                   font-size: 16px;
                 }
               }
@@ -583,18 +583,18 @@ const saveConfig = async () => {
           flex-direction: column;
           gap: 12px;
 
-          @media (max-width: 768px) {
+          @include mobile {
             gap: 8px;
           }
 
           .stage-radio {
-            :deep(.van-radio__label) {
-              display: flex;
+            :deep(.el-radio__label) {
+              display: inline-flex;
               align-items: center;
               gap: 8px;
               font-size: 14px;
 
-              @media (max-width: 768px) {
+              @include mobile {
                 font-size: 13px;
                 gap: 6px;
               }
@@ -602,7 +602,7 @@ const saveConfig = async () => {
               .stage-icon {
                 font-size: 18px;
 
-                @media (max-width: 768px) {
+                @include mobile {
                   font-size: 16px;
                 }
               }
@@ -623,7 +623,7 @@ const saveConfig = async () => {
           border-radius: $radius-md;
           border: 2px solid $border;
           cursor: pointer;
-          transition: all 0.3s ease;
+          transition: $transition;
           user-select: none;
 
           &:hover {
@@ -651,7 +651,7 @@ const saveConfig = async () => {
               color: $text-tertiary;
               font-size: 16px;
               opacity: 0.5;
-              transition: opacity 0.2s;
+              transition: opacity $transition-fast;
 
               &:hover {
                 opacity: 1;
@@ -698,7 +698,7 @@ const saveConfig = async () => {
         gap: 12px;
         margin-top: 12px;
 
-        @media (max-width: 768px) {
+        @include mobile {
           grid-template-columns: 1fr;
         }
 
@@ -710,7 +710,7 @@ const saveConfig = async () => {
           min-height: 200px;
           border: 2px dashed $border;
 
-          @media (max-width: 768px) {
+          @include mobile {
             min-height: 180px;
           }
 
@@ -752,7 +752,7 @@ const saveConfig = async () => {
             gap: 8px;
             min-height: 150px;
 
-            @media (max-width: 768px) {
+            @include mobile {
               min-height: 130px;
             }
 
@@ -765,12 +765,12 @@ const saveConfig = async () => {
               border-radius: $radius-sm;
               border: 1px solid $border;
               cursor: move;
-              transition: all 0.2s ease;
+              transition: $transition-fast;
               position: relative;
 
               &:hover {
                 border-color: $primary;
-                box-shadow: 0 2px 6px rgba($primary, 0.1);
+                box-shadow: $shadow-sm;
                 transform: translateY(-1px);
               }
 
@@ -823,7 +823,7 @@ const saveConfig = async () => {
                 font-weight: bold;
                 cursor: pointer;
                 opacity: 0;
-                transition: opacity 0.2s;
+                transition: opacity $transition-fast;
               }
 
               &:hover .remove-btn {
@@ -845,7 +845,7 @@ const saveConfig = async () => {
             height: 150px;
             color: $text-tertiary;
 
-            @media (max-width: 768px) {
+            @include mobile {
               height: 130px;
             }
 
@@ -854,7 +854,7 @@ const saveConfig = async () => {
               margin-bottom: 8px;
               opacity: 0.3;
 
-              @media (max-width: 768px) {
+              @include mobile {
                 font-size: 32px;
               }
             }
@@ -873,6 +873,7 @@ const saveConfig = async () => {
 
       // 分类折叠列表
       .category-collapse {
+        grid-column: 1 / -1;
         margin-top: 16px;
 
         .category-title {
@@ -911,7 +912,7 @@ const saveConfig = async () => {
             border-radius: $radius-sm;
             border: 1px solid $border;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: $transition-fast;
 
             &:hover {
               border-color: $primary;
@@ -947,12 +948,10 @@ const saveConfig = async () => {
 
             .icon-enabled {
               color: $success;
-              font-size: 20px;
             }
 
             .icon-disabled {
               color: $text-tertiary;
-              font-size: 20px;
             }
           }
         }
@@ -980,19 +979,20 @@ const saveConfig = async () => {
     .form-actions {
       margin-top: 8px;
 
-      @media (max-width: 768px) {
+      @include mobile {
         margin-top: 4px;
       }
 
       .save-btn {
+        width: 100%;
         height: 44px;
         font-size: 16px;
         font-weight: 600;
         border-radius: $radius-lg;
         box-shadow: 0 4px 12px rgba($primary, 0.2);
-        transition: all 0.3s ease;
+        transition: $transition;
 
-        @media (max-width: 768px) {
+        @include mobile {
           height: 42px;
           font-size: 15px;
         }
@@ -1004,13 +1004,18 @@ const saveConfig = async () => {
     }
   }
 
-  :deep(.van-collapse-item__title) {
+  :deep(.el-collapse-item__header) {
     font-weight: 600;
     color: $text-primary;
   }
 
-  :deep(.van-field__control) {
+  :deep(.el-input__inner) {
     font-size: 14px;
+  }
+
+  :deep(.el-textarea__inner) {
+    font-size: 14px;
+    font-family: $font-family;
   }
 }
 </style>

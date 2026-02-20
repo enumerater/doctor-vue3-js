@@ -1,62 +1,83 @@
 <template>
-  <van-popup v-model:show="visible" position="bottom" round :style="{ height: '70%' }" @close="onClose">
-    <div class="config-manager">
-      <!-- 头部 -->
+  <el-drawer v-model="visible" direction="btt" size="70%" :show-close="false" @close="onClose">
+    <template #header>
       <div class="manager-header">
         <h3>配置管理</h3>
-        <van-icon name="cross" size="20" @click="onClose" />
+        <el-icon :size="20" class="close-icon" @click="onClose">
+          <Close />
+        </el-icon>
       </div>
+    </template>
 
+    <div class="config-manager">
       <!-- 配置列表 -->
       <div class="config-list">
-        <van-cell v-for="config in configs" :key="config.id" :title="config.name"
-          :label="config.description || getConfigLabel(config)" :class="{ active: config.id === currentConfigId }">
-          <template #icon>
-            <van-icon :name="config.isDefault ? 'star' : 'star-o'" :color="config.isDefault ? '#ffd700' : '#c8c9cc'"
-              size="18" />
-          </template>
-          <template #right-icon>
-            <div class="config-actions">
-              <van-button v-if="config.id !== currentConfigId" size="small" type="primary" plain
-                @click="onSwitch(config)">
-                切换
-              </van-button>
-              <van-button size="small" icon="edit" @click="onRename(config)" />
-              <van-button size="small" icon="replay" @click="onDuplicate(config)" />
-              <van-button v-if="configs.length > 1" size="small" icon="delete-o" @click="onDelete(config)" />
+        <div v-for="config in configs" :key="config.id" class="config-item"
+          :class="{ active: config.id === currentConfigId }">
+          <div class="config-left">
+            <el-icon :size="18" class="star-icon" :class="{ 'is-default': config.isDefault }">
+              <StarFilled v-if="config.isDefault" />
+              <Star v-else />
+            </el-icon>
+            <div class="config-info">
+              <div class="config-name">{{ config.name }}</div>
+              <div class="config-label">{{ config.description || getConfigLabel(config) }}</div>
             </div>
-          </template>
-        </van-cell>
+          </div>
+          <div class="config-actions">
+            <el-button v-if="config.id !== currentConfigId" size="small" type="primary" plain @click="onSwitch(config)">
+              切换
+            </el-button>
+            <el-button size="small" :icon="Edit" @click="onRename(config)" />
+            <el-button size="small" :icon="CopyDocument" @click="onDuplicate(config)" />
+            <el-button v-if="configs.length > 1" size="small" :icon="Delete" @click="onDelete(config)" />
+          </div>
+        </div>
       </div>
 
       <!-- 新建配置按钮 -->
       <div class="manager-footer">
-        <van-button block type="primary" icon="plus" @click="onCreate">
+        <el-button type="primary" :icon="Plus" size="large" @click="onCreate" style="width: 100%;">
           新建配置
-        </van-button>
+        </el-button>
       </div>
     </div>
 
     <!-- 重命名对话框 -->
-    <van-dialog v-model:show="showRenameDialog" title="重命名配置" show-cancel-button @confirm="confirmRename">
-      <van-field v-model="renameValue" placeholder="请输入配置名称" maxlength="20" show-word-limit />
-    </van-dialog>
+    <el-dialog v-model="showRenameDialog" title="重命名配置" width="420px" append-to-body>
+      <el-input v-model="renameValue" placeholder="请输入配置名称" maxlength="20" show-word-limit />
+      <template #footer>
+        <el-button @click="showRenameDialog = false">取消</el-button>
+        <el-button type="primary" @click="confirmRename">确定</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 新建配置对话框 -->
-    <van-dialog v-model:show="showCreateDialog" title="新建配置" show-cancel-button @confirm="confirmCreate">
+    <el-dialog v-model="showCreateDialog" title="新建配置" width="480px" append-to-body>
       <div class="create-dialog">
-        <van-field v-model="createData.name" label="配置名称" placeholder="例如：玉米专用配置" maxlength="20" show-word-limit />
-        <van-field v-model="createData.description" label="配置说明" type="textarea" placeholder="简单描述这个配置的用途（可选）" rows="2"
-          maxlength="100" show-word-limit />
+        <el-form label-position="top">
+          <el-form-item label="配置名称">
+            <el-input v-model="createData.name" placeholder="例如：玉米专用配置" maxlength="20" show-word-limit />
+          </el-form-item>
+          <el-form-item label="配置说明">
+            <el-input v-model="createData.description" type="textarea" placeholder="简单描述这个配置的用途（可选）" :rows="2"
+              maxlength="100" show-word-limit />
+          </el-form-item>
+        </el-form>
       </div>
-    </van-dialog>
-  </van-popup>
+      <template #footer>
+        <el-button @click="showCreateDialog = false">取消</el-button>
+        <el-button type="primary" @click="confirmCreate">确定</el-button>
+      </template>
+    </el-dialog>
+  </el-drawer>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useAgentConfigStore } from '@/stores/agentConfig'
-import { showToast, showConfirmDialog } from 'vant'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Close, StarFilled, Star, Edit, CopyDocument, Delete, Plus } from '@element-plus/icons-vue'
 
 const props = defineProps({
   show: {
@@ -117,16 +138,10 @@ const onClose = () => {
 const onSwitch = async (config) => {
   try {
     await agentConfigStore.switchConfig(config.id)
-    showToast({
-      message: `已切换到「${config.name}」`,
-      position: 'top'
-    })
+    ElMessage.success(`已切换到「${config.name}」`)
     emit('config-changed')
   } catch (err) {
-    showToast({
-      message: '切换失败，请重试',
-      position: 'top'
-    })
+    ElMessage.error('切换失败，请重试')
   }
 }
 
@@ -142,10 +157,7 @@ const onRename = (config) => {
 
 const confirmRename = async () => {
   if (!renameValue.value.trim()) {
-    showToast({
-      message: '请输入配置名称',
-      position: 'top'
-    })
+    ElMessage.warning('请输入配置名称')
     return
   }
 
@@ -153,16 +165,11 @@ const confirmRename = async () => {
     await agentConfigStore.rename(renamingConfigId.value,
       renameValue.value.trim()
     )
-    showToast({
-      message: '重命名成功',
-      position: 'top'
-    })
+    ElMessage.success('重命名成功')
+    showRenameDialog.value = false
     emit('config-changed')
   } catch (err) {
-    showToast({
-      message: '重命名失败，请重试',
-      position: 'top'
-    })
+    ElMessage.error('重命名失败，请重试')
   }
 }
 
@@ -170,48 +177,38 @@ const confirmRename = async () => {
 const onDuplicate = async (config) => {
   try {
     const newConfig = await agentConfigStore.duplicate(config.id)
-    showToast({
-      message: `已创建「${newConfig.name}」`,
-      position: 'top'
-    })
+    ElMessage.success(`已创建「${newConfig.name}」`)
     emit('config-changed')
   } catch (err) {
-    showToast({
-      message: '复制失败，请重试',
-      position: 'top'
-    })
+    ElMessage.error('复制失败，请重试')
   }
 }
 
 // 删除配置
 const onDelete = async (config) => {
   if (configs.value.length <= 1) {
-    showToast({
-      message: '至少保留一个配置',
-      position: 'top'
-    })
+    ElMessage.warning('至少保留一个配置')
     return
   }
 
   try {
-    await showConfirmDialog({
-      title: '删除配置',
-      message: `确定要删除「${config.name}」吗？此操作不可恢复。`
-    })
+    await ElMessageBox.confirm(
+      `确定要删除「${config.name}」吗？此操作不可恢复。`,
+      '删除配置',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
 
     await agentConfigStore.deleteConfig(config.id)
-    showToast({
-      message: '删除成功',
-      position: 'top'
-    })
+    ElMessage.success('删除成功')
     emit('config-changed')
   } catch (err) {
     // 用户取消或删除失败
     if (err !== 'cancel') {
-      showToast({
-        message: '删除失败，请重试',
-        position: 'top'
-      })
+      ElMessage.error('删除失败，请重试')
     }
   }
 }
@@ -227,10 +224,7 @@ const onCreate = () => {
 
 const confirmCreate = async () => {
   if (!createData.value.name.trim()) {
-    showToast({
-      message: '请输入配置名称',
-      position: 'top'
-    })
+    ElMessage.warning('请输入配置名称')
     return
   }
 
@@ -275,19 +269,14 @@ const confirmCreate = async () => {
     }
 
     const created = await agentConfigStore.createConfig(newConfig)
-    showToast({
-      message: `已创建「${created.name}」`,
-      position: 'top'
-    })
+    ElMessage.success(`已创建「${created.name}」`)
 
     // 切换到新配置
     await agentConfigStore.switchConfig(created.id)
+    showCreateDialog.value = false
     emit('config-changed')
   } catch (err) {
-    showToast({
-      message: '创建失败，请重试',
-      position: 'top'
-    })
+    ElMessage.error('创建失败，请重试')
   }
 }
 </script>
@@ -296,81 +285,106 @@ const confirmCreate = async () => {
 @use "sass:color";
 @use '@/styles/variables.scss' as *;
 
+.manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  .close-icon {
+    cursor: pointer;
+    color: $text-secondary;
+    transition: $transition-fast;
+
+    &:hover {
+      color: $text-primary;
+    }
+  }
+}
+
 .config-manager {
   display: flex;
   flex-direction: column;
   height: 100%;
 
-  .manager-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px;
-    border-bottom: 1px solid $border;
-
-    h3 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 600;
-      color: $text-primary;
-    }
-
-    .van-icon {
-      cursor: pointer;
-      color: $text-secondary;
-      transition: $transition;
-
-      &:hover {
-        color: $text-primary;
-      }
-    }
-  }
-
   .config-list {
     flex: 1;
     overflow-y: auto;
-    padding: 8px;
+    padding: 8px 0;
 
-    :deep(.van-cell) {
+    .config-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
       margin-bottom: 8px;
       border-radius: $radius-md;
       border: 1px solid $border;
-      transition: $transition;
+      transition: $transition-fast;
 
       &.active {
         border-color: $primary;
         background: rgba($primary, 0.05);
       }
 
-      .van-cell__title {
-        font-weight: 600;
-        color: $text-primary;
+      &:hover {
+        border-color: rgba($primary, 0.3);
       }
 
-      .van-cell__label {
-        font-size: 12px;
-        color: $text-secondary;
-        margin-top: 4px;
+      .config-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        min-width: 0;
+
+        .star-icon {
+          flex-shrink: 0;
+          color: #c8c9cc;
+
+          &.is-default {
+            color: #ffd700;
+          }
+        }
+
+        .config-info {
+          min-width: 0;
+
+          .config-name {
+            font-weight: 600;
+            color: $text-primary;
+            font-size: 14px;
+          }
+
+          .config-label {
+            font-size: 12px;
+            color: $text-secondary;
+            margin-top: 4px;
+          }
+        }
       }
 
       .config-actions {
         display: flex;
         gap: 4px;
-
-        .van-button {
-          padding: 0 8px;
-          height: 28px;
-        }
+        flex-shrink: 0;
       }
     }
   }
 
   .manager-footer {
-    padding: 16px;
+    padding: 16px 0;
     border-top: 1px solid $border;
     background: $bg-card;
 
-    :deep(.van-button) {
+    :deep(.el-button) {
       height: 44px;
       font-size: 16px;
       font-weight: 600;
@@ -379,10 +393,8 @@ const confirmCreate = async () => {
 }
 
 .create-dialog {
-  padding: 16px;
-
-  :deep(.van-cell) {
-    padding: 12px 0;
+  :deep(.el-form-item) {
+    margin-bottom: 16px;
   }
 }
 </style>

@@ -1,30 +1,58 @@
 <template>
   <div class="mobile-login-form">
-    <van-form @submit="onSubmit">
-      <van-cell-group inset class="form-group">
-        <van-field v-model="username" name="username" label="手机号" placeholder="请输入手机号"
-          :rules="[{ required: true, message: '请输入手机号' }]" class="form-field" />
-        <div class="key-field-row">
-          <van-field v-model="key" type="digit" name="code" label="验证码" placeholder="请输入验证码"
-            :rules="[{ required: true, message: '请输入验证码' }]" class="form-field code-field" />
-          <span class="get-key" @click="getCode">获取验证码</span>
+    <el-form ref="formRef" :model="formData" :rules="rules" @submit.prevent="onSubmit" label-position="top">
+      <el-form-item label="手机号" prop="phone">
+        <el-input
+          v-model="formData.phone"
+          placeholder="请输入手机号"
+          prefix-icon="Iphone"
+          size="large"
+          clearable
+        />
+      </el-form-item>
+      <el-form-item label="验证码" prop="code">
+        <div class="code-field-row">
+          <el-input
+            v-model="formData.code"
+            placeholder="请输入验证码"
+            prefix-icon="Message"
+            size="large"
+            clearable
+          />
+          <el-button
+            type="primary"
+            plain
+            size="large"
+            class="get-code-btn"
+            :disabled="codeCooldown > 0"
+            @click="getCode"
+          >
+            {{ codeCooldown > 0 ? `${codeCooldown}s 后重发` : '获取验证码' }}
+          </el-button>
         </div>
-        <van-checkbox v-model="checked" class="agree">
+      </el-form-item>
+      <el-form-item>
+        <el-checkbox v-model="checked" class="agree-checkbox">
           我已同意
-          <a href="#" class="link">用户协议</a>
+          <a href="#" class="link" @click.prevent>用户协议</a>
           及
-          <a href="#" class="link">隐私协议</a>
-        </van-checkbox>
-      </van-cell-group>
-
-      <div class="submit-wrap">
-        <van-button round block type="primary" native-type="submit" class="submit-btn">
+          <a href="#" class="link" @click.prevent>隐私协议</a>
+        </el-checkbox>
+      </el-form-item>
+      <el-form-item>
+        <el-button
+          type="primary"
+          size="large"
+          class="submit-btn"
+          :loading="loading"
+          @click="onSubmit"
+        >
           登录
-        </van-button>
-      </div>
-    </van-form>
+        </el-button>
+      </el-form-item>
+    </el-form>
 
-    <van-divider class="divider">其他方式登录</van-divider>
+    <el-divider class="divider">其他方式登录</el-divider>
     <div class="other-login">
       <div class="other-item">
         <img src="@/assets/icon/微信.svg" alt="微信" class="other-icon" />
@@ -40,117 +68,145 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showToast } from 'vant'
+import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const store = useUserStore()
 const route = useRoute()
 
-const username = ref('')
-const key = ref('')
+const formRef = ref(null)
+const loading = ref(false)
 const checked = ref(false)
+const codeCooldown = ref(0)
+let cooldownTimer = null
+
+const formData = reactive({
+  phone: '',
+  code: '',
+})
+
+const rules = {
+  phone: [
+    { required: true, message: '请输入手机号', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' },
+  ],
+  code: [
+    { required: true, message: '请输入验证码', trigger: 'blur' },
+  ],
+}
 
 function getCode() {
-  // 预留：调用获取验证码接口
+  if (!formData.phone) {
+    ElMessage.warning('请先输入手机号')
+    return
+  }
+  if (!/^1[3-9]\d{9}$/.test(formData.phone)) {
+    ElMessage.warning('请输入正确的手机号')
+    return
+  }
+  // TODO: call get-verification-code API
+  ElMessage.success('验证码已发送')
+  codeCooldown.value = 60
+  cooldownTimer = setInterval(() => {
+    codeCooldown.value--
+    if (codeCooldown.value <= 0) {
+      clearInterval(cooldownTimer)
+      cooldownTimer = null
+    }
+  }, 1000)
 }
 
 async function onSubmit() {
-  if (!checked.value) return showToast('请勾选我已同意')
-  // 预留：调用验证码登录接口
-  // 模拟登录成功响应
-  const res = {
-    data: {
-      token: 'mock-token-' + Date.now(),
-      username: username.value,
-      id: 'mock-id',
-      sessionId: 'mock-session-' + Date.now(),
-    }
+  if (!checked.value) {
+    ElMessage.warning('请勾选我已同意')
+    return
   }
-  store.setUser({
-    token: res.data.token,
-    username: res.data.username,
-    id: res.data.id,
-    sessionId: res.data.sessionId,
+
+  if (!formRef.value) return
+  await formRef.value.validate(async (valid) => {
+    if (!valid) return
+
+    loading.value = true
+    try {
+      // TODO: call mobile login API
+      // Mock login success response
+      const res = {
+        data: {
+          token: 'mock-token-' + Date.now(),
+          username: formData.phone,
+          id: 'mock-id',
+          sessionId: 'mock-session-' + Date.now(),
+        },
+      }
+      store.setUser({
+        token: res.data.token,
+        username: res.data.username,
+        id: res.data.id,
+        sessionId: res.data.sessionId,
+      })
+      router.push(route.query.returnUrl || '/workbench')
+      ElMessage.success('登录成功')
+    } catch (err) {
+      ElMessage.error(err?.message || '登录失败，请重试')
+    } finally {
+      loading.value = false
+    }
   })
-  router.push(route.query.returnUrl || '/home/begin')
-  showToast('登录成功')
 }
+
+onBeforeUnmount(() => {
+  if (cooldownTimer) {
+    clearInterval(cooldownTimer)
+  }
+})
 </script>
 
 <style lang="scss" scoped>
 .mobile-login-form {
-  :deep(.van-cell-group) {
-    margin: 0;
-    border-radius: $radius-lg;
-    overflow: hidden;
-    box-shadow: $shadow-sm;
+  .el-form-item {
+    margin-bottom: 20px;
   }
 
-  :deep(.van-field__label) {
+  :deep(.el-input__wrapper) {
+    border-radius: $radius-sm;
+    box-shadow: 0 0 0 1px $border inset;
+    transition: $transition-fast;
+
+    &:hover {
+      box-shadow: 0 0 0 1px $primary inset;
+    }
+  }
+
+  :deep(.el-input__wrapper.is-focus) {
+    box-shadow: 0 0 0 1px $primary inset;
+  }
+
+  :deep(.el-form-item__label) {
     color: $text-primary;
-  }
-
-  :deep(.van-field__control) {
-    color: $text-primary;
-  }
-
-  :deep(.van-cell) {
-    background-color: $bg-card;
+    font-weight: 500;
   }
 }
 
-.key-field-row {
-  position: relative;
+.code-field-row {
   display: flex;
-  align-items: center;
+  gap: 12px;
+  width: 100%;
 
-  :deep(.van-cell) {
+  .el-input {
     flex: 1;
   }
 
-  :deep(.van-field__control) {
-    width: 100%;
+  .get-code-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+    border-radius: $radius-sm;
   }
 }
 
-.get-key {
-  position: absolute;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.875rem;
-  color: $primary;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-
-  &:hover {
-    color: $primary-hover;
-  }
-}
-
-.submit-wrap {
-  padding: 1.25rem 1rem 0;
-}
-
-.submit-btn {
-  background: linear-gradient(135deg, $primary, $primary-hover) !important;
-  border: none !important;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 12px rgba(56, 142, 60, 0.25);
-  transition: $transition;
-
-  &:active {
-    transform: scale(0.98);
-  }
-}
-
-.agree {
-  margin-top: 1rem;
+.agree-checkbox {
   font-size: 0.875rem;
   color: $text-secondary;
 
@@ -164,26 +220,45 @@ async function onSubmit() {
   }
 }
 
+.submit-btn {
+  width: 100%;
+  background: linear-gradient(135deg, $primary, $primary-hover);
+  border: none;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-radius: $radius-sm;
+  box-shadow: 0 4px 12px rgba(74, 155, 94, 0.25);
+  transition: $transition;
+  height: 44px;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(74, 155, 94, 0.35);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
 .divider {
-  color: $text-tertiary;
-  font-size: 0.8125rem;
-  border-color: $border;
+  :deep(.el-divider__text) {
+    color: $text-tertiary;
+    font-size: 0.8125rem;
+    background-color: transparent;
+  }
 }
 
 .other-login {
-  display: flex;
+  @include flex-center;
   gap: 1.5rem;
-  justify-content: center;
-  align-items: center;
   padding: 1rem 0;
 }
 
 .other-item {
   width: 48px;
   height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @include flex-center;
   background-color: $bg-card;
   border-radius: 50%;
   box-shadow: $shadow-sm;

@@ -16,12 +16,13 @@
         <span class="meta-item">{{ disease.category }}</span>
       </div>
     </div>
-    <van-icon name="arrow" class="card-arrow" />
+    <el-icon class="card-arrow"><ArrowRight /></el-icon>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import { ArrowRight } from '@element-plus/icons-vue'
 
 const props = defineProps({
   disease: { type: Object, required: true },

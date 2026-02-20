@@ -1,13 +1,15 @@
 <template>
-  <PageLayout :title="store.currentPlot?.name || '地块详情'" :showBack="true">
-    <template #actions>
-      <button class="action-btn" @click="goEdit">
-        <van-icon name="edit" />
-      </button>
-      <button class="action-btn danger" @click="handleDelete">
-        <van-icon name="delete-o" />
-      </button>
-    </template>
+  <div class="plot-detail-page">
+    <ContentHeader :title="store.currentPlot?.name || '地块详情'" :showBack="true">
+      <template #actions>
+        <el-button text class="action-btn" @click="goEdit">
+          <el-icon><Edit /></el-icon>
+        </el-button>
+        <el-button text class="action-btn danger" @click="handleDelete">
+          <el-icon><Delete /></el-icon>
+        </el-button>
+      </template>
+    </ContentHeader>
 
     <div class="plot-detail" v-if="store.currentPlot">
       <!-- 基本信息 -->
@@ -43,9 +45,9 @@
       <div class="stage-section">
         <div class="section-header">
           <h3 class="section-title">生长阶段</h3>
-          <button class="update-stage-btn" @click="showStagePopup = true">
+          <el-button type="primary" text size="small" @click="showStageDialog = true">
             更新阶段
-          </button>
+          </el-button>
         </div>
 
         <!-- 生长阶段时间线 -->
@@ -69,37 +71,40 @@
       <!-- 关联诊断记录（预留） -->
       <div class="diagnosis-section">
         <h3 class="section-title">诊断记录</h3>
-        <van-empty description="暂无诊断记录" image="search" />
+        <el-empty description="暂无诊断记录" />
       </div>
     </div>
 
-    <van-loading v-else-if="store.loading" class="loading-center" />
-    <van-empty v-else description="未找到地块信息" />
+    <div v-else-if="store.loading" v-loading="true" class="loading-center"></div>
+    <el-empty v-else description="未找到地块信息" />
 
     <!-- 生长阶段选择弹窗 -->
-    <van-popup v-model:show="showStagePopup" round position="bottom" :style="{ maxHeight: '60%' }">
-      <div class="stage-popup">
-        <div class="popup-header">
-          <span class="popup-title">更新生长阶段</span>
-          <van-icon name="cross" class="popup-close" @click="showStagePopup = false" />
-        </div>
-        <GrowthStageSelect
-          v-model="selectedStage"
-          :cropType="store.currentPlot?.cropType"
-        />
-        <van-button block type="primary" class="popup-confirm" @click="confirmStage" :disabled="!selectedStage">
+    <el-dialog
+      v-model="showStageDialog"
+      title="更新生长阶段"
+      width="500px"
+      :close-on-click-modal="true"
+    >
+      <GrowthStageSelect
+        v-model="selectedStage"
+        :cropType="store.currentPlot?.cropType"
+      />
+      <template #footer>
+        <el-button @click="showStageDialog = false">取消</el-button>
+        <el-button type="primary" @click="confirmStage" :disabled="!selectedStage">
           确认更新
-        </van-button>
-      </div>
-    </van-popup>
-  </PageLayout>
+        </el-button>
+      </template>
+    </el-dialog>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showConfirmDialog, showSuccessToast } from 'vant'
-import PageLayout from '@/components/shared/PageLayout.vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Edit, Delete } from '@element-plus/icons-vue'
+import ContentHeader from '@/components/layout/ContentHeader.vue'
 import GrowthStageSelect from '@/components/farm/GrowthStageSelect.vue'
 import { useFarmStore } from '@/stores/farm'
 
@@ -109,7 +114,7 @@ const store = useFarmStore()
 
 const farmId = route.params.farmId
 const plotId = route.params.plotId
-const showStagePopup = ref(false)
+const showStageDialog = ref(false)
 const selectedStage = ref('')
 
 onMounted(() => {
@@ -131,9 +136,13 @@ const goEdit = () => {
 
 const handleDelete = async () => {
   try {
-    await showConfirmDialog({ title: '确认删除', message: '删除地块后数据不可恢复' })
+    await ElMessageBox.confirm(
+      '删除地块后数据不可恢复',
+      '确认删除',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+    )
     await store.deletePlot(farmId, plotId)
-    showSuccessToast('已删除')
+    ElMessage.success('已删除')
     router.back()
   } catch {
     // 取消
@@ -146,26 +155,32 @@ const confirmStage = async () => {
     stage: selectedStage.value,
     date: new Date().toISOString().slice(0, 10),
   })
-  showSuccessToast('已更新')
-  showStagePopup.value = false
+  ElMessage.success('已更新')
+  showStageDialog.value = false
   selectedStage.value = ''
 }
 </script>
 
 <style lang="scss" scoped>
-.plot-detail {
+.plot-detail-page {
   padding-bottom: 20px;
+}
+
+.plot-detail {
+  padding: 0 24px;
+
+  @include mobile {
+    padding: 0 16px;
+  }
 }
 
 .action-btn {
   width: 34px;
   height: 34px;
-  border: none;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
   font-size: 16px;
   background: $primary-light;
   color: $primary;
@@ -257,18 +272,6 @@ const confirmStage = async () => {
   margin: 0;
 }
 
-.update-stage-btn {
-  padding: 5px 12px;
-  border: 1px solid $primary;
-  background: transparent;
-  color: $primary;
-  border-radius: $radius-sm;
-  font-size: 12px;
-  cursor: pointer;
-
-  &:active { transform: scale(0.95); }
-}
-
 // 时间线
 .stage-timeline {
   position: relative;
@@ -340,40 +343,10 @@ const confirmStage = async () => {
   margin-bottom: 20px;
 }
 
-// 弹窗
-.stage-popup {
-  padding: 20px;
-}
-
-.popup-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.popup-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: $text-primary;
-}
-
-.popup-close {
-  font-size: 20px;
-  color: $text-tertiary;
-  cursor: pointer;
-}
-
-.popup-confirm {
-  margin-top: 20px;
-  background: $primary;
-  border-color: $primary;
-  border-radius: $radius-sm;
-}
-
 .loading-center {
   display: flex;
   justify-content: center;
   padding: 60px 0;
+  min-height: 120px;
 }
 </style>

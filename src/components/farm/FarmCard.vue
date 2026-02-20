@@ -6,7 +6,7 @@
         <h3 class="farm-name">{{ farm.name }}</h3>
         <span class="farm-location" v-if="farm.location">{{ farm.location }}</span>
       </div>
-      <van-icon name="arrow" class="card-arrow" />
+      <el-icon class="card-arrow"><ArrowRight /></el-icon>
     </div>
     <div class="card-stats">
       <div class="stat-item">
@@ -29,6 +29,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { ArrowRight } from '@element-plus/icons-vue'
 
 const props = defineProps({
   farm: { type: Object, required: true },

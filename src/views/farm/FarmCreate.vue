@@ -1,38 +1,56 @@
 <template>
-  <PageLayout title="创建农场" :showBack="true">
-    <div class="farm-create">
-      <van-form @submit="onSubmit" class="create-form">
+  <div class="farm-create">
+    <ContentHeader title="创建农场" :showBack="true" />
+
+    <div class="form-wrapper">
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-position="top"
+        @submit.prevent="onSubmit"
+      >
         <div class="form-section">
           <h3 class="section-title">基本信息</h3>
 
-          <van-cell-group inset>
-            <van-field v-model="form.name" name="name" label="农场名称" placeholder="请输入农场名称"
-              :rules="[{ required: true, message: '请输入农场名称' }]" />
-            <van-field v-model="form.location" name="location" label="所在位置" placeholder="省/市/区（选填）" />
-            <van-field v-model="form.area" name="area" label="总面积(亩)" type="number" placeholder="请输入面积"
-              :rules="[{ required: true, message: '请输入面积' }]" />
-          </van-cell-group>
+          <el-form-item label="农场名称" prop="name">
+            <el-input v-model="form.name" placeholder="请输入农场名称" />
+          </el-form-item>
+
+          <el-form-item label="所在位置" prop="location">
+            <el-input v-model="form.location" placeholder="省/市/区（选填）" />
+          </el-form-item>
+
+          <el-form-item label="总面积(亩)" prop="area">
+            <el-input v-model="form.area" type="number" placeholder="请输入面积" />
+          </el-form-item>
         </div>
 
         <div class="form-actions">
-          <van-button block type="primary" native-type="submit" :loading="store.loading" class="submit-btn">
+          <el-button
+            type="primary"
+            :loading="store.loading"
+            class="submit-btn"
+            @click="onSubmit"
+          >
             创建农场
-          </van-button>
+          </el-button>
         </div>
-      </van-form>
+      </el-form>
     </div>
-  </PageLayout>
+  </div>
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { showSuccessToast } from 'vant'
-import PageLayout from '@/components/shared/PageLayout.vue'
+import { ElMessage } from 'element-plus'
+import ContentHeader from '@/components/layout/ContentHeader.vue'
 import { useFarmStore } from '@/stores/farm'
 
 const store = useFarmStore()
 const router = useRouter()
+const formRef = ref(null)
 
 const form = reactive({
   name: '',
@@ -40,22 +58,39 @@ const form = reactive({
   area: '',
 })
 
+const rules = {
+  name: [{ required: true, message: '请输入农场名称', trigger: 'blur' }],
+  area: [{ required: true, message: '请输入面积', trigger: 'blur' }],
+}
+
 const onSubmit = async () => {
-  const farm = await store.createFarm({
-    name: form.name,
-    location: form.location || undefined,
-    area: Number(form.area),
+  if (!formRef.value) return
+  await formRef.value.validate(async (valid) => {
+    if (!valid) return
+    const farm = await store.createFarm({
+      name: form.name,
+      location: form.location || undefined,
+      area: Number(form.area),
+    })
+    if (farm) {
+      ElMessage.success('创建成功')
+      router.replace({ name: 'farm' })
+    }
   })
-  if (farm) {
-    showSuccessToast('创建成功')
-    router.replace({ name: 'farm' })
-  }
 }
 </script>
 
 <style lang="scss" scoped>
 .farm-create {
   padding-bottom: 20px;
+}
+
+.form-wrapper {
+  padding: 0 24px;
+
+  @include mobile {
+    padding: 0 16px;
+  }
 }
 
 .form-section {
@@ -69,21 +104,14 @@ const onSubmit = async () => {
   margin: 0 0 12px 0;
 }
 
-:deep(.van-cell-group--inset) {
-  border-radius: $radius-sm;
-  border: 1px solid $border;
-  overflow: hidden;
-}
-
 .form-actions {
   padding-top: 12px;
 }
 
 .submit-btn {
-  background: $primary;
-  border-color: $primary;
-  border-radius: $radius-sm;
+  width: 100%;
   height: 44px;
   font-size: 15px;
+  border-radius: $radius-sm;
 }
 </style>

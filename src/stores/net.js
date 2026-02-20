@@ -88,7 +88,7 @@ export const useNetStore = defineStore('net', {
           sessionId: fullSessionId,
         })
 
-        router.push({ name: 'chatBegin' })
+        router.push({ name: 'chatHome' })
         this.closeLeft()
         await this.refreshHistory()
         chatStore.clearMessages()

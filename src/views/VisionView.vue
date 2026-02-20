@@ -1,34 +1,19 @@
 <template>
   <div class="disease-detection-container">
-    <!-- 极简返回按钮导航栏 -->
-    <nav class="nav-header">
-      <div class="nav-container">
-        <button class="back-btn" @click="goBack">
-          <svg class="back-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round" />
-          </svg>
-          <span class="back-text">返回</span>
-        </button>
-      </div>
-    </nav>
-
-    <!-- 核心内容区 -->
+    <!-- Core content area -->
     <main class="main-content">
-      <!-- 上传区域 -->
+      <!-- Upload section -->
       <section class="upload-section">
         <div class="upload-card">
-          <h2 class="card-title">上传检测图片</h2>
+          <h2 class="card-title">
+            <el-icon :size="20"><Upload /></el-icon>
+            上传检测图片
+          </h2>
           <div class="upload-area" @click="triggerFileInput" @drop="handleDrop" @dragover="handleDragOver"
             @dragleave="handleDragLeave" :class="{ 'upload-area--dragging': isDragging }">
             <div v-if="!uploadedImage" class="upload-placeholder">
               <div class="upload-icon-wrapper">
-                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                  <path d="M19 5L12 12L5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                </svg>
+                <el-icon :size="56" color="var(--text-secondary)"><UploadFilled /></el-icon>
               </div>
               <p class="upload-desc">点击或拖拽图片至此处上传</p>
               <p class="upload-tip">支持 JPG、PNG 格式，最大 5MB</p>
@@ -36,26 +21,20 @@
 
             <div v-else class="image-preview">
               <img :src="uploadedImage" alt="上传的病害图片" class="preview-img" />
-              <button class="remove-img-btn" @click="clearImage">×</button>
+              <button class="remove-img-btn" @click.stop="clearImage">
+                <el-icon :size="16"><Close /></el-icon>
+              </button>
             </div>
 
             <input type="file" ref="fileInput" class="file-input" accept="image/jpeg,image/png"
               @change="handleFileChange" />
           </div>
 
-          <!-- 识别状态提示 -->
+          <!-- Detecting status -->
           <div v-if="isDetecting" class="detecting-status">
             <div class="status-header">
               <div class="status-icon">
-                <svg class="spinner" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-dasharray="31.416" stroke-dashoffset="31.416">
-                    <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416;0 31.416"
-                      repeatCount="indefinite" />
-                    <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416;-31.416"
-                      repeatCount="indefinite" />
-                  </circle>
-                </svg>
+                <el-icon :size="24" class="spinner" color="#fff"><Loading /></el-icon>
               </div>
               <div class="status-info">
                 <div class="status-title">正在识别中...</div>
@@ -63,69 +42,64 @@
                 <div class="status-tip">预计需要30-60秒，您可以继续操作其他功能</div>
               </div>
             </div>
-            <div class="progress-bar">
-              <div class="progress-fill" :style="{ width: Math.min((detectingElapsedTime / 60) * 100, 95) + '%' }">
-              </div>
-            </div>
+            <el-progress
+              :percentage="Math.min((detectingElapsedTime / 60) * 100, 95)"
+              :show-text="false"
+              :stroke-width="6"
+              color="#4a9b5e"
+            />
           </div>
 
-          <button class="detect-btn" @click="showCropSelect = true" :disabled="!uploadedImage || isDetecting">
-            <span v-if="!isDetecting"> 开始识别 </span>
-            <span v-else class="loading">
-              <span class="loading-dot"></span>
-              <span class="loading-dot"></span>
-              <span class="loading-dot"></span>
-              识别中
-            </span>
-          </button>
+          <el-button
+            type="primary"
+            size="large"
+            class="detect-btn"
+            @click="showCropSelect = true"
+            :disabled="!uploadedImage || isDetecting"
+            :loading="isDetecting"
+          >
+            <span v-if="!isDetecting">开始识别</span>
+            <span v-else>识别中</span>
+          </el-button>
         </div>
       </section>
 
-      <!-- 识别结果：结构化可视化展示 -->
+      <!-- Structured result display -->
       <section class="result-section" v-if="structuredResult">
         <div class="result-card">
-          <h2 class="card-title">识别结果</h2>
+          <h2 class="card-title">
+            <el-icon :size="20"><Document /></el-icon>
+            识别结果
+          </h2>
 
-          <!-- 可视化结果区域 -->
+          <!-- Visual results area -->
           <div class="visual-result">
-            <!-- 健康状态或病害基本信息卡片 -->
+            <!-- Basic info card -->
             <div class="result-card-item basic-info">
               <div class="info-header">
-                <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                </svg>
+                <el-icon :size="20" color="#4a9b5e"><InfoFilled /></el-icon>
                 <h3 class="info-title">{{ structuredResult.hasDisease ? '病害基本信息' : '健康状态' }}</h3>
               </div>
               <div class="info-content">
                 <div class="info-row">
                   <label>作物类型：</label>
-                  <span class="value crop-type">{{ selectedCrop }}</span>
+                  <el-tag type="success" effect="light">{{ selectedCrop }}</el-tag>
                 </div>
 
-                <!-- 健康状态显示 -->
+                <!-- Healthy display -->
                 <div v-if="!structuredResult.hasDisease" class="info-row healthy-info">
                   <label>健康状态：</label>
-                  <span class="value healthy-status">
-                    <svg class="healthy-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round" />
-                      <path
-                        d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
+                  <el-tag type="success" effect="dark">
+                    <el-icon><CircleCheck /></el-icon>
                     健康
-                  </span>
+                  </el-tag>
                 </div>
                 <div v-if="!structuredResult.hasDisease" class="info-row">
                   <label>健康描述：</label>
                   <span class="value healthy-desc">{{ structuredResult.healthyDesc }}</span>
                 </div>
 
-                <!-- 病害信息显示 -->
+                <!-- Disease display -->
                 <div v-if="structuredResult.hasDisease" class="info-row">
                   <label>病害名称：</label>
                   <span class="value disease-name">{{ structuredResult.diseaseName }}</span>
@@ -133,29 +107,26 @@
                 <div v-if="structuredResult.hasDisease" class="info-row confidence-row">
                   <label>识别置信度：</label>
                   <div class="confidence-wrapper">
-                    <div class="confidence-bar" :style="{ width: structuredResult.confidence + '%' }"></div>
-                    <span class="confidence-value">{{ structuredResult.confidence }}%</span>
+                    <el-progress
+                      :percentage="structuredResult.confidence"
+                      :stroke-width="10"
+                      color="#4a9b5e"
+                    />
                   </div>
                 </div>
                 <div v-if="structuredResult.hasDisease" class="info-row">
                   <label>病害等级：</label>
-                  <span class="value severity-tag" :class="getSeverityClass(structuredResult.severity)">
+                  <el-tag :type="getSeverityType(structuredResult.severity)" effect="dark">
                     {{ structuredResult.severity }}
-                  </span>
+                  </el-tag>
                 </div>
               </div>
             </div>
 
-            <!-- 病害症状描述 -->
+            <!-- Disease symptoms -->
             <div v-if="structuredResult.hasDisease" class="result-card-item symptoms">
               <div class="info-header">
-                <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                </svg>
+                <el-icon :size="20" color="#4299e1"><Warning /></el-icon>
                 <h3 class="info-title">病害症状</h3>
               </div>
               <div class="info-content">
@@ -167,14 +138,10 @@
               </div>
             </div>
 
-            <!-- 防治方法 -->
+            <!-- Prevention methods -->
             <div v-if="structuredResult.hasDisease" class="result-card-item prevention">
               <div class="info-header">
-                <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
+                <el-icon :size="20" color="#9f7aea"><CircleCheck /></el-icon>
                 <h3 class="info-title">防治方法</h3>
               </div>
               <div class="info-content">
@@ -204,17 +171,11 @@
               </div>
             </div>
 
-            <!-- 注意事项 -->
+            <!-- Notes -->
             <div v-if="structuredResult.hasDisease && structuredResult.notes && structuredResult.notes.length"
               class="result-card-item notes">
               <div class="info-header">
-                <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  <path d="M12 8V12M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                </svg>
+                <el-icon :size="20" color="#ed8936"><WarningFilled /></el-icon>
                 <h3 class="info-title">注意事项</h3>
               </div>
               <div class="info-content">
@@ -225,76 +186,74 @@
             </div>
           </div>
 
-          <!-- 兼容原有 Markdown 展示（可选） -->
+          <!-- Markdown fallback -->
           <div class="markdown-fallback" v-if="markdownResult">
             <div class="fallback-title">详细说明</div>
             <div class="markdown-content" v-html="renderedMarkdown"></div>
           </div>
 
-          <button class="agent-analyze-btn" v-if="structuredResult?.hasDisease || markdownResult"
-            @click="showAgentPopup = true">
-            🌿 发送至Agent深入分析
-          </button>
-          <button class="reset-btn" @click="resetAll">重新检测</button>
+          <el-button
+            type="primary"
+            size="large"
+            class="agent-analyze-btn"
+            v-if="structuredResult?.hasDisease || markdownResult"
+            @click="showAgentPopup = true"
+          >
+            <el-icon><Promotion /></el-icon>
+            发送至Agent深入分析
+          </el-button>
+          <el-button size="large" class="reset-btn" @click="resetAll">重新检测</el-button>
         </div>
       </section>
 
-      <!-- 兼容纯 Markdown 结果的展示 -->
+      <!-- Markdown-only result fallback -->
       <section class="result-section" v-if="markdownResult && !structuredResult">
         <div class="result-card">
-          <h2 class="card-title">识别结果</h2>
+          <h2 class="card-title">
+            <el-icon :size="20"><Document /></el-icon>
+            识别结果
+          </h2>
           <div class="markdown-content" v-html="renderedMarkdown"></div>
-          <button class="agent-analyze-btn" v-if="structuredResult?.hasDisease || markdownResult"
-            @click="showAgentPopup = true">
-            🌿 发送至Agent深入分析
-          </button>
-          <button class="reset-btn" @click="resetAll">重新检测</button>
+          <el-button
+            type="primary"
+            size="large"
+            class="agent-analyze-btn"
+            v-if="structuredResult?.hasDisease || markdownResult"
+            @click="showAgentPopup = true"
+          >
+            <el-icon><Promotion /></el-icon>
+            发送至Agent深入分析
+          </el-button>
+          <el-button size="large" class="reset-btn" @click="resetAll">重新检测</el-button>
         </div>
       </section>
     </main>
 
-    <!-- 通知提示 -->
-    <transition name="notification">
-      <div v-if="showNotification" class="notification-toast">
-        <div class="notification-content">
-          <svg class="notification-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-          <span class="notification-text">{{ notificationMessage }}</span>
+    <!-- Crop selection dialog (replaces custom modal) -->
+    <el-dialog
+      v-model="showCropSelect"
+      title="选择作物类型"
+      width="520px"
+      :close-on-click-modal="true"
+      align-center
+      destroy-on-close
+    >
+      <div class="crop-grid">
+        <div class="crop-item" v-for="(crop, index) in cropList" :key="index"
+          :class="{ active: selectedCrop === crop.name }" @click="selectedCrop = crop.name">
+          <span class="crop-icon">{{ crop.icon }}</span>
+          <span class="crop-name">{{ crop.name }}</span>
         </div>
       </div>
-    </transition>
+      <template #footer>
+        <el-button @click="showCropSelect = false">取消</el-button>
+        <el-button type="primary" @click="confirmCropSelect" :disabled="!selectedCrop">
+          确认识别
+        </el-button>
+      </template>
+    </el-dialog>
 
-    <!-- 作物选择弹窗 -->
-    <div class="crop-select-modal" v-if="showCropSelect">
-      <div class="modal-mask" @click="showCropSelect = false"></div>
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">选择作物类型</h3>
-          <button class="modal-close" @click="showCropSelect = false">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="crop-grid">
-            <!-- 常见农作物选项 -->
-            <div class="crop-item" v-for="(crop, index) in cropList" :key="index"
-              :class="{ active: selectedCrop === crop.name }" @click="selectedCrop = crop.name">
-              <span class="crop-icon">{{ crop.icon }}</span>
-              <span class="crop-name">{{ crop.name }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="modal-cancel" @click="showCropSelect = false">取消</button>
-          <button class="modal-confirm" @click="confirmCropSelect" :disabled="!selectedCrop">
-            确认识别
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Agent分析弹窗 -->
+    <!-- Agent analysis popup -->
     <AgentTransferPopup v-model:visible="showAgentPopup" source="vision" :cropType="selectedCrop"
       :diseaseName="structuredResult?.diseaseName || ''" :severity="structuredResult?.severity || ''"
       :confidence="structuredResult?.confidence || 0" :imageUrl="visionStore.currentTask?.imageUrl || ''"
@@ -309,20 +268,26 @@ import { useRouter } from 'vue-router'
 import { useVisionStore } from '@/stores/vision'
 import { useSidebarStore } from '@/stores/sidebar'
 import { marked } from 'marked'
+import { ElMessage } from 'element-plus'
+import {
+  Upload, UploadFilled, Close, Loading, Document,
+  InfoFilled, CircleCheck, Warning, WarningFilled,
+  Promotion
+} from '@element-plus/icons-vue'
 import AgentTransferPopup from '@/components/AgentTransferPopup.vue'
 
-// 配置 marked
+// Configure marked
 marked.setOptions({
   breaks: true,
   gfm: true,
 })
 
-// 路由实例
+// Router instance
 const router = useRouter()
 const visionStore = useVisionStore()
 const sidebarStore = useSidebarStore()
 
-// 响应式数据
+// Reactive data
 const fileInput = ref(null)
 const uploadedImage = ref('')
 const isDragging = ref(false)
@@ -331,9 +296,9 @@ const showCropSelect = ref(false)
 const selectedCrop = ref('')
 const selectedFile = ref(null)
 const markdownResult = ref('')
-// 新增：结构化结果存储
+// Structured result
 const structuredResult = ref(null)
-// 防治方法标签页
+// Prevention tabs
 const preventionTabs = ref([
   { key: 'agricultural', name: '农业防治' },
   { key: 'chemical', name: '化学防治' },
@@ -341,31 +306,26 @@ const preventionTabs = ref([
 ])
 const activePreventionTab = ref('agricultural')
 
-// 异步任务相关
-const detectingTaskId = ref(null) // 当前识别任务ID
-const detectingStartTime = ref(null) // 识别开始时间
-const detectingElapsedTime = ref(0) // 已用时间（秒）
-const detectingTimer = ref(null) // 计时器
-const showNotification = ref(false) // 显示通知
-const notificationMessage = ref('') // 通知消息
-const showAgentPopup = ref(false) // Agent分析弹窗
+// Async task related
+const detectingTaskId = ref(null)
+const detectingStartTime = ref(null)
+const detectingElapsedTime = ref(0)
+const detectingTimer = ref(null)
+const showAgentPopup = ref(false)
 
-// 从store恢复状态
+// Restore state from store
 const restoreFromStore = () => {
   if (visionStore.currentTask) {
     const task = visionStore.currentTask
 
-    // 恢复图片
     if (task.imageUrl) {
       uploadedImage.value = task.imageUrl
     }
 
-    // 恢复作物类型
     if (task.cropType) {
       selectedCrop.value = task.cropType
     }
 
-    // 恢复识别结果
     if (task.result) {
       if (task.result.diseaseName && task.result.confidence) {
         structuredResult.value = task.result
@@ -374,35 +334,30 @@ const restoreFromStore = () => {
       }
     }
 
-    // 如果任务正在进行中，恢复状态
     if (task.status === 'detecting') {
       isDetecting.value = true
       detectingTaskId.value = task.id
       detectingStartTime.value = task.startTime
-      // 计算当前的真实已用时间，而不是使用store中保存的旧值
       detectingElapsedTime.value = Math.floor((Date.now() - task.startTime) / 1000)
       startTimer()
 
-      // 如果任务时间超过60秒，可能已经超时，标记为失败
       if (detectingElapsedTime.value > 60) {
         visionStore.failTask('识别超时，请重新识别')
         isDetecting.value = false
         stopTimer()
-        showTaskNotification('识别超时，请重新识别')
+        ElMessage.warning('识别超时，请重新识别')
       }
-      // 否则，任务可能还在进行中，显示提示但不重新调用API
-      // （因为HTTP请求无法暂停和恢复）
     }
   }
 }
 
-// 计算属性：解析 Markdown 为 HTML
+// Computed: render Markdown to HTML
 const renderedMarkdown = computed(() => {
   if (!markdownResult.value) return ''
   return marked.parse(markdownResult.value)
 })
 
-// Agent分析的默认提示词
+// Agent analysis default prompt
 const visionAgentPrompt = computed(() => {
   const r = structuredResult.value
   if (r && r.hasDisease) {
@@ -422,17 +377,17 @@ const visionAgentPrompt = computed(() => {
   return ''
 })
 
-// 处理Agent分析弹窗确认
+// Handle Agent transfer confirm
 const handleAgentTransferConfirm = async ({ prompt, imageUrl }) => {
   showAgentPopup.value = false
   try {
     await sidebarStore.transferToAgent(prompt, imageUrl)
   } catch (err) {
-    showTaskNotification('传递到Agent失败，请重试')
+    ElMessage.error('传递到Agent失败，请重试')
   }
 }
 
-// 作物列表
+// Crop list
 const cropList = ref([
   { icon: '🌾', name: '小麦' },
   { icon: '🌽', name: '玉米' },
@@ -445,17 +400,12 @@ const cropList = ref([
   { icon: '🍇', name: '葡萄' },
 ])
 
-// 返回上一页
-const goBack = () => {
-  router.go(-1)
-}
-
-// 触发文件选择
+// Trigger file input
 const triggerFileInput = () => {
   fileInput.value.click()
 }
 
-// 处理文件选择
+// Handle file change
 const handleFileChange = (e) => {
   const file = e.target.files[0]
   if (file) {
@@ -463,18 +413,18 @@ const handleFileChange = (e) => {
   }
 }
 
-// 文件上传处理
+// File upload handling
 const handleFileUpload = (file) => {
   const allowedTypes = ['image/jpeg', 'image/png']
   const maxSize = 20 * 1024 * 1024
 
   if (!allowedTypes.includes(file.type)) {
-    alert('仅支持上传 JPG/PNG 格式的图片！')
+    ElMessage.warning('仅支持上传 JPG/PNG 格式的图片！')
     return
   }
 
   if (file.size > maxSize) {
-    alert('图片大小不能超过 10MB！')
+    ElMessage.warning('图片大小不能超过 10MB！')
     return
   }
 
@@ -484,12 +434,12 @@ const handleFileUpload = (file) => {
   reader.onload = (e) => {
     uploadedImage.value = e.target.result
     markdownResult.value = ''
-    structuredResult.value = null // 清空结构化结果
+    structuredResult.value = null
   }
   reader.readAsDataURL(file)
 }
 
-// 拖拽事件处理
+// Drag events
 const handleDragOver = (e) => {
   e.preventDefault()
   isDragging.value = true
@@ -508,7 +458,7 @@ const handleDrop = (e) => {
   }
 }
 
-// 清空图片
+// Clear image
 const clearImage = () => {
   uploadedImage.value = ''
   markdownResult.value = ''
@@ -520,7 +470,7 @@ const clearImage = () => {
   }
 }
 
-// 确认作物选择并开始识别
+// Confirm crop selection and start detection
 const confirmCropSelect = () => {
   showCropSelect.value = false
   detectDisease()
@@ -528,23 +478,22 @@ const confirmCropSelect = () => {
 
 import { imageChat } from '@/axios/chat'
 
-// 获取病害等级样式类
-const getSeverityClass = (severity) => {
+// Get severity tag type for Element Plus
+const getSeverityType = (severity) => {
   switch (severity) {
     case '轻微':
-      return 'severity-mild'
+      return 'success'
     case '中度':
-      return 'severity-moderate'
+      return 'warning'
     case '重度':
-      return 'severity-severe'
+      return 'danger'
     default:
-      return ''
+      return 'info'
   }
 }
 
-// 开始计时
+// Start timer
 const startTimer = () => {
-  // 如果已有开始时间（从store恢复的），则基于该时间继续计时
   if (!detectingStartTime.value) {
     detectingStartTime.value = Date.now()
     detectingElapsedTime.value = 0
@@ -552,14 +501,13 @@ const startTimer = () => {
 
   detectingTimer.value = setInterval(() => {
     detectingElapsedTime.value = Math.floor((Date.now() - detectingStartTime.value) / 1000)
-    // 定期更新store中的已用时间，确保页面刷新时能正确恢复
     if (visionStore.currentTask && visionStore.currentTask.status === 'detecting') {
       visionStore.updateTaskElapsedTime()
     }
   }, 1000)
 }
 
-// 停止计时
+// Stop timer
 const stopTimer = () => {
   if (detectingTimer.value) {
     clearInterval(detectingTimer.value)
@@ -569,16 +517,7 @@ const stopTimer = () => {
   detectingElapsedTime.value = 0
 }
 
-// 显示通知
-const showTaskNotification = (message) => {
-  notificationMessage.value = message
-  showNotification.value = true
-  setTimeout(() => {
-    showNotification.value = false
-  }, 5000)
-}
-
-// 格式化时间显示
+// Format time display
 const formatTime = (seconds) => {
   if (seconds < 60) {
     return `${seconds}秒`
@@ -588,14 +527,14 @@ const formatTime = (seconds) => {
   return `${mins}分${secs}秒`
 }
 
-// 病害识别逻辑：解析结构化数据（异步处理）
+// Disease detection logic
 const detectDisease = async () => {
   if (!selectedFile.value) {
-    alert('请先上传图片！')
+    ElMessage.warning('请先上传图片！')
     return
   }
 
-  // 上传图片
+  // Upload image
   let imageUrl = ''
   try {
     const url = await upload(selectedFile.value)
@@ -603,65 +542,59 @@ const detectDisease = async () => {
     console.log('图片上传成功：', imageUrl)
   } catch (error) {
     console.error('图片上传失败：', error)
-    alert('图片上传失败，请重试！')
+    ElMessage.error('图片上传失败，请重试！')
     return
   }
 
-  // 创建任务并保存到store
+  // Create task and save to store
   const taskId = visionStore.createTask(imageUrl, selectedCrop.value)
   detectingTaskId.value = taskId
   isDetecting.value = true
 
-  // 开始计时
+  // Start timer
   startTimer()
 
-  // 显示提示信息
-  showTaskNotification('识别任务已开始，预计需要30-60秒，您可以继续操作其他功能')
+  // Show notification
+  ElMessage.info({ message: '识别任务已开始，预计需要30-60秒', duration: 5000 })
 
   try {
-    // 异步执行识别任务
     const res = await imageChat({
       url: imageUrl,
       cropType: selectedCrop.value,
     })
 
-    // 检查任务是否被取消（用户可能开始了新任务）
+    // Check if task was cancelled
     if (detectingTaskId.value !== taskId || !visionStore.currentTask) {
       console.log('任务已被新任务替换，忽略此结果')
       return
     }
 
-    // 优先解析结构化数据（假设后端返回的res.data是JSON格式的结构化数据）
-    // 如果后端返回的是字符串，可先尝试JSON.parse
+    // Parse structured data
     let resultData = null
     try {
       resultData = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
-      // 验证是否为结构化数据：检查hasDisease字段是否存在（新的核心标识）
       if (resultData.hasDisease !== undefined) {
         structuredResult.value = resultData
         visionStore.completeTask(resultData)
       } else {
-        // 否则作为markdown处理
         markdownResult.value = res.data
         visionStore.completeTask(res.data)
       }
     } catch (e) {
-      // 解析失败则作为markdown处理
       markdownResult.value = res.data
       visionStore.completeTask(res.data)
     }
 
-    // 识别成功，显示通知
-    showTaskNotification('识别完成！结果已更新')
+    ElMessage.success('识别完成！结果已更新')
 
-    // 有病害时自动弹出Agent分析弹窗
+    // Auto-open Agent popup for diseases
     if (structuredResult.value && structuredResult.value.hasDisease) {
       setTimeout(() => {
         showAgentPopup.value = true
       }, 1500)
     }
 
-    // 滚动到结果区域
+    // Scroll to results
     setTimeout(() => {
       const resultSection = document.querySelector('.result-section')
       if (resultSection) {
@@ -671,16 +604,13 @@ const detectDisease = async () => {
   } catch (error) {
     console.error('识别失败：', error)
 
-    // 检查任务是否被取消
     if (detectingTaskId.value !== taskId || !visionStore.currentTask) {
       return
     }
 
     visionStore.failTask(error.message || '识别失败')
-    showTaskNotification('识别失败，请重试！')
-    alert('识别失败，请重试！')
+    ElMessage.error('识别失败，请重试！')
   } finally {
-    // 只有当前任务才清除状态
     if (detectingTaskId.value === taskId) {
       isDetecting.value = false
       detectingTaskId.value = null
@@ -689,7 +619,7 @@ const detectDisease = async () => {
   }
 }
 
-// 重置所有状态
+// Reset all state
 const resetAll = () => {
   uploadedImage.value = ''
   markdownResult.value = ''
@@ -706,7 +636,7 @@ const resetAll = () => {
   }
 }
 
-// 监听store中的任务状态变化，更新本地显示
+// Watch store task state changes
 watch(
   () => visionStore.currentTask?.elapsedTime,
   (newTime) => {
@@ -716,48 +646,30 @@ watch(
   },
 )
 
-// 组件挂载时恢复状态
+// Restore state on mount
 onMounted(() => {
   restoreFromStore()
 })
 
-// 组件卸载时清理定时器
+// Cleanup on unmount
 onBeforeUnmount(() => {
   stopTimer()
 })
 </script>
 
 <style lang="scss" scoped>
-// 使用全局 variables.scss
-
-// 全局样式
 .disease-detection-container {
-  min-height: 100vh;
+  min-height: 100%;
   background-color: $bg-main;
-  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: $font-family;
   color: $text-primary;
   position: relative;
 }
 
-// 健康状态样式
+// Healthy status styles
 .healthy-info {
   display: flex;
   align-items: center;
-}
-
-.healthy-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #10B981;
-  /* 绿色 */
-  font-weight: 500;
-}
-
-.healthy-icon {
-  width: 20px;
-  height: 20px;
-  fill: #10B981;
 }
 
 .healthy-desc {
@@ -765,54 +677,7 @@ onBeforeUnmount(() => {
   line-height: 1.5;
 }
 
-// 导航栏
-.nav-header {
-  background-color: $bg-card;
-  box-shadow: $shadow-sm;
-  position: sticky;
-  top: 0;
-  z-index: 999;
-
-  .nav-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 1.25rem;
-    display: flex;
-    align-items: center;
-    height: 56px;
-
-    .back-btn {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: transparent;
-      border: none;
-      color: $primary;
-      font-size: 15px;
-      font-weight: 500;
-      cursor: pointer;
-      padding: 8px 12px;
-      border-radius: $radius-sm;
-      transition: $transition;
-
-      &:hover {
-        color: $primary-hover;
-        background-color: $primary-light;
-      }
-
-      .back-icon {
-        width: 18px;
-        height: 18px;
-      }
-
-      .back-text {
-        letter-spacing: 0.2px;
-      }
-    }
-  }
-}
-
-// 主内容区
+// Main content area
 .main-content {
   max-width: 1100px;
   margin: 0 auto;
@@ -821,21 +686,20 @@ onBeforeUnmount(() => {
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
 
-  @media (max-width: 768px) {
+  @include mobile {
     grid-template-columns: 1fr;
     padding: 1.5rem 1rem;
     gap: 1.5rem;
   }
 }
 
-// 卡片通用样式
+// Card common styles
 .upload-card,
 .result-card {
-  background: $bg-card;
+  @include card-base;
   border-radius: $radius-lg;
   box-shadow: $shadow-md;
   padding: 2rem;
-  transition: $transition;
   position: relative;
   overflow: hidden;
 
@@ -849,10 +713,7 @@ onBeforeUnmount(() => {
     background: linear-gradient(90deg, $primary, $secondary);
   }
 
-  &:hover {
-    box-shadow: $shadow-lg;
-    transform: translateY(-2px);
-  }
+  @include card-hover;
 
   .card-title {
     font-size: 1.3rem;
@@ -865,14 +726,14 @@ onBeforeUnmount(() => {
     align-items: center;
     gap: 8px;
 
-    @media (max-width: 768px) {
+    @include mobile {
       font-size: 1.15rem;
       margin-bottom: 1.5rem;
     }
   }
 }
 
-// 上传区域
+// Upload area
 .upload-section {
   .upload-area {
     border: 2px dashed $border;
@@ -889,25 +750,11 @@ onBeforeUnmount(() => {
       border-color: $primary;
       background-color: $primary-light;
       transform: scale(1.01);
-
-      .upload-placeholder {
-        .upload-icon {
-          color: $primary;
-          animation: pulse 1.5s infinite;
-        }
-      }
     }
 
     .upload-placeholder {
       .upload-icon-wrapper {
         margin-bottom: 1.25rem;
-
-        .upload-icon {
-          width: 56px;
-          height: 56px;
-          color: $text-secondary;
-          transition: $transition;
-        }
       }
 
       .upload-desc {
@@ -950,10 +797,7 @@ onBeforeUnmount(() => {
         color: white;
         border: none;
         cursor: pointer;
-        font-size: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        @include flex-center;
         transition: $transition;
         opacity: 0.8;
 
@@ -970,7 +814,7 @@ onBeforeUnmount(() => {
     }
   }
 
-  // 识别状态提示区域
+  // Detecting status
   .detecting-status {
     margin-bottom: 1.5rem;
     padding: 1.25rem;
@@ -989,16 +833,12 @@ onBeforeUnmount(() => {
         flex-shrink: 0;
         width: 48px;
         height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        @include flex-center;
         background: linear-gradient(135deg, $primary, $primary-hover);
         border-radius: 50%;
         color: white;
 
         .spinner {
-          width: 24px;
-          height: 24px;
           animation: spin 1s linear infinite;
         }
       }
@@ -1027,79 +867,25 @@ onBeforeUnmount(() => {
         }
       }
     }
-
-    .progress-bar {
-      width: 100%;
-      height: 6px;
-      background-color: rgba(56, 142, 60, 0.1);
-      border-radius: 3px;
-      overflow: hidden;
-
-      .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, $primary, $primary-hover);
-        border-radius: 3px;
-        transition: width 1s ease;
-        animation: progressPulse 2s ease-in-out infinite;
-      }
-    }
   }
 
-  // 识别按钮
+  // Detection button
   .detect-btn {
     width: 100%;
-    padding: 0.85rem 1rem;
-    border: none;
-    border-radius: $radius-md;
-    font-size: 1rem;
     font-weight: 600;
-    cursor: pointer;
-    transition: $transition;
-    background: linear-gradient(135deg, $primary, $primary-hover);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
     letter-spacing: 0.3px;
+    background: linear-gradient(135deg, $primary, $primary-hover);
+    border-color: $primary;
+    border-radius: $radius-md;
 
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    &:not(:disabled):hover {
+    &:hover:not(:disabled) {
       transform: translateY(-2px);
       box-shadow: 0 4px 8px rgba(56, 142, 60, 0.3);
-    }
-
-    .loading {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.75rem;
-
-      .loading-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background-color: white;
-        animation: loading 1.4s infinite ease-in-out both;
-
-        &:nth-child(1) {
-          animation-delay: -0.32s;
-        }
-
-        &:nth-child(2) {
-          animation-delay: -0.16s;
-        }
-      }
     }
   }
 }
 
-// 可视化结果样式（核心新增）
+// Result section styles
 .result-section {
   .visual-result {
     margin-bottom: 2rem;
@@ -1139,12 +925,6 @@ onBeforeUnmount(() => {
         gap: 8px;
         margin-bottom: 1rem;
 
-        .info-icon {
-          width: 20px;
-          height: 20px;
-          color: inherit;
-        }
-
         .info-title {
           font-size: 1rem;
           font-weight: 600;
@@ -1173,8 +953,7 @@ onBeforeUnmount(() => {
             flex-shrink: 0;
           }
 
-          // 在移动端使用更灵活的标签宽度
-          @media (max-width: 768px) {
+          @include mobile {
             label {
               width: auto;
               margin-right: 0.75rem;
@@ -1184,11 +963,6 @@ onBeforeUnmount(() => {
 
           .value {
             flex: 1;
-          }
-
-          .crop-type {
-            color: $primary;
-            font-weight: 500;
           }
 
           .disease-name {
@@ -1203,53 +977,14 @@ onBeforeUnmount(() => {
 
           .confidence-wrapper {
             flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-
-            .confidence-bar {
-              height: 8px;
-              background: linear-gradient(90deg, $primary, $secondary);
-              border-radius: 4px;
-              transition: width 0.5s ease;
-            }
-
-            .confidence-value {
-              font-size: 0.85rem;
-              color: $primary;
-              font-weight: 500;
-            }
           }
         }
 
-        // 在移动端确保进度条有足够的宽度
-        @media (max-width: 768px) {
+        @include mobile {
           .confidence-row {
             .confidence-wrapper {
               width: 100%;
             }
-          }
-        }
-
-        .severity-tag {
-          padding: 2px 8px;
-          border-radius: 12px;
-          font-size: 0.8rem;
-          font-weight: 500;
-
-          &.severity-mild {
-            background-color: rgba(72, 187, 120, 0.1);
-            color: $severity-mild;
-          }
-
-          &.severity-moderate {
-            background-color: rgba(237, 137, 54, 0.1);
-            color: $severity-moderate;
-          }
-
-          &.severity-severe {
-            background-color: rgba(229, 62, 62, 0.1);
-            color: $severity-severe;
           }
         }
 
@@ -1266,7 +1001,7 @@ onBeforeUnmount(() => {
             }
 
             &::before {
-              content: '•';
+              content: '\2022';
               color: #4299e1;
               font-weight: bold;
               position: absolute;
@@ -1315,7 +1050,7 @@ onBeforeUnmount(() => {
               }
 
               &::before {
-                content: '✓';
+                content: '\2713';
                 color: #9f7aea;
                 font-weight: bold;
                 position: absolute;
@@ -1335,7 +1070,7 @@ onBeforeUnmount(() => {
     }
   }
 
-  // Markdown 降级展示样式
+  // Markdown fallback
   .markdown-fallback {
     margin-top: 1.5rem;
     padding-top: 1.5rem;
@@ -1355,49 +1090,49 @@ onBeforeUnmount(() => {
     }
   }
 
-  // 原有 Markdown 样式
+  // Markdown content styles
   .markdown-content {
     line-height: 1.8;
     color: $text-secondary;
     font-size: 0.95rem;
     margin-bottom: 2rem;
 
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
+    :deep(h1),
+    :deep(h2),
+    :deep(h3),
+    :deep(h4),
+    :deep(h5),
+    :deep(h6) {
       color: $primary;
       margin: 1.2rem 0 0.8rem;
       font-weight: 600;
     }
 
-    p {
+    :deep(p) {
       margin: 0.8rem 0;
       text-align: justify;
     }
 
-    ul,
-    ol {
+    :deep(ul),
+    :deep(ol) {
       padding-left: 1.5rem;
       margin: 0.8rem 0;
     }
 
-    li {
+    :deep(li) {
       margin: 0.4rem 0;
     }
 
-    strong {
+    :deep(strong) {
       color: $primary;
       font-weight: 600;
     }
 
-    em {
+    :deep(em) {
       color: $text-primary;
     }
 
-    pre {
+    :deep(pre) {
       background-color: $bg-main;
       padding: 1rem;
       border-radius: $radius-sm;
@@ -1405,7 +1140,7 @@ onBeforeUnmount(() => {
       margin: 1rem 0;
     }
 
-    code {
+    :deep(code) {
       background-color: $primary-light;
       padding: 0.2rem 0.4rem;
       border-radius: 4px;
@@ -1413,29 +1148,20 @@ onBeforeUnmount(() => {
       font-size: 0.9rem;
     }
 
-    pre code {
+    :deep(pre code) {
       background: none;
       padding: 0;
     }
   }
 
-  // Agent分析按钮
+  // Agent analyze button
   .agent-analyze-btn {
     width: 100%;
-    padding: 0.85rem 1rem;
-    border: none;
-    border-radius: $radius-md;
-    font-size: 1rem;
     font-weight: 600;
-    cursor: pointer;
-    transition: $transition;
-    background: linear-gradient(135deg, $primary, $primary-hover);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
     letter-spacing: 0.3px;
+    background: linear-gradient(135deg, $primary, $primary-hover);
+    border-color: $primary;
+    border-radius: $radius-md;
     margin-bottom: 0.75rem;
 
     &:hover {
@@ -1444,23 +1170,14 @@ onBeforeUnmount(() => {
     }
   }
 
-  // 重置按钮
+  // Reset button
   .reset-btn {
     width: 100%;
-    padding: 0.85rem 1rem;
-    border: none;
-    border-radius: $radius-md;
-    font-size: 1rem;
     font-weight: 600;
-    cursor: pointer;
-    transition: $transition;
+    border-radius: $radius-md;
     background-color: $bg-main;
     color: $text-primary;
     border: 1px solid $border;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
 
     &:hover {
       background-color: $primary-light;
@@ -1472,212 +1189,51 @@ onBeforeUnmount(() => {
   }
 }
 
-// 作物选择弹窗样式
-.crop-select-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+// Crop selection dialog grid
+.crop-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
 
-  .modal-mask {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px);
+  @include mobile {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .crop-item {
+    padding: 1rem;
+    border-radius: $radius-md;
+    border: 1px solid $border;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
     transition: $transition;
-  }
 
-  .modal-content {
-    position: relative;
-    width: 90%;
-    max-width: 500px;
-    background-color: $bg-card;
-    border-radius: $radius-lg;
-    box-shadow: $shadow-lg;
-    overflow: hidden;
-    animation: modalFadeIn 0.3s ease;
-
-    .modal-header {
-      padding: 1.25rem 1.5rem;
-      border-bottom: 1px solid $border;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-
-      .modal-title {
-        font-size: 1.15rem;
-        font-weight: 600;
-        color: $text-primary;
-        margin: 0;
-      }
-
-      .modal-close {
-        background: transparent;
-        border: none;
-        font-size: 1.25rem;
-        color: $text-secondary;
-        cursor: pointer;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: $transition;
-
-        &:hover {
-          color: $primary;
-          background-color: $primary-light;
-        }
-      }
+    &:hover {
+      border-color: $primary-light;
+      background-color: $primary-light;
+      transform: translateY(-2px);
     }
 
-    .modal-body {
-      padding: 1.5rem;
-      max-height: 60vh;
-      overflow-y: auto;
-
-      .crop-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-
-        @media (max-width: 480px) {
-          grid-template-columns: repeat(2, 1fr);
-        }
-
-        .crop-item {
-          padding: 1rem;
-          border-radius: $radius-md;
-          border: 1px solid $border;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 8px;
-          cursor: pointer;
-          transition: $transition;
-
-          &:hover {
-            border-color: $primary-light;
-            background-color: $primary-light;
-            transform: translateY(-2px);
-          }
-
-          &.active {
-            border-color: $primary;
-            background-color: $primary-light;
-            color: $primary;
-            font-weight: 500;
-          }
-
-          .crop-icon {
-            font-size: 1.5rem;
-          }
-
-          .crop-name {
-            font-size: 0.9rem;
-          }
-        }
-      }
+    &.active {
+      border-color: $primary;
+      background-color: $primary-light;
+      color: $primary;
+      font-weight: 500;
     }
 
-    .modal-footer {
-      padding: 1rem 1.5rem;
-      border-top: 1px solid $border;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 12px;
+    .crop-icon {
+      font-size: 1.5rem;
+    }
 
-      .modal-cancel {
-        padding: 0.65rem 1.25rem;
-        border-radius: $radius-sm;
-        border: 1px solid $border;
-        background-color: transparent;
-        color: $text-secondary;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: $transition;
-
-        &:hover {
-          background-color: $bg-main;
-          color: $text-primary;
-        }
-      }
-
-      .modal-confirm {
-        padding: 0.65rem 1.25rem;
-        border-radius: $radius-sm;
-        border: none;
-        background-color: $primary;
-        color: white;
-        font-size: 0.9rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: $transition;
-
-        &:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        &:not(:disabled):hover {
-          background-color: $primary-hover;
-          box-shadow: 0 2px 8px rgba(56, 142, 60, 0.2);
-        }
-      }
+    .crop-name {
+      font-size: 0.9rem;
     }
   }
 }
 
-// 动画效果
-@keyframes loading {
-
-  0%,
-  80%,
-  100% {
-    transform: scale(0);
-  }
-
-  40% {
-    transform: scale(1);
-  }
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.05);
-  }
-
-  100% {
-    transform: scale(1);
-  }
-}
-
-@keyframes modalFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.98);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
+// Animations
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -1700,100 +1256,8 @@ onBeforeUnmount(() => {
   }
 }
 
-@keyframes progressPulse {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.7;
-  }
-}
-
-// 通知提示样式
-.notification-toast {
-  position: fixed;
-  top: 80px;
-  right: 20px;
-  z-index: 2000;
-  max-width: 400px;
-  animation: slideInRight 0.3s ease;
-
-  @media (max-width: 768px) {
-    right: 10px;
-    left: 10px;
-    max-width: none;
-  }
-
-  .notification-content {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 1rem 1.25rem;
-    background: linear-gradient(135deg, $primary, $primary-hover);
-    color: white;
-    border-radius: $radius-md;
-    box-shadow: 0 4px 12px rgba(56, 142, 60, 0.3);
-    animation: notificationPulse 2s ease-in-out infinite;
-
-    .notification-icon {
-      width: 20px;
-      height: 20px;
-      flex-shrink: 0;
-    }
-
-    .notification-text {
-      font-size: 0.9rem;
-      line-height: 1.5;
-      font-weight: 500;
-    }
-  }
-}
-
-.notification-enter-active,
-.notification-leave-active {
-  transition: all 0.3s ease;
-}
-
-.notification-enter-from {
-  opacity: 0;
-  transform: translateX(100%);
-}
-
-.notification-leave-to {
-  opacity: 0;
-  transform: translateX(100%);
-}
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(100%);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes notificationPulse {
-
-  0%,
-  100% {
-    box-shadow: 0 4px 12px rgba(56, 142, 60, 0.3);
-  }
-
-  50% {
-    box-shadow: 0 4px 16px rgba(56, 142, 60, 0.5);
-  }
-}
-
-// 响应式细节优化
-@media (max-width: 768px) {
-
+// Responsive
+@include mobile {
   .upload-card,
   .result-card {
     padding: 1.5rem;

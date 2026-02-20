@@ -1,13 +1,17 @@
 <template>
-  <PageLayout title="搜索病害" :showBack="true">
-    <div class="search-page">
-      <van-search
+  <div class="search-page">
+    <ContentHeader title="搜索病害" show-back />
+
+    <div class="page-body">
+      <el-input
         v-model="keyword"
         placeholder="输入病害名称、作物或类型..."
-        shape="round"
+        clearable
+        :prefix-icon="Search"
+        size="large"
         autofocus
-        @search="doSearch"
-        @update:model-value="onInput"
+        @keyup.enter="doSearch"
+        @input="onInput"
         class="search-bar"
       />
 
@@ -27,10 +31,10 @@
       </div>
 
       <!-- 加载中 -->
-      <van-loading v-else-if="store.loading" class="loading-center" />
+      <div v-else-if="store.loading" v-loading="true" class="loading-center" />
 
       <!-- 空状态 -->
-      <van-empty
+      <el-empty
         v-else-if="searched && keyword"
         description="未找到相关病害"
       />
@@ -40,17 +44,27 @@
         <div class="hint-icon">🔍</div>
         <p class="hint-text">输入关键词搜索病害</p>
         <div class="hint-tags">
-          <span class="hint-tag" v-for="tag in hotTags" :key="tag" @click="quickSearch(tag)">{{ tag }}</span>
+          <el-tag
+            v-for="tag in hotTags"
+            :key="tag"
+            class="hint-tag"
+            effect="light"
+            round
+            @click="quickSearch(tag)"
+          >
+            {{ tag }}
+          </el-tag>
         </div>
       </div>
     </div>
-  </PageLayout>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import PageLayout from '@/components/shared/PageLayout.vue'
+import { Search } from '@element-plus/icons-vue'
+import ContentHeader from '@/components/layout/ContentHeader.vue'
 import DiseaseCard from '@/components/knowledge/DiseaseCard.vue'
 import { useKnowledgeStore } from '@/stores/knowledge'
 
@@ -104,13 +118,22 @@ const goDetail = (disease) => {
   padding-bottom: 20px;
 }
 
-.search-bar {
-  margin: 0 -20px 16px;
-  padding: 0 12px;
+.page-body {
+  padding: 0 24px;
 
-  :deep(.van-search__content) {
+  @include mobile {
+    padding: 0 16px;
+  }
+}
+
+.search-bar {
+  margin-bottom: 16px;
+
+  :deep(.el-input__wrapper) {
+    border-radius: $radius-xl;
     background: $bg-card;
     border: 1px solid $border;
+    box-shadow: none;
   }
 }
 
@@ -154,23 +177,20 @@ const goDetail = (disease) => {
 }
 
 .hint-tag {
-  font-size: 13px;
-  color: $primary;
-  background: $primary-light;
-  padding: 6px 14px;
-  border-radius: 16px;
   cursor: pointer;
   transition: $transition-fast;
+  font-size: 13px;
+
+  &:hover {
+    opacity: 0.85;
+  }
 
   &:active {
-    background: darken(#edf7f0, 5%);
     transform: scale(0.95);
   }
 }
 
 .loading-center {
-  display: flex;
-  justify-content: center;
-  padding: 60px 0;
+  min-height: 200px;
 }
 </style>

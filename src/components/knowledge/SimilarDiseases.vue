@@ -5,10 +5,10 @@
       <div v-for="item in diseases" :key="item.id" class="similar-item" @click="$emit('select', item)">
         <div class="similar-header">
           <span class="similar-name">{{ item.name }}</span>
-          <van-icon name="arrow" class="similar-arrow" />
+          <el-icon class="similar-arrow"><ArrowRight /></el-icon>
         </div>
         <div class="similar-diff">
-          <span class="diff-label">区别</span>
+          <el-tag type="warning" size="small" effect="light">区别</el-tag>
           <span class="diff-text">{{ item.difference }}</span>
         </div>
       </div>
@@ -17,6 +17,8 @@
 </template>
 
 <script setup>
+import { ArrowRight } from '@element-plus/icons-vue'
+
 defineProps({
   diseases: { type: Array, default: () => [] },
 })
@@ -82,15 +84,6 @@ defineEmits(['select'])
   align-items: flex-start;
   gap: 6px;
   font-size: 12px;
-}
-
-.diff-label {
-  flex-shrink: 0;
-  color: $severity-moderate;
-  background: #fef3c7;
-  padding: 1px 6px;
-  border-radius: 6px;
-  font-weight: 500;
 }
 
 .diff-text {

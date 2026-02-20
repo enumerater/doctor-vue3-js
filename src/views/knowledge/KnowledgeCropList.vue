@@ -1,6 +1,8 @@
 <template>
-  <PageLayout :title="cropName + ' - 病害列表'" :showBack="true">
-    <div class="crop-list-page">
+  <div class="crop-list-page">
+    <ContentHeader :title="cropName + ' - 病害列表'" show-back />
+
+    <div class="page-body">
       <div class="list-header">
         <span class="total-count">共 {{ store.currentCropTotal }} 种病害</span>
       </div>
@@ -10,17 +12,17 @@
           @click="goDetail(disease)" />
       </div>
 
-      <van-loading v-else-if="store.loading" class="loading-center" />
+      <div v-else-if="store.loading" v-loading="true" class="loading-center" />
 
-      <van-empty v-else description="暂无病害数据" />
+      <el-empty v-else description="暂无病害数据" />
     </div>
-  </PageLayout>
+  </div>
 </template>
 
 <script setup>
 import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import PageLayout from '@/components/shared/PageLayout.vue'
+import ContentHeader from '@/components/layout/ContentHeader.vue'
 import DiseaseCard from '@/components/knowledge/DiseaseCard.vue'
 import { useKnowledgeStore } from '@/stores/knowledge'
 
@@ -44,6 +46,14 @@ const goDetail = (disease) => {
   padding-bottom: 20px;
 }
 
+.page-body {
+  padding: 0 24px;
+
+  @include mobile {
+    padding: 0 16px;
+  }
+}
+
 .list-header {
   margin-bottom: 14px;
 }
@@ -60,8 +70,6 @@ const goDetail = (disease) => {
 }
 
 .loading-center {
-  display: flex;
-  justify-content: center;
-  padding: 60px 0;
+  min-height: 200px;
 }
 </style>

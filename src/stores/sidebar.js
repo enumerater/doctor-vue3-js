@@ -84,7 +84,7 @@ export const useSidebarStore = defineStore('sidebar', {
         const hasImageSkill = skillsStore.isSkillEnabled('disease-recognition')
         this.agentImageUploadEnabled = hasImageSkill
         router.push({
-          name: 'agentDetil',
+          name: 'agentDetail',
           params: { sessionId: sessionId },
         })
       } else {
@@ -135,7 +135,7 @@ export const useSidebarStore = defineStore('sidebar', {
         // 设置当前会话ID为部分的sessionId，因为还没有完整的sessionId（需要userId前缀）
         chatStore.setCurrentSessionId(partialSessionId)
 
-        router.push({ name: 'chatBegin' })
+        router.push({ name: 'chatHome' })
         this.closeLeft()
         chatStore.clearMessages()
       } catch (err) {
@@ -188,7 +188,7 @@ export const useSidebarStore = defineStore('sidebar', {
         chatStore.pendingTransferImageUrl = imageUrl || ''
         chatStore.autoSendPending = true
         // 4. 导航到Agent首页（HomeView的watcher会自动触发发送）
-        router.push({ name: 'agent' })
+        router.push({ name: 'agentHome' })
       } catch (err) {
         console.error('传递到Agent失败：', err)
         chatStore.clearAutoSend()

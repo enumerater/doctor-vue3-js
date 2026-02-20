@@ -18,12 +18,13 @@
         </template>
       </div>
     </div>
-    <van-icon name="arrow" class="card-arrow" />
+    <el-icon class="card-arrow"><ArrowRight /></el-icon>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import { ArrowRight } from '@element-plus/icons-vue'
 
 const props = defineProps({
   plot: { type: Object, required: true },

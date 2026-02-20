@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 
+import { setupElementPlus } from './utils/element.js'
 import { setupVant } from './utils/vant.js'
 
 import { createPinia } from 'pinia'
@@ -15,7 +16,10 @@ const app = createApp(App)
 app.use(pinia.use(persist))
 app.use(router)
 
-// 调用 Vant 插件注册函数
+// Element Plus 全局注册
+setupElementPlus(app)
+
+// Vant 仅注册移动端必要组件
 setupVant(app)
 
 app.mount('#app')

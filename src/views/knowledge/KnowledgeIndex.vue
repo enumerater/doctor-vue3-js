@@ -1,48 +1,59 @@
 <template>
-  <PageLayout title="病害知识库" :showBack="true">
-    <div class="knowledge-index">
-      <!-- 搜索栏 -->
-      <van-search v-model="searchVal" placeholder="搜索病害名称、作物、类型..." shape="round" @search="handleSearch"
-        @click-input="goSearch" class="search-bar" />
+  <div class="knowledge-index">
+    <ContentHeader title="病害知识库" show-back />
 
-      <!-- 季节风险提示 -->
-      <div v-if="store.seasonalRisks.length > 0" class="risk-banner">
-        <div class="risk-header">
-          <span class="risk-icon">⚠️</span>
-          <span class="risk-title">当季病害预警</span>
-        </div>
-        <div class="risk-list">
-          <div v-for="risk in store.seasonalRisks" :key="risk.diseaseId" class="risk-item"
-            @click="goDetail(risk.diseaseId)">
-            <div class="risk-name">
-              <span class="risk-crop">{{ risk.cropName }}</span>
-              {{ risk.diseaseName }}
-            </div>
-            <div class="risk-desc">{{ risk.description }}</div>
-          </div>
-        </div>
+    <!-- 搜索栏 -->
+    <div class="search-area">
+      <el-input
+        v-model="searchVal"
+        placeholder="搜索病害名称、作物、类型..."
+        clearable
+        :prefix-icon="Search"
+        size="large"
+        @keyup.enter="handleSearch(searchVal)"
+        @focus="goSearch"
+        class="search-bar"
+      />
+    </div>
+
+    <!-- 季节风险提示 -->
+    <div v-if="store.seasonalRisks.length > 0" class="risk-banner">
+      <div class="risk-header">
+        <span class="risk-icon">⚠️</span>
+        <span class="risk-title">当季病害预警</span>
       </div>
-
-      <!-- 作物分类网格 -->
-      <div class="crop-section">
-        <h3 class="section-title">按作物浏览</h3>
-        <div class="crop-grid" v-if="store.crops.length > 0">
-          <div v-for="crop in store.crops" :key="crop.name" class="crop-card" @click="goCropList(crop.name)">
-            <span class="crop-icon">{{ crop.icon }}</span>
-            <span class="crop-name">{{ crop.name }}</span>
-            <span class="crop-count">{{ crop.diseaseCount }}种病害</span>
+      <div class="risk-list">
+        <div v-for="risk in store.seasonalRisks" :key="risk.diseaseId" class="risk-item"
+          @click="goDetail(risk.diseaseId)">
+          <div class="risk-name">
+            <span class="risk-crop">{{ risk.cropName }}</span>
+            {{ risk.diseaseName }}
           </div>
+          <div class="risk-desc">{{ risk.description }}</div>
         </div>
-        <van-loading v-else-if="store.loading" class="loading-center" />
       </div>
     </div>
-  </PageLayout>
+
+    <!-- 作物分类网格 -->
+    <div class="crop-section">
+      <h3 class="section-title">按作物浏览</h3>
+      <div class="crop-grid" v-if="store.crops.length > 0" v-loading="false">
+        <div v-for="crop in store.crops" :key="crop.name" class="crop-card" @click="goCropList(crop.name)">
+          <span class="crop-icon">{{ crop.icon }}</span>
+          <span class="crop-name">{{ crop.name }}</span>
+          <span class="crop-count">{{ crop.diseaseCount }}种病害</span>
+        </div>
+      </div>
+      <div v-else-if="store.loading" v-loading="true" class="loading-center" />
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import PageLayout from '@/components/shared/PageLayout.vue'
+import { Search } from '@element-plus/icons-vue'
+import ContentHeader from '@/components/layout/ContentHeader.vue'
 import { useKnowledgeStore } from '@/stores/knowledge'
 
 const store = useKnowledgeStore()
@@ -76,13 +87,20 @@ const goDetail = (diseaseId) => {
   padding-bottom: 20px;
 }
 
-.search-bar {
-  margin: 0 -20px 16px;
-  padding: 0 12px;
+.search-area {
+  padding: 0 24px 16px;
 
-  :deep(.van-search__content) {
+  @include mobile {
+    padding: 0 16px 16px;
+  }
+}
+
+.search-bar {
+  :deep(.el-input__wrapper) {
+    border-radius: $radius-xl;
     background: $bg-card;
     border: 1px solid $border;
+    box-shadow: none;
   }
 }
 
@@ -91,8 +109,12 @@ const goDetail = (diseaseId) => {
   background: linear-gradient(135deg, #fef3c7, #fde68a);
   border-radius: $radius-md;
   padding: 14px 16px;
-  margin-bottom: 20px;
+  margin: 0 24px 20px;
   border: 1px solid #fcd34d;
+
+  @include mobile {
+    margin: 0 16px 20px;
+  }
 }
 
 .risk-header {
@@ -125,6 +147,10 @@ const goDetail = (diseaseId) => {
   cursor: pointer;
   transition: $transition-fast;
 
+  &:hover {
+    background: rgba(255, 255, 255, 0.9);
+  }
+
   &:active {
     transform: scale(0.98);
   }
@@ -155,6 +181,12 @@ const goDetail = (diseaseId) => {
 
 // 作物分类
 .crop-section {
+  padding: 0 24px;
+
+  @include mobile {
+    padding: 0 16px;
+  }
+
   .section-title {
     font-size: 16px;
     font-weight: 600;
@@ -212,8 +244,6 @@ const goDetail = (diseaseId) => {
 }
 
 .loading-center {
-  display: flex;
-  justify-content: center;
-  padding: 40px 0;
+  min-height: 200px;
 }
 </style>

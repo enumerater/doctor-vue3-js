@@ -1,0 +1,76 @@
+// Element Plus CSS 变量覆盖 - 有机农业绿色主题
+:root {
+  // 主色
+  --el-color-primary: #4a9b5e;
+  --el-color-primary-light-3: #78c48f;
+  --el-color-primary-light-5: #a3d8b0;
+  --el-color-primary-light-7: #c8ebd1;
+  --el-color-primary-light-8: #daf2e0;
+  --el-color-primary-light-9: #edf7f0;
+  --el-color-primary-dark-2: #3d8550;
+
+  // 功能色
+  --el-color-success: #48bb78;
+  --el-color-success-light-3: #6fcf97;
+  --el-color-success-light-5: #96dfb4;
+  --el-color-success-light-7: #bcefd1;
+  --el-color-success-light-8: #d0f5e0;
+  --el-color-success-light-9: #e4fbef;
+  --el-color-success-dark-2: #38a169;
+
+  --el-color-warning: #ed8936;
+  --el-color-warning-light-9: #fdf3e8;
+  --el-color-danger: #e53e3e;
+  --el-color-danger-light-9: #fde8e8;
+  --el-color-info: #5f6f65;
+  --el-color-info-light-9: #edf0ee;
+
+  // 文字色
+  --el-text-color-primary: #2c3e35;
+  --el-text-color-regular: #5f6f65;
+  --el-text-color-secondary: #8b9a91;
+  --el-text-color-placeholder: #a8b5ad;
+  --el-text-color-disabled: #c0c4cc;
+
+  // 边框色
+  --el-border-color: #e5ede8;
+  --el-border-color-light: #edf7f0;
+  --el-border-color-lighter: #f0f7f2;
+  --el-border-color-extra-light: #f5faf7;
+
+  // 填充色
+  --el-fill-color: #f0f7f2;
+  --el-fill-color-light: #f5faf7;
+  --el-fill-color-lighter: #fafcfb;
+  --el-fill-color-extra-light: #fdfefe;
+  --el-fill-color-blank: #ffffff;
+
+  // 背景色
+  --el-bg-color: #ffffff;
+  --el-bg-color-page: #fafcfb;
+  --el-bg-color-overlay: #ffffff;
+
+  // 圆角 - 有机圆润风格
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 20px;
+  --el-border-radius-circle: 100%;
+
+  // 字体
+  --el-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --el-font-size-base: 14px;
+
+  // 阴影 - 绿色调柔和阴影
+  --el-box-shadow: 0 2px 12px rgba(74, 155, 94, 0.08);
+  --el-box-shadow-light: 0 2px 8px rgba(74, 155, 94, 0.06);
+  --el-box-shadow-lighter: 0 1px 4px rgba(74, 155, 94, 0.04);
+  --el-box-shadow-dark: 0 6px 20px rgba(74, 155, 94, 0.12);
+
+  // Menu 侧边栏
+  --el-menu-bg-color: #ffffff;
+  --el-menu-text-color: #5f6f65;
+  --el-menu-active-color: #4a9b5e;
+  --el-menu-hover-bg-color: #edf7f0;
+  --el-menu-item-height: 48px;
+}

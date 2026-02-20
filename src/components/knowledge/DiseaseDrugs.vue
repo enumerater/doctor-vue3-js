@@ -2,7 +2,9 @@
   <div class="drugs-section">
     <div class="drugs-header">
       <h3 class="section-title">推荐用药</h3>
-      <span class="drugs-tip">请在专业人员指导下使用</span>
+      <el-tag type="warning" size="small" effect="light" round>
+        请在专业人员指导下使用
+      </el-tag>
     </div>
     <div class="drugs-list">
       <div v-for="(drug, index) in drugs" :key="index" class="drug-item">
@@ -26,9 +28,7 @@
         </div>
       </div>
     </div>
-    <div v-if="!drugs || drugs.length === 0" class="drugs-empty">
-      暂无推荐用药信息
-    </div>
+    <el-empty v-if="!drugs || drugs.length === 0" description="暂无推荐用药信息" :image-size="80" />
   </div>
 </template>
 
@@ -55,14 +55,6 @@ defineProps({
   font-weight: 600;
   color: $text-primary;
   margin: 0;
-}
-
-.drugs-tip {
-  font-size: 11px;
-  color: $severity-moderate;
-  background: #fef3c7;
-  padding: 2px 8px;
-  border-radius: 8px;
 }
 
 .drugs-list {
@@ -128,12 +120,5 @@ defineProps({
     color: $severity-moderate;
     font-weight: 500;
   }
-}
-
-.drugs-empty {
-  text-align: center;
-  color: $text-tertiary;
-  font-size: 13px;
-  padding: 20px 0;
 }
 </style>

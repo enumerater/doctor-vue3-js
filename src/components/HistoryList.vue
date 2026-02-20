@@ -2,7 +2,7 @@
   <div class="history-list-container">
     <div class="history-content">
       <div class="empty-history" v-if="sidebarStore.filteredHistory.length === 0">
-        <van-empty description="暂无对话历史记录" icon="clock-o" class="empty-custom" />
+        <el-empty description="暂无对话历史记录" :image-size="80" class="empty-custom" />
       </div>
 
       <div class="history-item" :class="{
@@ -10,16 +10,18 @@
         'is-agent': item.sessionType === 'agent'
       }" v-for="item in sidebarStore.filteredHistory" :key="item.id"
         @click="sidebarStore.selectHistoryItem(item.sessionId, item.sessionType)">
-        <van-badge dot v-if="item.unread" class="unread-dot" />
+        <el-badge is-dot v-if="item.unread" class="unread-dot" />
 
         <!-- Agent标识图标 -->
-        <van-icon v-if="item.sessionType === 'agent'" name="leaf" class="agent-badge" />
+        <el-icon v-if="item.sessionType === 'agent'" class="agent-badge">
+          <Sunny />
+        </el-icon>
 
         <div class="item-main">
           <h3 class="item-title">{{ item.sessionTitle }}</h3>
           <div class="item-footer">
             <span class="item-time">{{ item.lastChatTime }}</span>
-            <van-button size="mini" type="text" icon="delete" class="delete-btn"
+            <el-button size="small" text :icon="Delete" class="delete-btn"
               @click.stop="sidebarStore.deleteHistoryItem(item.id)" />
           </div>
         </div>
@@ -31,6 +33,7 @@
 <script setup>
 import { useSidebarStore } from '@/stores/sidebar'
 import { onMounted } from 'vue'
+import { Sunny, Delete } from '@element-plus/icons-vue'
 
 const sidebarStore = useSidebarStore()
 
@@ -55,17 +58,15 @@ onMounted(() => {
   .empty-history {
     padding: 2rem 0;
 
-    :deep(.van-empty) {
-      .van-empty__description {
+    :deep(.el-empty) {
+      .el-empty__description p {
         color: $text-secondary;
         font-size: 0.875rem;
       }
 
-      .van-empty__image {
-        .van-icon {
-          color: $secondary;
-          opacity: 0.8;
-        }
+      .el-empty__image svg {
+        color: $secondary;
+        opacity: 0.8;
       }
     }
   }

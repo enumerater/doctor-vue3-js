@@ -1,10 +1,17 @@
 <template>
-  <PageLayout :title="store.currentFarm?.name || '农场详情'" :showBack="true">
-    <template #actions>
-      <button class="action-btn danger" @click="handleDeleteFarm">
-        <van-icon name="delete-o" />
-      </button>
-    </template>
+  <div class="farm-detail-page">
+    <ContentHeader :title="store.currentFarm?.name || '农场详情'" :showBack="true">
+      <template #actions>
+        <el-button
+          type="danger"
+          text
+          class="action-btn danger"
+          @click="handleDeleteFarm"
+        >
+          <el-icon><Delete /></el-icon>
+        </el-button>
+      </template>
+    </ContentHeader>
 
     <div class="farm-detail" v-if="store.currentFarm">
       <!-- 农场概况 -->
@@ -26,7 +33,7 @@
           </div>
         </div>
         <div class="overview-location" v-if="store.currentFarm.location">
-          <van-icon name="location-o" /> {{ store.currentFarm.location }}
+          <el-icon><Location /></el-icon> {{ store.currentFarm.location }}
         </div>
       </div>
 
@@ -34,9 +41,9 @@
       <div class="plot-section">
         <div class="section-header">
           <h3 class="section-title">地块管理</h3>
-          <button class="add-plot-btn" @click="goAddPlot">
-            <van-icon name="plus" /> 添加地块
-          </button>
+          <el-button type="primary" text @click="goAddPlot">
+            <el-icon><Plus /></el-icon> 添加地块
+          </el-button>
         </div>
 
         <div class="plot-list" v-if="store.currentFarm.plots?.length > 0">
@@ -48,20 +55,21 @@
           />
         </div>
 
-        <van-empty v-else description="还没有添加地块" />
+        <el-empty v-else description="还没有添加地块" />
       </div>
     </div>
 
-    <van-loading v-else-if="store.loading" class="loading-center" />
-    <van-empty v-else description="未找到农场信息" />
-  </PageLayout>
+    <div v-else-if="store.loading" v-loading="true" class="loading-center"></div>
+    <el-empty v-else description="未找到农场信息" />
+  </div>
 </template>
 
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showConfirmDialog, showSuccessToast } from 'vant'
-import PageLayout from '@/components/shared/PageLayout.vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Delete, Location, Plus } from '@element-plus/icons-vue'
+import ContentHeader from '@/components/layout/ContentHeader.vue'
 import PlotCard from '@/components/farm/PlotCard.vue'
 import { useFarmStore } from '@/stores/farm'
 
@@ -90,9 +98,13 @@ const goPlotDetail = (plot) => {
 
 const handleDeleteFarm = async () => {
   try {
-    await showConfirmDialog({ title: '确认删除', message: '删除农场将同时删除所有关联地块，此操作不可恢复' })
+    await ElMessageBox.confirm(
+      '删除农场将同时删除所有关联地块，此操作不可恢复',
+      '确认删除',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+    )
     await store.deleteFarm(farmId)
-    showSuccessToast('已删除')
+    ElMessage.success('已删除')
     router.replace({ name: 'farm' })
   } catch {
     // 用户取消
@@ -101,19 +113,25 @@ const handleDeleteFarm = async () => {
 </script>
 
 <style lang="scss" scoped>
-.farm-detail {
+.farm-detail-page {
   padding-bottom: 20px;
+}
+
+.farm-detail {
+  padding: 0 24px;
+
+  @include mobile {
+    padding: 0 16px;
+  }
 }
 
 .action-btn {
   width: 36px;
   height: 36px;
-  border: none;
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
   font-size: 18px;
   transition: $transition-fast;
 
@@ -192,22 +210,6 @@ const handleDeleteFarm = async () => {
   }
 }
 
-.add-plot-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 14px;
-  border: 1px dashed $primary;
-  background: transparent;
-  color: $primary;
-  border-radius: $radius-sm;
-  font-size: 13px;
-  cursor: pointer;
-  transition: $transition-fast;
-
-  &:active { transform: scale(0.95); }
-}
-
 .plot-list {
   display: flex;
   flex-direction: column;
@@ -218,5 +220,6 @@ const handleDeleteFarm = async () => {
   display: flex;
   justify-content: center;
   padding: 60px 0;
+  min-height: 120px;
 }
 </style>

@@ -48,7 +48,7 @@ function updateClock() {
 }
 
 function goBack() {
-  router.push({ name: 'chatBegin' })
+  router.push({ name: 'workbench' })
 }
 
 onMounted(() => {

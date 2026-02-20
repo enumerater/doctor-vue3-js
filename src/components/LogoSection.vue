@@ -1,5 +1,5 @@
 <script setup>
-// 接受标题和副标题属性，增强组件复用性
+// Accept title and subtitle props for reusability
 const props = defineProps({
   title: {
     type: String,

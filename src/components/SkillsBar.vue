@@ -2,43 +2,58 @@
   <div v-if="enabledSkills.length > 0" class="skills-bar">
     <!-- 快捷技能按钮 -->
     <div class="skills-buttons">
-      <van-button v-for="skill in enabledSkills" :key="skill.id" size="small" plain :icon="skill.icon"
+      <el-button v-for="skill in enabledSkills" :key="skill.id" size="small" plain
         :loading="isSkillExecuting(skill.id)" @click="onSkillClick(skill)">
+        <template v-if="skill.icon" #icon>
+          <span class="skill-btn-icon">{{ skill.icon }}</span>
+        </template>
         {{ skill.name }}
-      </van-button>
+      </el-button>
     </div>
 
     <!-- Skill参数输入对话框 -->
-    <van-popup v-model:show="showParamDialog" position="bottom" round :style="{ maxHeight: '80%' }">
-      <div v-if="selectedSkill" class="param-dialog">
-        <div class="dialog-header">
+    <el-drawer v-model="showParamDialog" direction="btt" :size="'auto'" class="param-drawer">
+      <template #header>
+        <div v-if="selectedSkill" class="dialog-header">
           <span class="skill-icon">{{ selectedSkill.icon }}</span>
           <h3>{{ selectedSkill.name }}</h3>
-          <van-icon name="cross" size="20" @click="closeParamDialog" />
         </div>
+      </template>
 
+      <div v-if="selectedSkill" class="param-dialog">
         <div class="dialog-content">
           <p class="skill-description">{{ selectedSkill.description }}</p>
 
           <!-- 动态参数表单 -->
-          <div class="param-form">
+          <el-form class="param-form" label-position="top">
             <div v-for="param in selectedSkill.params" :key="param.name" class="param-field">
               <!-- 文本输入 -->
-              <van-field v-if="param.type === 'text'" v-model="paramValues[param.name]" :label="param.description"
-                :placeholder="param.placeholder" :required="param.required" />
+              <el-form-item v-if="param.type === 'text'" :label="param.description"
+                :required="param.required">
+                <el-input v-model="paramValues[param.name]"
+                  :placeholder="param.placeholder" />
+              </el-form-item>
 
               <!-- 数字输入 -->
-              <van-field v-else-if="param.type === 'number'" v-model.number="paramValues[param.name]" type="number"
-                :label="param.description" :placeholder="param.placeholder" :required="param.required">
-                <template v-if="param.unit" #button>
-                  <span class="unit-text">{{ param.unit }}</span>
-                </template>
-              </van-field>
+              <el-form-item v-else-if="param.type === 'number'" :label="param.description"
+                :required="param.required">
+                <el-input v-model.number="paramValues[param.name]" type="number"
+                  :placeholder="param.placeholder">
+                  <template v-if="param.unit" #append>
+                    <span class="unit-text">{{ param.unit }}</span>
+                  </template>
+                </el-input>
+              </el-form-item>
 
               <!-- 下拉选择 -->
-              <van-field v-else-if="param.type === 'select'" v-model="paramValues[param.name]" readonly clickable
-                :label="param.description" :placeholder="param.placeholder || '请选择'" :required="param.required"
-                right-icon="arrow-down" @click="openSelectPicker(param)" />
+              <el-form-item v-else-if="param.type === 'select'" :label="param.description"
+                :required="param.required">
+                <el-select v-model="paramValues[param.name]"
+                  :placeholder="param.placeholder || '请选择'" style="width: 100%">
+                  <el-option v-for="opt in normalizeOptions(param.options)" :key="opt.value"
+                    :label="opt.text" :value="opt.value" />
+                </el-select>
+              </el-form-item>
 
               <!-- 文件上传 -->
               <div v-else-if="param.type === 'file'" class="file-field">
@@ -46,59 +61,60 @@
                   {{ param.description }}
                   <span v-if="param.required" class="required-mark">*</span>
                 </div>
-                <van-uploader v-model="paramValues[param.name]" :accept="param.accept" :max-count="1"
-                  :after-read="(file) => onFileRead(file, param)">
-                  <van-button icon="photograph" type="primary" size="small">
+                <el-upload :accept="param.accept" :limit="1" :auto-upload="false"
+                  :on-change="(file) => onFileChange(file, param)">
+                  <el-button type="primary" size="small">
+                    <el-icon><Upload /></el-icon>
                     选择文件
-                  </van-button>
-                </van-uploader>
+                  </el-button>
+                </el-upload>
               </div>
 
               <!-- 文本域 -->
-              <van-field v-else-if="param.type === 'textarea'" v-model="paramValues[param.name]" type="textarea"
-                :label="param.description" :placeholder="param.placeholder" :required="param.required" rows="3"
-                autosize />
+              <el-form-item v-else-if="param.type === 'textarea'" :label="param.description"
+                :required="param.required">
+                <el-input v-model="paramValues[param.name]" type="textarea"
+                  :placeholder="param.placeholder" :rows="3" autosize />
+              </el-form-item>
             </div>
-          </div>
+          </el-form>
         </div>
 
         <div class="dialog-footer">
-          <van-button block type="primary" :loading="executing" @click="executeSkill">
+          <el-button type="primary" :loading="executing" style="width: 100%" @click="executeSkill">
             执行
-          </van-button>
+          </el-button>
         </div>
       </div>
-    </van-popup>
-
-    <!-- 选择器弹窗 -->
-    <van-popup v-model:show="showSelectPicker" position="bottom" round>
-      <van-picker :columns="selectOptions" @confirm="onSelectConfirm" @cancel="showSelectPicker = false" />
-    </van-popup>
+    </el-drawer>
 
     <!-- Skill执行结果展示 -->
-    <van-popup v-model:show="showResultDialog" position="center" round :style="{ width: '90%', maxHeight: '80%' }">
-      <div v-if="skillResult" class="result-dialog">
-        <div class="result-header">
+    <el-dialog v-model="showResultDialog" :width="'90%'" class="result-el-dialog" :show-close="false"
+      align-center>
+      <template #header>
+        <div v-if="skillResult" class="result-header">
           <h3>{{ skillResult.skillName }}</h3>
-          <van-icon name="cross" size="20" @click="closeResultDialog" />
+          <el-icon class="close-icon" :size="20" @click="closeResultDialog"><Close /></el-icon>
         </div>
+      </template>
 
-        <div class="result-content">
-          <div v-if="skillResult.success" class="result-success">
-            <van-icon name="checked" color="#07c160" size="48" />
-            <div class="result-message" v-html="formatMessage(skillResult.message)" />
-          </div>
-          <div v-else class="result-error">
-            <van-icon name="close" color="#ee0a24" size="48" />
-            <p>{{ skillResult.message || '执行失败' }}</p>
-          </div>
+      <div v-if="skillResult" class="result-content">
+        <div v-if="skillResult.success" class="result-success">
+          <el-icon color="#07c160" :size="48"><CircleCheckFilled /></el-icon>
+          <div class="result-message" v-html="formatMessage(skillResult.message)" />
         </div>
-
-        <div class="result-footer">
-          <van-button block @click="closeResultDialog">关闭</van-button>
+        <div v-else class="result-error">
+          <el-icon color="#ee0a24" :size="48"><CircleCloseFilled /></el-icon>
+          <p>{{ skillResult.message || '执行失败' }}</p>
         </div>
       </div>
-    </van-popup>
+
+      <template #footer>
+        <div class="result-footer">
+          <el-button style="width: 100%" @click="closeResultDialog">关闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -106,7 +122,8 @@
 import { ref, computed, watch } from 'vue'
 import { useSkillsStore } from '@/stores/skills'
 import { useAgentConfigStore } from '@/stores/agentConfig'
-import { showToast } from 'vant'
+import { ElMessage } from 'element-plus'
+import { Upload, Close, CircleCheckFilled, CircleCloseFilled } from '@element-plus/icons-vue'
 import { executeSkill as execSkill } from '@/skills'
 
 const skillsStore = useSkillsStore()
@@ -126,14 +143,20 @@ const selectedSkill = ref(null)
 const paramValues = ref({})
 const executing = ref(false)
 
-// 选择器
-const showSelectPicker = ref(false)
-const selectOptions = ref([])
-const currentSelectParam = ref(null)
-
 // 结果对话框
 const showResultDialog = ref(false)
 const skillResult = ref(null)
+
+// 规范化选项格式（用于 el-select）
+const normalizeOptions = (options) => {
+  if (!options) return []
+  return options.map(opt => {
+    if (typeof opt === 'object') {
+      return opt
+    }
+    return { text: opt, value: opt }
+  })
+}
 
 // 点击skill按钮
 const onSkillClick = (skill) => {
@@ -157,30 +180,9 @@ const onSkillClick = (skill) => {
   }
 }
 
-// 打开选择器
-const openSelectPicker = (param) => {
-  currentSelectParam.value = param
-  selectOptions.value = param.options.map(opt => {
-    if (typeof opt === 'object') {
-      return opt
-    }
-    return { text: opt, value: opt }
-  })
-  showSelectPicker.value = true
-}
-
-// 选择器确认
-const onSelectConfirm = ({ selectedOptions }) => {
-  const selected = selectedOptions[0]
-  paramValues.value[currentSelectParam.value.name] = selected.value
-  showSelectPicker.value = false
-}
-
-// 文件读取
-const onFileRead = (file, param) => {
-  // file可能是数组或单个文件对象
-  const fileObj = Array.isArray(file) ? file[0] : file
-  paramValues.value[param.name] = fileObj.file
+// 文件选择回调（el-upload on-change）
+const onFileChange = (uploadFile, param) => {
+  paramValues.value[param.name] = uploadFile.raw
 }
 
 // 执行skill
@@ -224,10 +226,7 @@ const executeSkill = async () => {
     // 显示结果对话框
     showResultDialog.value = true
   } catch (err) {
-    showToast({
-      message: err.message || 'Skill执行失败',
-      position: 'top'
-    })
+    ElMessage.warning(err.message || 'Skill执行失败')
   } finally {
     executing.value = false
   }
@@ -300,8 +299,12 @@ defineExpose({
       border-radius: 2px;
     }
 
-    .van-button {
+    .el-button {
       flex-shrink: 0;
+    }
+
+    .skill-btn-icon {
+      margin-right: 4px;
     }
   }
 }
@@ -311,35 +314,10 @@ defineExpose({
   flex-direction: column;
   max-height: 80vh;
 
-  .dialog-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px;
-    border-bottom: 1px solid $border;
-
-    .skill-icon {
-      font-size: 24px;
-    }
-
-    h3 {
-      flex: 1;
-      margin: 0;
-      font-size: 18px;
-      font-weight: 600;
-      color: $text-primary;
-    }
-
-    .van-icon {
-      cursor: pointer;
-      color: $text-secondary;
-    }
-  }
-
   .dialog-content {
     flex: 1;
     overflow-y: auto;
-    padding: 16px;
+    padding: 0 16px 16px;
 
     .skill-description {
       margin: 0 0 16px 0;
@@ -360,7 +338,7 @@ defineExpose({
             margin-bottom: 8px;
 
             .required-mark {
-              color: $danger-color;
+              color: $danger;
               margin-left: 4px;
             }
           }
@@ -378,7 +356,7 @@ defineExpose({
     padding: 16px;
     border-top: 1px solid $border;
 
-    :deep(.van-button) {
+    :deep(.el-button) {
       height: 44px;
       font-size: 16px;
       font-weight: 600;
@@ -386,101 +364,145 @@ defineExpose({
   }
 }
 
-.result-dialog {
-  display: flex;
-  flex-direction: column;
+// Drawer header styling
+:deep(.param-drawer) {
+  border-radius: $radius-md $radius-md 0 0;
 
-  .result-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  .el-drawer__header {
+    margin-bottom: 0;
     padding: 16px;
     border-bottom: 1px solid $border;
+  }
+}
 
-    h3 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 600;
-      color: $text-primary;
-    }
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
 
-    .van-icon {
-      cursor: pointer;
-      color: $text-secondary;
-    }
+  .skill-icon {
+    font-size: 24px;
   }
 
-  .result-content {
+  h3 {
     flex: 1;
-    overflow-y: auto;
-    padding: 24px;
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: $text-primary;
+  }
+}
 
-    .result-success,
-    .result-error {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
+// Result dialog styling
+:deep(.result-el-dialog) {
+  border-radius: $radius-md;
+  max-height: 80%;
 
-      .result-message {
-        width: 100%;
+  .el-dialog__header {
+    padding: 16px;
+    margin-right: 0;
+    border-bottom: 1px solid $border;
+  }
+
+  .el-dialog__body {
+    padding: 0;
+  }
+
+  .el-dialog__footer {
+    padding: 0;
+  }
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  .close-icon {
+    cursor: pointer;
+    color: $text-secondary;
+  }
+}
+
+.result-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+
+  .result-success,
+  .result-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+
+    .result-message {
+      width: 100%;
+      font-size: 14px;
+      line-height: 1.6;
+      color: $text-primary;
+
+      :deep(h2) {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 16px 0 8px 0;
+      }
+
+      :deep(h3) {
         font-size: 14px;
-        line-height: 1.6;
-        color: $text-primary;
+        font-weight: 600;
+        margin: 12px 0 8px 0;
+      }
 
-        :deep(h2) {
-          font-size: 16px;
-          font-weight: 600;
-          margin: 16px 0 8px 0;
-        }
+      :deep(strong) {
+        font-weight: 600;
+        color: $primary;
+      }
 
-        :deep(h3) {
-          font-size: 14px;
-          font-weight: 600;
-          margin: 12px 0 8px 0;
-        }
+      :deep(li) {
+        margin-left: 20px;
+        list-style: disc;
+      }
 
-        :deep(strong) {
-          font-weight: 600;
-          color: $primary-color;
-        }
+      :deep(table) {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 8px 0;
 
-        :deep(li) {
-          margin-left: 20px;
-          list-style: disc;
-        }
+        tr {
+          border-bottom: 1px solid $border;
 
-        :deep(table) {
-          width: 100%;
-          border-collapse: collapse;
-          margin: 8px 0;
-
-          tr {
-            border-bottom: 1px solid $border;
-
-            td {
-              padding: 8px;
-              font-size: 13px;
-            }
+          td {
+            padding: 8px;
+            font-size: 13px;
           }
         }
       }
+    }
 
-      p {
-        text-align: center;
-        font-size: 14px;
-        color: $text-secondary;
-      }
+    p {
+      text-align: center;
+      font-size: 14px;
+      color: $text-secondary;
     }
   }
+}
 
-  .result-footer {
-    padding: 16px;
-    border-top: 1px solid $border;
+.result-footer {
+  padding: 16px;
+  border-top: 1px solid $border;
 
-    :deep(.van-button) {
-      height: 44px;
-    }
+  :deep(.el-button) {
+    height: 44px;
   }
 }
 </style>
