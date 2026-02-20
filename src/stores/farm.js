@@ -28,9 +28,10 @@ export const useFarmStore = defineStore('farm', () => {
   async function createFarm(data) {
     loading.value = true
     try {
-      const farm = await api.createFarm(data)
-      if (farm) farms.value.push(farm)
-      return farm
+      const res = await api.createFarm(data)
+      // 创建成功后重新拉取列表，因为后端不返回完整对象
+      if (res) await fetchFarms()
+      return res
     } finally {
       loading.value = false
     }

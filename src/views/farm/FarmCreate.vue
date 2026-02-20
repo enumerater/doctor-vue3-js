@@ -48,7 +48,7 @@ const onSubmit = async () => {
   })
   if (farm) {
     showSuccessToast('创建成功')
-    router.replace({ name: 'farmDetail', params: { farmId: farm.id } })
+    router.replace({ name: 'farm' })
   }
 }
 </script>

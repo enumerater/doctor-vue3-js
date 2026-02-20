@@ -56,114 +56,110 @@ function generateId(prefix) {
   return `${prefix}${mockIdCounter}`
 }
 
+// ====== 字段适配 ======
+function normalizeFarm(farm) {
+  if (!farm) return farm
+  if (farm.plot && !farm.plots) {
+    farm.plots = farm.plot
+    delete farm.plot
+  }
+  if (!farm.plots) farm.plots = []
+  return farm
+}
+
 // ====== API 接口 ======
 
-export const getFarms = () =>
-  safeRequest({ url: '/farm/list', method: 'get' }, () => mockFarms)
+export const getFarms = async () => {
+  const list = await safeRequest({ url: '/farm/list', method: 'get' }, () => mockFarms)
+  return Array.isArray(list) ? list.map(normalizeFarm) : list
+}
 
 export const createFarm = (data) =>
-  safeRequest(
-    { url: '/farm', method: 'post', data },
-    () => {
-      const farm = {
-        id: generateId('farm'),
-        ...data,
-        plotCount: 0,
-        plots: [],
-      }
-      mockFarms.push(farm)
-      return farm
-    },
-  )
+  safeRequest({ url: '/farm', method: 'post', data }, () => {
+    const farm = {
+      id: generateId('farm'),
+      ...data,
+      plotCount: 0,
+      plots: [],
+    }
+    mockFarms.push(farm)
+    return farm
+  })
 
-export const getFarmDetail = (farmId) =>
-  safeRequest(
+export const getFarmDetail = async (farmId) => {
+  const farm = await safeRequest(
     { url: `/farm/${farmId}`, method: 'get' },
     () => mockFarms.find((f) => f.id === farmId) || null,
   )
+  return normalizeFarm(farm)
+}
 
 export const updateFarm = (farmId, data) =>
-  safeRequest(
-    { url: `/farm/${farmId}`, method: 'put', data },
-    () => {
-      const farm = mockFarms.find((f) => f.id === farmId)
-      if (farm) Object.assign(farm, data)
-      return farm
-    },
-  )
+  safeRequest({ url: `/farm/${farmId}`, method: 'put', data }, () => {
+    const farm = mockFarms.find((f) => f.id === farmId)
+    if (farm) Object.assign(farm, data)
+    return farm
+  })
 
 export const deleteFarm = (farmId) =>
-  safeRequest(
-    { url: `/farm/${farmId}`, method: 'delete' },
-    () => {
-      mockFarms = mockFarms.filter((f) => f.id !== farmId)
-      return true
-    },
-  )
+  safeRequest({ url: `/farm/${farmId}`, method: 'delete' }, () => {
+    mockFarms = mockFarms.filter((f) => f.id !== farmId)
+    return true
+  })
 
 export const createPlot = (farmId, data) =>
-  safeRequest(
-    { url: `/farm/${farmId}/plot`, method: 'post', data },
-    () => {
-      const farm = mockFarms.find((f) => f.id === farmId)
-      if (!farm) return null
-      const plot = {
-        id: generateId('plot'),
-        ...data,
-        growthStage: '播种',
-        stageHistory: [{ stage: '播种', date: data.sowingDate || new Date().toISOString().slice(0, 10) }],
-      }
-      farm.plots.push(plot)
-      farm.plotCount = farm.plots.length
-      return plot
-    },
-  )
+  safeRequest({ url: `/farm/${farmId}/plot`, method: 'post', data }, () => {
+    const farm = mockFarms.find((f) => f.id === farmId)
+    if (!farm) return null
+    const plot = {
+      id: generateId('plot'),
+      ...data,
+      growthStage: '播种',
+      stageHistory: [
+        { stage: '播种', date: data.sowingDate || new Date().toISOString().slice(0, 10) },
+      ],
+    }
+    farm.plots.push(plot)
+    farm.plotCount = farm.plots.length
+    return plot
+  })
 
 export const getPlotDetail = (farmId, plotId) =>
-  safeRequest(
-    { url: `/farm/${farmId}/plot/${plotId}`, method: 'get' },
-    () => {
-      const farm = mockFarms.find((f) => f.id === farmId)
-      if (!farm) return null
-      return farm.plots.find((p) => p.id === plotId) || null
-    },
-  )
+  safeRequest({ url: `/farm/${farmId}/plot/${plotId}`, method: 'get' }, () => {
+    const farm = mockFarms.find((f) => f.id === farmId)
+    if (!farm) return null
+    return farm.plots.find((p) => p.id === plotId) || null
+  })
 
 export const updatePlot = (farmId, plotId, data) =>
-  safeRequest(
-    { url: `/farm/${farmId}/plot/${plotId}`, method: 'put', data },
-    () => {
-      const farm = mockFarms.find((f) => f.id === farmId)
-      if (!farm) return null
-      const plot = farm.plots.find((p) => p.id === plotId)
-      if (plot) Object.assign(plot, data)
-      return plot
-    },
-  )
+  safeRequest({ url: `/farm/${farmId}/plot/${plotId}`, method: 'put', data }, () => {
+    const farm = mockFarms.find((f) => f.id === farmId)
+    if (!farm) return null
+    const plot = farm.plots.find((p) => p.id === plotId)
+    if (plot) Object.assign(plot, data)
+    return plot
+  })
 
 export const deletePlot = (farmId, plotId) =>
-  safeRequest(
-    { url: `/farm/${farmId}/plot/${plotId}`, method: 'delete' },
-    () => {
-      const farm = mockFarms.find((f) => f.id === farmId)
-      if (!farm) return false
-      farm.plots = farm.plots.filter((p) => p.id !== plotId)
-      farm.plotCount = farm.plots.length
-      return true
-    },
-  )
+  safeRequest({ url: `/farm/${farmId}/plot/${plotId}`, method: 'delete' }, () => {
+    const farm = mockFarms.find((f) => f.id === farmId)
+    if (!farm) return false
+    farm.plots = farm.plots.filter((p) => p.id !== plotId)
+    farm.plotCount = farm.plots.length
+    return true
+  })
 
 export const updateGrowthStage = (farmId, plotId, data) =>
-  safeRequest(
-    { url: `/farm/${farmId}/plot/${plotId}/stage`, method: 'put', data },
-    () => {
-      const farm = mockFarms.find((f) => f.id === farmId)
-      if (!farm) return null
-      const plot = farm.plots.find((p) => p.id === plotId)
-      if (plot) {
-        plot.growthStage = data.stage
-        plot.stageHistory.push({ stage: data.stage, date: data.date || new Date().toISOString().slice(0, 10) })
-      }
-      return plot
-    },
-  )
+  safeRequest({ url: `/farm/${farmId}/plot/${plotId}/stage`, method: 'put', data }, () => {
+    const farm = mockFarms.find((f) => f.id === farmId)
+    if (!farm) return null
+    const plot = farm.plots.find((p) => p.id === plotId)
+    if (plot) {
+      plot.growthStage = data.stage
+      plot.stageHistory.push({
+        stage: data.stage,
+        date: data.date || new Date().toISOString().slice(0, 10),
+      })
+    }
+    return plot
+  })
