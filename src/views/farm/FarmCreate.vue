@@ -6,27 +6,11 @@
           <h3 class="section-title">基本信息</h3>
 
           <van-cell-group inset>
-            <van-field
-              v-model="form.name"
-              name="name"
-              label="农场名称"
-              placeholder="请输入农场名称"
-              :rules="[{ required: true, message: '请输入农场名称' }]"
-            />
-            <van-field
-              v-model="form.location"
-              name="location"
-              label="所在位置"
-              placeholder="省/市/区（选填）"
-            />
-            <van-field
-              v-model="form.area"
-              name="area"
-              label="总面积(亩)"
-              type="number"
-              placeholder="请输入面积"
-              :rules="[{ required: true, message: '请输入面积' }]"
-            />
+            <van-field v-model="form.name" name="name" label="农场名称" placeholder="请输入农场名称"
+              :rules="[{ required: true, message: '请输入农场名称' }]" />
+            <van-field v-model="form.location" name="location" label="所在位置" placeholder="省/市/区（选填）" />
+            <van-field v-model="form.area" name="area" label="总面积(亩)" type="number" placeholder="请输入面积"
+              :rules="[{ required: true, message: '请输入面积' }]" />
           </van-cell-group>
         </div>
 
