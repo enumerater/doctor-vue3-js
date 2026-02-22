@@ -1,7 +1,7 @@
 <template>
   <div class="chat-layout">
     <!-- PC: persistent sidebar -->
-    <div class="chat-sidebar" v-if="!isMobile">
+    <div class="chat-sidebar" v-if="!isMobile && !sidebarStore.sidebarCollapsed">
       <div class="sidebar-header">
         <button class="new-chat-btn" @click="handleNewChat">
           <el-icon><Plus /></el-icon>
@@ -25,6 +25,11 @@
       </div>
       <div class="history-list">
         <HistoryList />
+      </div>
+      <div class="sidebar-footer">
+        <button class="collapse-btn" @click="sidebarStore.toggleSidebar()" title="收起侧边栏">
+          <el-icon><Fold /></el-icon>
+        </button>
       </div>
     </div>
 
@@ -62,6 +67,13 @@
 
     <!-- Main content -->
     <div class="chat-main">
+      <!-- PC: expand sidebar button when collapsed -->
+      <div class="expand-bar" v-if="!isMobile && sidebarStore.sidebarCollapsed">
+        <button class="expand-btn" @click="sidebarStore.toggleSidebar()" title="展开侧边栏">
+          <el-icon><Expand /></el-icon>
+        </button>
+      </div>
+
       <!-- Mobile: toolbar -->
       <div class="mobile-toolbar" v-if="isMobile">
         <el-button text @click="showHistory = true">
@@ -81,7 +93,7 @@ import { useRouter } from 'vue-router'
 import { useSidebarStore } from '@/stores/sidebar'
 import { useChatStore } from '@/stores/chat'
 import HistoryList from '@/components/HistoryList.vue'
-import { Plus, Search, CircleClose, List } from '@element-plus/icons-vue'
+import { Plus, Search, CircleClose, List, Fold, Expand } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const sidebarStore = useSidebarStore()
@@ -147,6 +159,44 @@ const handleNewChat = async () => {
     overflow-y: auto;
     padding: 0 6px;
   }
+
+  .sidebar-footer {
+    padding: 8px 14px;
+    border-top: 1px solid $border;
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+.collapse-btn,
+.expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  background: $bg-card;
+  color: $text-secondary;
+  cursor: pointer;
+  transition: $transition-fast;
+
+  &:hover {
+    color: $primary;
+    border-color: $primary;
+    background: $primary-light;
+  }
+
+  .el-icon {
+    font-size: 16px;
+  }
+}
+
+.expand-bar {
+  padding: 8px 12px;
+  border-bottom: 1px solid $border;
+  background: $bg-main;
 }
 
 .new-chat-btn {

@@ -77,6 +77,7 @@
 
 <script setup>
 import { ref, computed, nextTick, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useSidebarStore } from '@/stores/sidebar'
 import { useChatStore } from '@/stores/chat'
 import { useSkillsStore } from '@/stores/skills'
@@ -85,6 +86,8 @@ import { Upload, Setting, Promotion } from '@element-plus/icons-vue'
 
 const emit = defineEmits(['send', 'toggle-settings'])
 
+const route = useRoute()
+const router = useRouter()
 const sidebarStore = useSidebarStore()
 const chatStore = useChatStore()
 const skillsStore = useSkillsStore()
@@ -97,13 +100,24 @@ const canSend = computed(() => {
   return !!(chatStore.inputValue?.trim()) || uploadedImages.value.length > 0
 })
 
-const handleAgentToggle = (val) => {
+const handleAgentToggle = async (val) => {
+  const isOnDetail = route.name === 'chatDetail'
+
   if (val) {
     const hasImageSkill = skillsStore.isSkillEnabled('disease-recognition')
     sidebarStore.agentImageUploadEnabled = hasImageSkill
-    chatStore.clearMessages()
+    if (isOnDetail) {
+      await sidebarStore.prepareConversation()
+      router.push({ name: 'chatHome' })
+    } else {
+      chatStore.clearMessages()
+    }
   } else {
     sidebarStore.agentImageUploadEnabled = false
+    if (isOnDetail) {
+      await sidebarStore.prepareConversation()
+      router.push({ name: 'chatHome' })
+    }
   }
 }
 

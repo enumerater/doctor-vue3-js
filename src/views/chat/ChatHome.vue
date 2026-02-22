@@ -9,9 +9,8 @@
           <AgentHotQuestionCard class="hot-question-card" />
         </template>
         <template v-else>
-          <div class="empty-icon">💬</div>
-          <div class="empty-title">开始一段新对话</div>
-          <div class="empty-desc">向AI助手提问关于农业种植、病害诊断的问题</div>
+          <LogoSection class="logo-section" title="智农AI" subtitle="您的智能农业助手" altText="智农AI" />
+          <HotQuestionCard class="hot-question-card" />
         </template>
       </div>
 
@@ -36,6 +35,7 @@
 
     <!-- Input area -->
     <div class="input-wrapper">
+      <div class="input-inner">
       <AgentSettingsInline
         :visible="showAgentSettings"
         @close="showAgentSettings = false"
@@ -45,6 +45,7 @@
         @send="sendMessage"
         @toggle-settings="showAgentSettings = !showAgentSettings"
       />
+      </div>
     </div>
   </div>
 </template>
@@ -59,6 +60,7 @@ import ChatInputCard from '@/components/ChatInputCard.vue'
 import AgentSettingsInline from '@/components/AgentSettingsInline.vue'
 import LogoSection from '@/components/LogoSection.vue'
 import AgentHotQuestionCard from '@/components/AgentHotQuestionCard.vue'
+import HotQuestionCard from '@/components/HotQuestionCard.vue'
 
 marked.setOptions({ breaks: true, gfm: true })
 
@@ -163,21 +165,6 @@ const sendMessage = async (content, images = []) => {
   height: 100%;
   gap: 12px;
 
-  .empty-icon {
-    font-size: 48px;
-  }
-
-  .empty-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: $text-primary;
-  }
-
-  .empty-desc {
-    font-size: 14px;
-    color: $text-secondary;
-  }
-
   .logo-section {
     margin-bottom: 2rem;
     text-align: center;
@@ -264,5 +251,10 @@ const sendMessage = async (content, images = []) => {
     padding: 8px 12px;
     padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   }
+}
+
+.input-inner {
+  max-width: 800px;
+  margin: 0 auto;
 }
 </style>

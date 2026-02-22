@@ -9,6 +9,7 @@ import { updateSesssionId, getUser } from '@/axios/user'
 export const useSidebarStore = defineStore('sidebar', {
   state: () => ({
     showLeft: false,
+    sidebarCollapsed: false, // PC端侧边栏折叠状态
     historyList: [],
     refreshTrigger: false,
     searchKeyword: '',
@@ -25,6 +26,9 @@ export const useSidebarStore = defineStore('sidebar', {
   actions: {
     toggleLeft(visible) {
       this.showLeft = visible ?? !this.showLeft
+    },
+    toggleSidebar() {
+      this.sidebarCollapsed = !this.sidebarCollapsed
     },
     closeLeft() {
       this.showLeft = false
