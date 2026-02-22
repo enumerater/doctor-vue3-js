@@ -1,5 +1,5 @@
 <script setup>
-import { Monitor, DataBoard, Reading, Sunny } from '@element-plus/icons-vue'
+import { Monitor, DataBoard, Reading, Sunny, Clock } from '@element-plus/icons-vue'
 import { markRaw } from 'vue'
 
 const features = [
@@ -30,6 +30,13 @@ const features = [
     icon: markRaw(Monitor),
     path: '/farm',
     color: '#b05cc5',
+  },
+  {
+    name: '诊断历史',
+    desc: '查看历史诊断记录',
+    icon: markRaw(Clock),
+    path: '/diagnosis',
+    color: '#e67e22',
   },
 ]
 </script>

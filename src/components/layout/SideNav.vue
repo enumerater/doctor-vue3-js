@@ -8,6 +8,7 @@ import {
   DataAnalysis,
   Reading,
   OfficeBuilding,
+  Clock,
 } from '@element-plus/icons-vue'
 
 const props = defineProps({
@@ -21,6 +22,7 @@ const menuItems = [
   { index: '/workbench', icon: HomeFilled, label: '工作台' },
   { index: '/chat', icon: ChatDotRound, label: 'AI 对话' },
   { index: '/vision', icon: Camera, label: '图像诊断' },
+  { index: '/diagnosis', icon: Clock, label: '诊断历史' },
   { index: '/dashboard', icon: DataAnalysis, label: '数据看板' },
   { index: '/knowledge', icon: Reading, label: '知识库' },
   { index: '/farm', icon: OfficeBuilding, label: '我的农场' },

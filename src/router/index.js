@@ -62,6 +62,20 @@ const router = createRouter({
           meta: { title: '智能诊断' },
         },
 
+        // ====== 诊断历史 ======
+        {
+          path: 'diagnosis',
+          name: 'diagnosis',
+          component: () => import('@/views/diagnosis/DiagnosisIndex.vue'),
+          meta: { title: '诊断历史' },
+        },
+        {
+          path: 'diagnosis/:diagnosisId',
+          name: 'diagnosisDetail',
+          component: () => import('@/views/diagnosis/DiagnosisDetail.vue'),
+          meta: { title: '诊断详情' },
+        },
+
         // ====== 数据看板（重定向到独立路由） ======
         {
           path: 'dashboard',

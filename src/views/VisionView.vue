@@ -266,6 +266,7 @@ import { upload } from '@/axios/oss'
 import { ref, computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useVisionStore } from '@/stores/vision'
+import { useDiagnosisStore } from '@/stores/diagnosis'
 import { useSidebarStore } from '@/stores/sidebar'
 import { marked } from 'marked'
 import { ElMessage } from 'element-plus'
@@ -286,6 +287,7 @@ marked.setOptions({
 const router = useRouter()
 const visionStore = useVisionStore()
 const sidebarStore = useSidebarStore()
+const diagnosisStore = useDiagnosisStore()
 
 // Reactive data
 const fileInput = ref(null)
@@ -528,6 +530,24 @@ const formatTime = (seconds) => {
 }
 
 // Disease detection logic
+const saveDiagnosisRecord = (resultData) => {
+  const task = visionStore.currentTask
+  if (!task) return
+  const isStructured = resultData && typeof resultData === 'object' && resultData.hasDisease !== undefined
+  diagnosisStore.createDiagnosis({
+    imageUrl: task.imageUrl,
+    cropType: task.cropType || selectedCrop.value,
+    hasDisease: isStructured ? resultData.hasDisease : false,
+    diseaseName: isStructured && resultData.diseaseName ? resultData.diseaseName : '',
+    confidence: isStructured && resultData.confidence ? resultData.confidence : 0,
+    severity: isStructured && resultData.severity ? resultData.severity : '',
+    result: resultData,
+    status: 'completed',
+    createdAt: new Date().toISOString(),
+    elapsedTime: task.elapsedTime || 0,
+  })
+}
+
 const detectDisease = async () => {
   if (!selectedFile.value) {
     ElMessage.warning('请先上传图片！')
@@ -576,13 +596,16 @@ const detectDisease = async () => {
       if (resultData.hasDisease !== undefined) {
         structuredResult.value = resultData
         visionStore.completeTask(resultData)
+        saveDiagnosisRecord(resultData)
       } else {
         markdownResult.value = res.data
         visionStore.completeTask(res.data)
+        saveDiagnosisRecord(res.data)
       }
     } catch (e) {
       markdownResult.value = res.data
       visionStore.completeTask(res.data)
+      saveDiagnosisRecord(res.data)
     }
 
     ElMessage.success('识别完成！结果已更新')
