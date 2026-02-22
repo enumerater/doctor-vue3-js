@@ -264,22 +264,57 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
             <div class="bubble-content" v-html="parseMarkdown(msg.messageContent)"></div>
 
             <div v-if="msg.messageContent" class="msg-actions">
-              <el-button text size="small" @click="openAgentPopup(msg)">深入分析</el-button>
-              <el-button text size="small" @click="handleCopy(msg)">复制</el-button>
-              <el-button text size="small" @click="handleRegenerate(msg, index)">重新生成</el-button>
-              <el-button text size="small" @click="handleReadAloud(msg)">
-                {{ readingMsgId === msg.id ? '停止' : '朗读' }}
-              </el-button>
-              <el-button
-                text size="small"
-                :type="likedMsgIds.has(msg.id) ? 'primary' : ''"
-                @click="handleLike(msg)"
-              >👍</el-button>
-              <el-button
-                text size="small"
-                :type="dislikedMsgIds.has(msg.id) ? 'danger' : ''"
-                @click="handleDislike(msg)"
-              >👎</el-button>
+              <div class="action-bar">
+                <button
+                  class="action-btn"
+                  :class="{ active: likedMsgIds.has(msg.id) }"
+                  @click="handleLike(msg)"
+                  title="赞同"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                  </svg>
+                </button>
+                <button
+                  class="action-btn"
+                  :class="{ 'active-danger': dislikedMsgIds.has(msg.id) }"
+                  @click="handleDislike(msg)"
+                  title="不满意"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/>
+                  </svg>
+                </button>
+                <span class="action-divider"></span>
+                <button class="action-btn" @click="handleCopy(msg)" title="复制">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                </button>
+                <button class="action-btn" @click="handleRegenerate(msg, index)" title="重新生成">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                  </svg>
+                </button>
+                <button class="action-btn" :class="{ active: readingMsgId === msg.id }" @click="handleReadAloud(msg)" title="朗读">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                  </svg>
+                </button>
+                <span class="action-divider"></span>
+                <button class="action-btn action-btn-text" @click="openAgentPopup(msg)" title="深入分析">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    <line x1="11" y1="8" x2="11" y2="14"/>
+                    <line x1="8" y1="11" x2="14" y2="11"/>
+                  </svg>
+                  <span>深入分析</span>
+                </button>
+              </div>
             </div>
 
             <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
@@ -414,10 +449,75 @@ $border-light: rgba(5, 150, 105, 0.1);
 }
 
 .msg-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
-  margin-top: 6px;
+  margin-top: 8px;
+
+  .action-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: #f8faf9;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
+    padding: 3px 6px;
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #9ca3af;
+    transition: all 0.2s ease;
+    padding: 0;
+    outline: none;
+
+    svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    &:hover {
+      background: rgba(5, 150, 105, 0.08);
+      color: $primary-green;
+    }
+
+    &.active {
+      color: $primary-green;
+      background: rgba(5, 150, 105, 0.12);
+    }
+
+    &.active-danger {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    &.action-btn-text {
+      width: auto;
+      border-radius: 15px;
+      padding: 0 10px;
+      gap: 4px;
+      font-size: 12px;
+      font-family: inherit;
+
+      span {
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .action-divider {
+    width: 1px;
+    height: 16px;
+    background: rgba(0, 0, 0, 0.08);
+    margin: 0 3px;
+    flex-shrink: 0;
+  }
 }
 
 .image-preview-container {

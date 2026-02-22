@@ -52,25 +52,38 @@ const features = [
 <style lang="scss" scoped>
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 
   @include mobile {
+    grid-template-columns: 1fr;
     gap: 12px;
   }
 }
 
 .feature-card {
-  @include card-base;
-  @include card-hover;
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding: 20px 18px;
+  text-align: center;
+  gap: 12px;
+  padding: 24px 16px;
   text-decoration: none;
   cursor: pointer;
+  transition: all 0.25s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  }
 
   @include mobile {
+    flex-direction: row;
+    text-align: left;
     padding: 16px 14px;
     gap: 12px;
   }
@@ -78,14 +91,15 @@ const features = [
 
 .feature-icon-wrap {
   @include flex-center;
-  width: 52px;
-  height: 52px;
-  border-radius: $radius-sm;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
   flex-shrink: 0;
 
   @include mobile {
     width: 44px;
     height: 44px;
+    border-radius: 12px;
   }
 }
 
@@ -97,7 +111,7 @@ const features = [
 
 .feature-name {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   color: $text-primary;
   margin-bottom: 4px;
 

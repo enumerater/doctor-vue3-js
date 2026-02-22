@@ -23,7 +23,7 @@ const notificationStore = useNotificationStore()
 
 const menuItems = [
   { index: '/workbench', icon: HomeFilled, label: '首页' },
-  { index: '/chat', icon: ChatDotRound, label: 'AI 对话' },
+  { index: '/chat', icon: ChatDotRound, label: 'chat小农' },
   { index: '/vision', icon: Camera, label: '图像诊断' },
 
   { index: '/knowledge', icon: Reading, label: '知识库' },

@@ -35,7 +35,7 @@ import RecentActivity from '@/components/workbench/RecentActivity.vue'
 <style lang="scss" scoped>
 .workbench-page {
   min-height: 100%;
-  background: linear-gradient(180deg, $bg-main 0%, #f0f7f2 100%);
+  background: linear-gradient(180deg, #f7faf8 0%, #f0f7f2 40%, #f5f7f5 100%);
 }
 
 .page-container {
@@ -76,16 +76,32 @@ import RecentActivity from '@/components/workbench/RecentActivity.vue'
     margin-bottom: 20px;
   }
 }
-
 .section-title {
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 700;
   color: $text-primary;
   margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &::before {
+    content: '';
+    width: 4px;
+    height: 18px;
+    background: linear-gradient(180deg, $primary, $secondary);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
 
   @include mobile {
     font-size: 15px;
     margin: 0 0 12px;
+
+    &::before {
+      height: 15px;
+    }
   }
 }
+
 </style>

@@ -1,14 +1,14 @@
 <template>
   <div class="chat-layout">
     <!-- PC: persistent sidebar -->
-    <div class="chat-sidebar" v-if="!isMobile && !sidebarStore.sidebarCollapsed">
-      <div class="sidebar-header">
+    <div class="chat-sidebar" :class="{ collapsed: sidebarStore.sidebarCollapsed }" v-if="!isMobile">
+      <div class="sidebar-header" v-show="!sidebarStore.sidebarCollapsed">
         <button class="new-chat-btn" @click="handleNewChat">
           <el-icon><Plus /></el-icon>
           <span>新建对话</span>
         </button>
       </div>
-      <div class="sidebar-search">
+      <div class="sidebar-search" v-show="!sidebarStore.sidebarCollapsed">
         <div class="search-box">
           <el-icon class="search-icon"><Search /></el-icon>
           <input
@@ -23,12 +23,12 @@
           ><CircleClose /></el-icon>
         </div>
       </div>
-      <div class="history-list">
+      <div class="history-list" v-show="!sidebarStore.sidebarCollapsed">
         <HistoryList />
       </div>
       <div class="sidebar-footer">
-        <button class="collapse-btn" @click="sidebarStore.toggleSidebar()" title="收起侧边栏">
-          <el-icon><Fold /></el-icon>
+        <button class="collapse-btn" @click="sidebarStore.toggleSidebar()" :title="sidebarStore.sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'">
+          <el-icon><component :is="sidebarStore.sidebarCollapsed ? Expand : Fold" /></el-icon>
         </button>
       </div>
     </div>
@@ -67,12 +67,6 @@
 
     <!-- Main content -->
     <div class="chat-main">
-      <!-- PC: expand sidebar button when collapsed -->
-      <div class="expand-bar" v-if="!isMobile && sidebarStore.sidebarCollapsed">
-        <button class="expand-btn" @click="sidebarStore.toggleSidebar()" title="展开侧边栏">
-          <el-icon><Expand /></el-icon>
-        </button>
-      </div>
 
       <!-- Mobile: toolbar -->
       <div class="mobile-toolbar" v-if="isMobile">
@@ -145,6 +139,11 @@ const handleNewChat = async () => {
   flex-shrink: 0;
   overflow: hidden;
   border-right: 1px solid $border;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.collapsed {
+    width: 48px;
+  }
 
   .sidebar-header {
     padding: 16px 14px 8px;
@@ -161,15 +160,14 @@ const handleNewChat = async () => {
   }
 
   .sidebar-footer {
-    padding: 8px 14px;
+    padding: 8px;
     border-top: 1px solid $border;
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
   }
 }
 
-.collapse-btn,
-.expand-btn {
+.collapse-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -191,12 +189,6 @@ const handleNewChat = async () => {
   .el-icon {
     font-size: 16px;
   }
-}
-
-.expand-bar {
-  padding: 8px 12px;
-  border-bottom: 1px solid $border;
-  background: $bg-main;
 }
 
 .new-chat-btn {

@@ -28,13 +28,13 @@ const router = createRouter({
         {
           path: 'chat',
           component: () => import('@/views/chat/ChatLayout.vue'),
-          meta: { title: 'AI对话' },
+          meta: { title: 'chat小农' },
           children: [
             {
               path: '',
               name: 'chatHome',
               component: () => import('@/views/chat/ChatHome.vue'),
-              meta: { title: 'AI对话' },
+              meta: { title: 'chat小农' },
             },
             {
               path: ':sessionId',
@@ -202,7 +202,7 @@ const router = createRouter({
 
 // 访问权限控制
 router.beforeEach((to) => {
-  document.title = `智慧农业诊断-${to.meta.title || ''}`
+  document.title = `小农-${to.meta.title || ''}`
   const whiteList = ['/login']
   if (!localStorage.getItem('token') && !whiteList.includes(to.path)) {
     return '/login'

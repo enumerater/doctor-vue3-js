@@ -2,7 +2,7 @@
   <Transition name="slide-down">
     <div v-if="visible" class="agent-settings-inline">
       <div class="settings-header">
-        <span class="settings-title">Agent Settings</span>
+        <span class="settings-title">智能体设置</span>
         <el-button text size="small" @click="$emit('close')" class="close-btn">
           <el-icon><Close /></el-icon>
         </el-button>
@@ -11,21 +11,21 @@
       <div class="settings-body">
         <!-- Config selector -->
         <div class="setting-row">
-          <label class="row-label">Config</label>
+          <label class="row-label">配置方案</label>
           <div class="row-content config-row">
-            <el-select v-model="selectedConfigId" placeholder="Select config" size="small" @change="onConfigSelect" class="config-select">
+            <el-select v-model="selectedConfigId" placeholder="选择配置" size="small" @change="onConfigSelect" class="config-select">
               <el-option v-for="c in configColumns" :key="c.value" :label="c.text" :value="c.value" />
             </el-select>
             <el-button size="small" @click="showConfigManager = true">
               <el-icon><Setting /></el-icon>
-              Manage
+              管理
             </el-button>
           </div>
         </div>
 
         <!-- Crops -->
         <div class="setting-row">
-          <label class="row-label">Crops</label>
+          <label class="row-label">作物类型</label>
           <div class="row-content chips-row">
             <span
               v-for="crop in commonCrops"
@@ -41,7 +41,7 @@
 
         <!-- Growth stage -->
         <div class="setting-row">
-          <label class="row-label">Stage</label>
+          <label class="row-label">生长阶段</label>
           <div class="row-content pills-row">
             <span
               v-for="stage in stages"
@@ -57,7 +57,7 @@
 
         <!-- Skills -->
         <div class="setting-row">
-          <label class="row-label">Skills</label>
+          <label class="row-label">技能</label>
           <div class="row-content skills-toggles">
             <div v-for="skill in allSkills" :key="skill.id" class="skill-toggle">
               <el-switch
@@ -73,13 +73,13 @@
 
         <!-- Prompt -->
         <div class="setting-row">
-          <label class="row-label">Prompt</label>
+          <label class="row-label">自定义提示词</label>
           <div class="row-content">
             <el-input
               v-model="formData.customPrompt"
               type="textarea"
               :rows="2"
-              placeholder="Custom agent prompt..."
+              placeholder="自定义智能体提示词..."
               maxlength="500"
               show-word-limit
               size="small"
@@ -90,7 +90,7 @@
 
       <div class="settings-footer">
         <el-button type="primary" size="small" :loading="isSaving" @click="saveConfig" class="save-btn">
-          Save settings
+          保存设置
         </el-button>
       </div>
 
@@ -122,22 +122,22 @@ const showConfigManager = ref(false)
 const selectedConfigId = ref(null)
 
 const commonCrops = [
-  { label: 'Corn', value: 'corn', icon: '' },
-  { label: 'Wheat', value: 'wheat', icon: '' },
-  { label: 'Rice', value: 'rice', icon: '' },
-  { label: 'Tomato', value: 'tomato', icon: '' },
-  { label: 'Cucumber', value: 'cucumber', icon: '' },
-  { label: 'Pepper', value: 'pepper', icon: '' },
-  { label: 'Apple', value: 'apple', icon: '' },
-  { label: 'Grape', value: 'grape', icon: '' },
+  { label: '玉米', value: 'corn', icon: '' },
+  { label: '小麦', value: 'wheat', icon: '' },
+  { label: '水稻', value: 'rice', icon: '' },
+  { label: '番茄', value: 'tomato', icon: '' },
+  { label: '黄瓜', value: 'cucumber', icon: '' },
+  { label: '辣椒', value: 'pepper', icon: '' },
+  { label: '苹果', value: 'apple', icon: '' },
+  { label: '葡萄', value: 'grape', icon: '' },
 ]
 
 const stages = [
-  { label: 'Seeding', value: 'seeding', icon: '' },
-  { label: 'Growing', value: 'growing', icon: '' },
-  { label: 'Flowering', value: 'flowering', icon: '' },
-  { label: 'Fruiting', value: 'fruiting', icon: '' },
-  { label: 'Mature', value: 'mature', icon: '' },
+  { label: '育苗期', value: 'seeding', icon: '' },
+  { label: '生长期', value: 'growing', icon: '' },
+  { label: '开花期', value: 'flowering', icon: '' },
+  { label: '结果期', value: 'fruiting', icon: '' },
+  { label: '成熟期', value: 'mature', icon: '' },
 ]
 
 const allSkills = registeredSkills
@@ -211,8 +211,7 @@ const onConfigSelect = async (configId) => {
   skillsStore.enabledSkillIds = formData.value.enabledSkillIds
   const hasImageSkill = formData.value.enabledSkillIds.includes('disease-recognition')
   sidebarStore.setAgentImageUploadEnabled(hasImageSkill)
-  ElMessage.success(`Switched to "${opt?.text || ''}"`)
-}
+  ElMessage.success(`已切换到「${opt?.text || ''}」`)}
 
 const onConfigChanged = () => {
   loadCurrentConfig()
@@ -223,7 +222,7 @@ const onConfigChanged = () => {
 
 const saveConfig = async () => {
   if (formData.value.cropTypes.length === 0) {
-    ElMessage.warning('Please select at least one crop')
+    ElMessage.warning('请至少选择一种作物')
     return
   }
   isSaving.value = true
@@ -257,10 +256,10 @@ const saveConfig = async () => {
     const hasImageSkill = formData.value.enabledSkillIds.includes('disease-recognition')
     sidebarStore.setAgentImageUploadEnabled(hasImageSkill)
 
-    ElMessage.success('Settings saved')
+    ElMessage.success('设置已保存')
   } catch (err) {
     console.error('Save config failed:', err)
-    ElMessage.error('Save failed, please retry')
+    ElMessage.error('保存失败，请重试')
   } finally {
     isSaving.value = false
   }
@@ -335,7 +334,6 @@ onMounted(async () => {
     font-weight: 600;
     color: $text-secondary;
     margin-bottom: 6px;
-    text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 

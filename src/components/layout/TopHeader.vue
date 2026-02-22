@@ -47,8 +47,7 @@ const goNotifications = () => {
       </el-icon>
       <div class="logo" @click="goHome">
         <span class="logo-icon">🌿</span>
-        <span class="logo-text" v-show="!isMobile">智慧农业诊断平台</span>
-        <span class="logo-text" v-show="isMobile">Chat小农</span>
+        <span class="logo-text">小农</span>
       </div>
     </div>
 
@@ -128,10 +127,14 @@ const goNotifications = () => {
   }
 
   .logo-text {
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 700;
     color: $text-primary;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    background: linear-gradient(135deg, $primary, #2d7a3a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }
 

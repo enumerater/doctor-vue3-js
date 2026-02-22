@@ -40,67 +40,104 @@ function handleKeydown(e) {
 </script>
 
 <template>
-  <el-card class="quick-chat-card" shadow="never">
-    <template #header>
-      <div class="card-header">
-        <el-icon class="header-icon" :size="20">
-          <ChatLineSquare />
-        </el-icon>
-        <span class="header-title">AI 智能问答</span>
+  <div class="quick-chat-card">
+    <div class="card-icon-area">
+      <div class="icon-circle">
+        <el-icon :size="24"><ChatLineSquare /></el-icon>
       </div>
-    </template>
-
-    <p class="card-desc">输入您的农业问题，AI 为您智能解答</p>
-
-    <div class="input-row">
-      <el-input
-        v-model="inputValue"
-        placeholder="例如：番茄叶片发黄是什么原因？"
-        clearable
-        @keydown="handleKeydown"
-      />
-      <el-button
-        type="primary"
-        :loading="loading"
-        :disabled="!inputValue.trim()"
-        @click="handleSend"
-      >
-        发送
-      </el-button>
     </div>
-  </el-card>
+    <div class="card-body">
+      <h3 class="card-title">chat小农</h3>
+      <p class="card-desc">输入您的农业问题，AI 为您智能解答</p>
+      <div class="input-row">
+        <el-input
+          v-model="inputValue"
+          placeholder="例如：番茄叶片发黄是什么原因？"
+          clearable
+          @keydown="handleKeydown"
+        />
+        <el-button
+          type="primary"
+          :loading="loading"
+          :disabled="!inputValue.trim()"
+          @click="handleSend"
+          class="send-btn"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </el-button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style lang="scss" scoped>
 .quick-chat-card {
+  background: #fff;
   border: 1px solid $border;
-  border-radius: $radius-md;
+  border-radius: $radius-lg;
   box-shadow: $shadow-sm;
+  padding: 24px;
+  display: flex;
+  gap: 18px;
+  transition: box-shadow 0.3s, transform 0.2s;
+  position: relative;
+  overflow: hidden;
 
-  :deep(.el-card__header) {
-    padding: 16px 20px 12px;
-    border-bottom: 1px solid $border;
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, $primary, $secondary);
+    border-radius: $radius-lg $radius-lg 0 0;
   }
 
-  :deep(.el-card__body) {
-    padding: 16px 20px 20px;
+  &:hover {
+    box-shadow: 0 4px 20px rgba(74, 155, 94, 0.12);
+  }
+
+  @include mobile {
+    padding: 18px 16px;
+    gap: 14px;
   }
 }
 
-.card-header {
-  @include flex-between;
+.card-icon-area {
+  flex-shrink: 0;
 
-  .header-icon {
+  .icon-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba($primary, 0.1), rgba($secondary, 0.08));
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: $primary;
-    margin-right: 8px;
-  }
 
-  .header-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: $text-primary;
-    flex: 1;
+    @include mobile {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+    }
   }
+}
+
+.card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: $text-primary;
+  margin: 0 0 4px;
 }
 
 .card-desc {
@@ -111,16 +148,30 @@ function handleKeydown(e) {
 
 .input-row {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 
   .el-input {
     flex: 1;
+
+    :deep(.el-input__wrapper) {
+      border-radius: 10px;
+    }
   }
 
-  .el-button {
-    background-color: $primary;
+  .send-btn {
+    background: $primary;
     border-color: $primary;
+    border-radius: 10px;
+    width: 40px;
+    padding: 0;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      color: #fff;
+    }
 
     &:hover,
     &:focus {

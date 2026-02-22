@@ -15,7 +15,7 @@
       <div class="report-page" ref="reportRef">
         <!-- 报告头 -->
         <div class="report-header">
-          <div class="report-logo">🌿 智慧农业诊断平台</div>
+          <div class="report-logo">🌿 小农</div>
           <h1 class="report-title">作物病害诊断报告</h1>
           <div class="report-meta">
             <span>报告编号：{{ record.id }}</span>
@@ -82,7 +82,7 @@
         <!-- 报告底部 -->
         <div class="report-footer">
           <div class="report-divider"></div>
-          <p>本报告由智慧农业诊断平台AI系统自动生成，仅供参考。</p>
+          <p>本报告由小农AI系统自动生成，仅供参考。</p>
           <p>如有疑问，建议咨询当地农业技术推广站专业人员。</p>
         </div>
       </div>

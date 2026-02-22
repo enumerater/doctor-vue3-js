@@ -67,18 +67,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <el-card class="recent-activity-card" shadow="never">
-    <template #header>
-      <div class="card-header">
-        <span class="header-title">最近动态</span>
-      </div>
-    </template>
+  <div class="recent-activity-card">
+    <div class="card-header-row">
+      <h3 class="header-title">最近动态</h3>
+    </div>
 
     <div v-if="!hasContent" class="empty-state">
       <p class="empty-text">暂无最近活动，开始您的第一次对话吧</p>
     </div>
 
-    <el-timeline v-else>
+    <el-timeline v-else class="activity-timeline">
       <!-- Recent chat sessions -->
       <el-timeline-item
         v-for="item in recentChats"
@@ -97,6 +95,7 @@ onMounted(() => {
             size="small"
             effect="light"
             type="success"
+            round
           >
             Agent
           </el-tag>
@@ -114,36 +113,46 @@ onMounted(() => {
       >
         <div class="activity-item alert-item">
           <span class="activity-title">{{ alert.diseaseName || alert.name }}</span>
-          <el-tag size="small" type="warning" effect="light">
+          <el-tag size="small" type="warning" effect="light" round>
             风险提醒
           </el-tag>
         </div>
       </el-timeline-item>
     </el-timeline>
-  </el-card>
+  </div>
 </template>
 
 <style lang="scss" scoped>
 .recent-activity-card {
+  background: #fff;
   border: 1px solid $border;
-  border-radius: $radius-md;
+  border-radius: $radius-lg;
   box-shadow: $shadow-sm;
+  padding: 20px 24px;
 
-  :deep(.el-card__header) {
-    padding: 16px 20px 12px;
-    border-bottom: 1px solid $border;
-  }
-
-  :deep(.el-card__body) {
-    padding: 16px 20px 12px;
+  @include mobile {
+    padding: 16px 18px;
   }
 }
 
-.card-header {
+.card-header-row {
+  margin-bottom: 16px;
+
   .header-title {
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700;
     color: $text-primary;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &::before {
+      content: '';
+      width: 4px;
+      height: 16px;
+      background: linear-gradient(180deg, $primary, $secondary);
+      border-radius: 2px;
+    }
   }
 }
 
@@ -161,11 +170,16 @@ onMounted(() => {
 .activity-item {
   @include flex-between;
   cursor: pointer;
-  padding: 4px 0;
-  transition: $transition-fast;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: all 0.2s;
 
-  &:hover .activity-title {
-    color: $primary;
+  &:hover {
+    background: rgba($primary, 0.04);
+
+    .activity-title {
+      color: $primary;
+    }
   }
 }
 
@@ -181,8 +195,12 @@ onMounted(() => {
 .alert-item {
   cursor: default;
 
-  &:hover .activity-title {
-    color: $text-primary;
+  &:hover {
+    background: transparent;
+
+    .activity-title {
+      color: $text-primary;
+    }
   }
 }
 

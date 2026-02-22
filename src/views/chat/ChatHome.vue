@@ -9,7 +9,7 @@
           <AgentHotQuestionCard class="hot-question-card" />
         </template>
         <template v-else>
-          <LogoSection class="logo-section" title="智农AI" subtitle="您的智能农业助手" altText="智农AI" />
+          <LogoSection class="logo-section" title="chat小农" subtitle="您的智能农业助手" altText="chat小农" />
           <HotQuestionCard class="hot-question-card" />
         </template>
       </div>
