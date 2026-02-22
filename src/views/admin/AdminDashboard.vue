@@ -31,10 +31,6 @@
           <el-icon :size="28" color="#ed8936"><ChatLineSquare /></el-icon>
           <span>审核反馈</span>
         </div>
-        <div class="action-card" @click="$router.push('/dashboard')">
-          <el-icon :size="28" color="#9f7aea"><DataAnalysis /></el-icon>
-          <span>数据大屏</span>
-        </div>
       </div>
     </div>
   </div>
@@ -42,7 +38,7 @@
 
 <script setup>
 import { computed, onMounted } from 'vue'
-import { User, Reading, ChatLineSquare, DataAnalysis, UserFilled, Histogram, Document, Star } from '@element-plus/icons-vue'
+import { User, Reading, ChatLineSquare, UserFilled, Histogram, Document, Star } from '@element-plus/icons-vue'
 import { useAdminStore } from '@/stores/admin'
 
 const store = useAdminStore()
@@ -179,7 +175,7 @@ const kpiList = computed(() => [
 
 .action-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 
   @include mobile {

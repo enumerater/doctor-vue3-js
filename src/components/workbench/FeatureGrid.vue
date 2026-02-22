@@ -1,5 +1,5 @@
 <script setup>
-import { Monitor, DataBoard, Reading, Sunny } from '@element-plus/icons-vue'
+import { Monitor, Reading, Sunny } from '@element-plus/icons-vue'
 import { markRaw } from 'vue'
 
 const features = [
@@ -10,13 +10,7 @@ const features = [
     path: '/agent',
     color: '#4a9b5e',
   },
-  {
-    name: '数据看板',
-    desc: '可视化数据分析与趋势洞察',
-    icon: markRaw(DataBoard),
-    path: '/dashboard',
-    color: '#3d8ac6',
-  },
+
   {
     name: '知识库',
     desc: '病虫害百科与防治方案查询',

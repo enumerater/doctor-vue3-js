@@ -5,7 +5,7 @@ import {
   HomeFilled,
   ChatDotRound,
   Camera,
-  DataAnalysis,
+
   Reading,
   OfficeBuilding,
   Bell,
@@ -25,7 +25,7 @@ const menuItems = [
   { index: '/workbench', icon: HomeFilled, label: '首页' },
   { index: '/chat', icon: ChatDotRound, label: 'AI 对话' },
   { index: '/vision', icon: Camera, label: '图像诊断' },
-  { index: '/dashboard', icon: DataAnalysis, label: '数据看板' },
+
   { index: '/knowledge', icon: Reading, label: '知识库' },
   { index: '/farm', icon: OfficeBuilding, label: '我的农场' },
   { index: '/notifications', icon: Bell, label: '通知中心', badge: true },

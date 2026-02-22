@@ -82,12 +82,6 @@ const router = createRouter({
           meta: { title: '诊断报告' },
         },
 
-        // ====== 数据看板（重定向到独立路由） ======
-        {
-          path: 'dashboard',
-          redirect: '/dashboard',
-        },
-
         // ====== 病害知识库 ======
         {
           path: 'knowledge',
@@ -162,14 +156,6 @@ const router = createRouter({
       ],
     },
 
-    // ====== 数据看板（独立全屏布局） ======
-    {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: () => import('@/views/DataVision.vue'),
-      meta: { title: '数据看板', noLayout: true },
-    },
-
     // ====== 管理后台 ======
     {
       path: '/admin',
@@ -209,8 +195,6 @@ const router = createRouter({
     { path: '/home/agent', redirect: '/agent' },
     { path: '/home/agen/:sessionId', redirect: (to) => `/agent/${to.params.sessionId}` },
     { path: '/home', redirect: '/workbench' },
-    { path: '/data', redirect: '/dashboard' },
-
     // 通配符路由
     { path: '/:pathMatch(.*)*', redirect: '/workbench' },
   ],
