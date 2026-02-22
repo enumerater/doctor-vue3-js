@@ -32,8 +32,18 @@ const menuItems = [
   { index: '/admin', icon: Setting, label: '管理后台' },
 ]
 
+// 子路由 → 父菜单的映射（路由前缀不在 menuItems 中的情况）
+const routeAliasMap = {
+  '/diagnosis': '/vision',
+  '/report': '/vision',
+}
+
 const activeMenu = computed(() => {
   const path = route.path
+  // 先检查别名映射
+  for (const [prefix, menuIndex] of Object.entries(routeAliasMap)) {
+    if (path.startsWith(prefix)) return menuIndex
+  }
   // 匹配子路由
   const match = menuItems.find(
     (item) => path === item.index || (item.index !== '/' && path.startsWith(item.index))

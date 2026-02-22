@@ -13,8 +13,18 @@ const tabs = [
   { name: 'farm', path: '/farm', icon: '🌾', label: '农场' },
 ]
 
+// 子路由 → 父菜单的映射（路由前缀不在 tabs 中的情况）
+const routeAliasMap = {
+  '/diagnosis': 'vision',
+  '/report': 'vision',
+}
+
 const activeTab = computed(() => {
   const path = route.path
+  // 先检查别名映射
+  for (const [prefix, tabName] of Object.entries(routeAliasMap)) {
+    if (path.startsWith(prefix)) return tabName
+  }
   const match = tabs.find(
     (t) => path === t.path || (t.path !== '/' && path.startsWith(t.path))
   )
