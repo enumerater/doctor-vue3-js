@@ -98,6 +98,22 @@
         />
       </div>
 
+      <!-- 诊断反馈 -->
+      <DiagnosisFeedback
+        v-if="record"
+        :diagnosis-id="record.id"
+        :crop-type="record.cropType"
+        :disease-name="diseaseName"
+      />
+
+      <!-- 导出报告 -->
+      <div class="report-section">
+        <el-button type="primary" plain @click="exportReport">
+          <el-icon><Download /></el-icon>
+          导出诊断报告
+        </el-button>
+      </div>
+
       <!-- 删除按钮 -->
       <div class="danger-zone">
         <el-button type="danger" plain @click="confirmDelete">删除此诊断记录</el-button>
@@ -116,9 +132,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
-  Picture, Warning, CircleCheck, InfoFilled,
+  Picture, Warning, CircleCheck, InfoFilled, Download,
 } from '@element-plus/icons-vue'
 import ContentHeader from '@/components/layout/ContentHeader.vue'
+import DiagnosisFeedback from '@/components/feedback/DiagnosisFeedback.vue'
 import { useDiagnosisStore } from '@/stores/diagnosis'
 
 const route = useRoute()
@@ -207,6 +224,10 @@ const saveNotes = async () => {
   } finally {
     savingNotes.value = false
   }
+}
+
+const exportReport = () => {
+  router.push({ name: 'reportPreview', params: { diagnosisId: record.value.id } })
 }
 
 const confirmDelete = async () => {
@@ -418,6 +439,11 @@ const confirmDelete = async () => {
     color: $text-tertiary;
     font-style: italic;
   }
+}
+
+.report-section {
+  display: flex;
+  justify-content: center;
 }
 
 .danger-zone {

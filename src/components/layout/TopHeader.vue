@@ -1,9 +1,10 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { ElDropdown, ElDropdownMenu, ElDropdownItem, ElAvatar, ElIcon } from 'element-plus'
-import { Menu, User, SwitchButton, HomeFilled } from '@element-plus/icons-vue'
+import { useNotificationStore } from '@/stores/notification'
+import { ElDropdown, ElDropdownMenu, ElDropdownItem, ElAvatar, ElIcon, ElBadge } from 'element-plus'
+import { Menu, User, SwitchButton, Bell } from '@element-plus/icons-vue'
 
 const props = defineProps({
   collapsed: Boolean,
@@ -14,8 +15,13 @@ const emit = defineEmits(['toggle-sidebar'])
 
 const router = useRouter()
 const userStore = useUserStore()
+const notificationStore = useNotificationStore()
 
 const username = computed(() => userStore.user.username || '用户')
+
+onMounted(() => {
+  notificationStore.fetchUnreadCount()
+})
 
 const handleCommand = (command) => {
   if (command === 'logout') {
@@ -26,6 +32,10 @@ const handleCommand = (command) => {
 
 const goHome = () => {
   router.push('/workbench')
+}
+
+const goNotifications = () => {
+  router.push('/notifications')
 }
 </script>
 
@@ -43,6 +53,13 @@ const goHome = () => {
     </div>
 
     <div class="header-right">
+      <!-- 通知铃铛 -->
+      <div class="notification-bell" @click="goNotifications">
+        <el-badge :value="notificationStore.unreadCount" :hidden="!notificationStore.hasUnread" :max="99">
+          <el-icon :size="20"><Bell /></el-icon>
+        </el-badge>
+      </div>
+
       <el-dropdown trigger="click" @command="handleCommand">
         <div class="user-area">
           <el-avatar :size="32" class="user-avatar">
@@ -122,6 +139,21 @@ const goHome = () => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.notification-bell {
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  color: $text-secondary;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+
+  &:hover {
+    color: $primary;
+    background: $primary-light;
+  }
 }
 
 .user-area {

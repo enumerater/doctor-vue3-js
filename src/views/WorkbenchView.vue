@@ -20,7 +20,7 @@ import RecentActivity from '@/components/workbench/RecentActivity.vue'
 
       <!-- Feature Grid -->
       <div class="section">
-        <h2 class="section-title">功能导航</h2>
+        <h2 class="section-title">更多功能</h2>
         <FeatureGrid />
       </div>
 

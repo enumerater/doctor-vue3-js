@@ -8,8 +8,10 @@ import {
   DataAnalysis,
   Reading,
   OfficeBuilding,
-  Clock,
+  Bell,
+  Setting,
 } from '@element-plus/icons-vue'
+import { useNotificationStore } from '@/stores/notification'
 
 const props = defineProps({
   collapsed: Boolean,
@@ -17,15 +19,17 @@ const props = defineProps({
 
 const route = useRoute()
 const router = useRouter()
+const notificationStore = useNotificationStore()
 
 const menuItems = [
-  { index: '/workbench', icon: HomeFilled, label: '工作台' },
+  { index: '/workbench', icon: HomeFilled, label: '首页' },
   { index: '/chat', icon: ChatDotRound, label: 'AI 对话' },
   { index: '/vision', icon: Camera, label: '图像诊断' },
-  { index: '/diagnosis', icon: Clock, label: '诊断历史' },
   { index: '/dashboard', icon: DataAnalysis, label: '数据看板' },
   { index: '/knowledge', icon: Reading, label: '知识库' },
   { index: '/farm', icon: OfficeBuilding, label: '我的农场' },
+  { index: '/notifications', icon: Bell, label: '通知中心', badge: true },
+  { index: '/admin', icon: Setting, label: '管理后台' },
 ]
 
 const activeMenu = computed(() => {
@@ -56,7 +60,15 @@ const handleSelect = (index) => {
         :key="item.index"
         :index="item.index"
       >
-        <el-icon><component :is="item.icon" /></el-icon>
+        <el-badge
+          v-if="item.badge && notificationStore.hasUnread"
+          :value="notificationStore.unreadCount"
+          :max="99"
+          class="nav-badge"
+        >
+          <el-icon><component :is="item.icon" /></el-icon>
+        </el-badge>
+        <el-icon v-else><component :is="item.icon" /></el-icon>
         <template #title>{{ item.label }}</template>
       </el-menu-item>
     </el-menu>
@@ -122,6 +134,12 @@ const handleSelect = (index) => {
       padding: 0 !important;
       justify-content: center;
     }
+  }
+}
+
+.nav-badge {
+  :deep(.el-badge__content) {
+    transform: scale(0.8) translateY(-4px);
   }
 }
 </style>

@@ -455,3 +455,51 @@ export const getSeasonalRisks = (month) =>
     { url: '/knowledge/seasonal-risks', method: 'get', params: { month } },
     mockSeasonalRisks,
   )
+
+// ====== 管理端接口 ======
+
+// 获取所有病害列表（支持搜索、分页、按作物/分类筛选）
+export const getDiseaseList = (params = {}) =>
+  safeRequest({ url: '/knowledge/diseases', method: 'get', params }, () => {
+    let allDiseases = []
+    for (const diseases of Object.values(diseaseDatabase)) {
+      allDiseases = allDiseases.concat(diseases)
+    }
+    if (params.keyword) {
+      const kw = params.keyword
+      allDiseases = allDiseases.filter(
+        (d) => d.name.includes(kw) || d.cropName.includes(kw) || d.category.includes(kw),
+      )
+    }
+    if (params.cropName) {
+      allDiseases = allDiseases.filter((d) => d.cropName === params.cropName)
+    }
+    if (params.category) {
+      allDiseases = allDiseases.filter((d) => d.category === params.category)
+    }
+    const total = allDiseases.length
+    const page = params.page || 1
+    const pageSize = params.pageSize || 20
+    const list = allDiseases.slice((page - 1) * pageSize, page * pageSize)
+    return { list, total }
+  })
+
+// 新增病害
+export const createDisease = (data) =>
+  safeRequest({ url: '/knowledge/disease', method: 'post', data }, () => ({
+    id: String(Date.now()),
+    ...data,
+    createdAt: new Date().toISOString(),
+  }))
+
+// 更新病害
+export const updateDisease = (id, data) =>
+  safeRequest({ url: `/knowledge/disease/${id}`, method: 'put', data }, () => ({
+    id,
+    ...data,
+    updatedAt: new Date().toISOString(),
+  }))
+
+// 删除病害
+export const deleteDisease = (id) =>
+  safeRequest({ url: `/knowledge/disease/${id}`, method: 'delete' }, () => true)

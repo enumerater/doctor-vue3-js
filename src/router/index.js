@@ -21,7 +21,7 @@ const router = createRouter({
           path: 'workbench',
           name: 'workbench',
           component: () => import('@/views/WorkbenchView.vue'),
-          meta: { title: '工作台' },
+          meta: { title: '首页' },
         },
 
         // ====== 对话 ======
@@ -62,18 +62,24 @@ const router = createRouter({
           meta: { title: '智能诊断' },
         },
 
-        // ====== 诊断历史 ======
+        // ====== 诊断历史（已合并到图像诊断页） ======
         {
           path: 'diagnosis',
-          name: 'diagnosis',
-          component: () => import('@/views/diagnosis/DiagnosisIndex.vue'),
-          meta: { title: '诊断历史' },
+          redirect: '/vision',
         },
         {
           path: 'diagnosis/:diagnosisId',
           name: 'diagnosisDetail',
           component: () => import('@/views/diagnosis/DiagnosisDetail.vue'),
           meta: { title: '诊断详情' },
+        },
+
+        // ====== 报告预览 ======
+        {
+          path: 'report/:diagnosisId',
+          name: 'reportPreview',
+          component: () => import('@/views/report/ReportPreview.vue'),
+          meta: { title: '诊断报告' },
         },
 
         // ====== 数据看板（重定向到独立路由） ======
@@ -145,6 +151,14 @@ const router = createRouter({
           component: () => import('@/views/farm/PlotEdit.vue'),
           meta: { title: '编辑地块' },
         },
+
+        // ====== 通知中心 ======
+        {
+          path: 'notifications',
+          name: 'notifications',
+          component: () => import('@/views/notification/NotificationIndex.vue'),
+          meta: { title: '通知中心' },
+        },
       ],
     },
 
@@ -154,6 +168,39 @@ const router = createRouter({
       name: 'dashboard',
       component: () => import('@/views/DataVision.vue'),
       meta: { title: '数据看板', noLayout: true },
+    },
+
+    // ====== 管理后台 ======
+    {
+      path: '/admin',
+      component: () => import('@/views/admin/AdminLayout.vue'),
+      meta: { title: '管理后台', requiresAdmin: true },
+      children: [
+        {
+          path: '',
+          name: 'adminDashboard',
+          component: () => import('@/views/admin/AdminDashboard.vue'),
+          meta: { title: '系统概览' },
+        },
+        {
+          path: 'users',
+          name: 'adminUsers',
+          component: () => import('@/views/admin/AdminUsers.vue'),
+          meta: { title: '用户管理' },
+        },
+        {
+          path: 'knowledge',
+          name: 'adminKnowledge',
+          component: () => import('@/views/admin/AdminKnowledge.vue'),
+          meta: { title: '知识库管理' },
+        },
+        {
+          path: 'feedback',
+          name: 'adminFeedback',
+          component: () => import('@/views/admin/AdminFeedback.vue'),
+          meta: { title: '反馈审核' },
+        },
+      ],
     },
 
     // 兼容旧路由：重定向到新路径

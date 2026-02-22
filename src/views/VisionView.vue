@@ -1,7 +1,28 @@
 <template>
   <div class="disease-detection-container">
-    <!-- Core content area -->
-    <main class="main-content">
+    <!-- Tab navigation -->
+    <div class="vision-tabs">
+      <div
+        class="tab-item"
+        :class="{ active: activeTab === 'detect' }"
+        @click="activeTab = 'detect'"
+      >
+        <el-icon :size="16"><Camera /></el-icon>
+        拍照检测
+      </div>
+      <div
+        class="tab-item"
+        :class="{ active: activeTab === 'history' }"
+        @click="switchToHistory"
+      >
+        <el-icon :size="16"><Clock /></el-icon>
+        检测记录
+        <span v-if="diagnosisStore.totalCount > 0" class="tab-count">{{ diagnosisStore.totalCount }}</span>
+      </div>
+    </div>
+
+    <!-- Detection tab -->
+    <main class="main-content" v-show="activeTab === 'detect'">
       <!-- Upload section -->
       <section class="upload-section">
         <div class="upload-card">
@@ -139,6 +160,85 @@
       </section>
     </main>
 
+    <!-- History tab -->
+    <div class="history-content" v-show="activeTab === 'history'">
+      <!-- Stats bar -->
+      <div class="stats-bar">
+        <div class="stat-item">
+          <span class="stat-value">{{ diagnosisStore.totalCount }}</span>
+          <span class="stat-label">总诊断</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-value warn">{{ diagnosisStore.diseasedCount }}</span>
+          <span class="stat-label">不健康</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-value safe">{{ diagnosisStore.healthyCount }}</span>
+          <span class="stat-label">健康</span>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <el-select
+          v-model="diagnosisStore.filters.cropType"
+          placeholder="全部作物"
+          clearable
+          size="small"
+          class="filter-select"
+        >
+          <el-option
+            v-for="crop in diagnosisStore.cropTypes"
+            :key="crop"
+            :label="crop"
+            :value="crop"
+          />
+        </el-select>
+
+        <div class="filter-tabs">
+          <span
+            class="tab-filter"
+            :class="{ active: diagnosisStore.filters.resultType === '' }"
+            @click="diagnosisStore.setFilter('resultType', '')"
+          >全部</span>
+          <span
+            class="tab-filter"
+            :class="{ active: diagnosisStore.filters.resultType === '不健康作物' }"
+            @click="diagnosisStore.setFilter('resultType', '不健康作物')"
+          >不健康</span>
+          <span
+            class="tab-filter"
+            :class="{ active: diagnosisStore.filters.resultType === '健康作物' }"
+            @click="diagnosisStore.setFilter('resultType', '健康作物')"
+          >健康</span>
+        </div>
+      </div>
+
+      <!-- Record list -->
+      <div class="diagnosis-list" v-if="diagnosisStore.filteredRecords.length > 0">
+        <DiagnosisCard
+          v-for="record in diagnosisStore.filteredRecords"
+          :key="record.id"
+          :record="record"
+          @click="goDetail(record)"
+        />
+      </div>
+
+      <!-- Loading -->
+      <div v-else-if="diagnosisStore.loading" v-loading="true" class="loading-center"></div>
+
+      <!-- Empty state -->
+      <div v-else class="empty-state">
+        <el-empty description="暂无诊断记录">
+          <el-button type="primary" @click="activeTab = 'detect'">
+            开始第一次诊断
+          </el-button>
+        </el-empty>
+      </div>
+    </div>
+
     <!-- Crop selection dialog -->
     <el-dialog
       v-model="showCropSelect"
@@ -181,9 +281,10 @@ import { useSidebarStore } from '@/stores/sidebar'
 import { ElMessage } from 'element-plus'
 import {
   Upload, UploadFilled, Close, Loading, Document,
-  InfoFilled, CircleCheck, Warning, Promotion
+  InfoFilled, CircleCheck, Warning, Promotion, Camera, Clock
 } from '@element-plus/icons-vue'
 import AgentTransferPopup from '@/components/AgentTransferPopup.vue'
+import DiagnosisCard from '@/components/diagnosis/DiagnosisCard.vue'
 
 // Router instance
 const router = useRouter()
@@ -200,6 +301,7 @@ const showCropSelect = ref(false)
 const selectedCrop = ref('')
 const selectedFile = ref(null)
 const resultText = ref('') // raw JSON string from backend
+const activeTab = ref('detect')
 
 // Async task related
 const detectingTaskId = ref(null)
@@ -568,6 +670,20 @@ watch(
   },
 )
 
+// History tab related
+const historyLoaded = ref(false)
+const switchToHistory = async () => {
+  activeTab.value = 'history'
+  if (!historyLoaded.value) {
+    await Promise.all([diagnosisStore.fetchRecords(), diagnosisStore.fetchStats()])
+    historyLoaded.value = true
+  }
+}
+
+const goDetail = (record) => {
+  router.push({ name: 'diagnosisDetail', params: { diagnosisId: record.id } })
+}
+
 // Restore state on mount
 onMounted(() => {
   restoreFromStore()
@@ -586,6 +702,68 @@ onBeforeUnmount(() => {
   font-family: $font-family;
   color: $text-primary;
   position: relative;
+}
+
+// Tab navigation
+.vision-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 16px 24px 0;
+  max-width: 1100px;
+  margin: 0 auto;
+
+  @include mobile {
+    padding: 12px 16px 0;
+  }
+
+  .tab-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: $radius-md $radius-md 0 0;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    color: $text-secondary;
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: none;
+    transition: $transition;
+    position: relative;
+
+    &:hover {
+      color: $primary;
+      background: rgba($primary, 0.04);
+    }
+
+    &.active {
+      color: $primary;
+      font-weight: 600;
+      background: $bg-card;
+      border-color: $border;
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: $bg-card;
+      }
+    }
+
+    .tab-count {
+      background: $primary;
+      color: #fff;
+      font-size: 11px;
+      padding: 0 6px;
+      border-radius: 10px;
+      font-weight: 600;
+      line-height: 18px;
+    }
+  }
 }
 
 // Main content area
@@ -1061,5 +1239,125 @@ onBeforeUnmount(() => {
       font-size: 1.05rem !important;
     }
   }
+}
+
+// History tab styles
+.history-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 2rem;
+
+  @include mobile {
+    padding: 0.75rem 1rem 1.5rem;
+  }
+}
+
+.stats-bar {
+  display: flex;
+  align-items: center;
+  background: $bg-card;
+  border-radius: $radius-md;
+  border: 1px solid $border;
+  padding: 16px 0;
+  margin-bottom: 16px;
+}
+
+.stat-item {
+  flex: 1;
+  text-align: center;
+}
+
+.stat-value {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  color: $primary;
+
+  &.warn {
+    color: #e6a23c;
+  }
+
+  &.safe {
+    color: #67c23a;
+  }
+}
+
+.stat-label {
+  display: block;
+  font-size: 12px;
+  color: $text-tertiary;
+  margin-top: 2px;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 32px;
+  background: $border;
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  width: 120px;
+
+  @include mobile {
+    width: 100px;
+  }
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  background: $bg-main;
+  border-radius: 6px;
+  padding: 2px;
+  border: 1px solid $border;
+
+  @include mobile {
+    margin-left: 0;
+  }
+
+  .tab-filter {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: $transition-fast;
+    color: $text-secondary;
+
+    &.active {
+      background: $primary;
+      color: #fff;
+      font-weight: 500;
+    }
+
+    &:hover:not(.active) {
+      color: $primary;
+    }
+  }
+}
+
+.diagnosis-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.loading-center {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0;
+  min-height: 120px;
+}
+
+.empty-state {
+  padding: 40px 0;
 }
 </style>
