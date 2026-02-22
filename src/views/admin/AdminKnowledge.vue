@@ -304,13 +304,13 @@ const resetForm = () => {
 }
 
 const categoryTagType = (cat) => {
-  const map = { 真菌: '', 细菌: 'warning', 病毒: 'danger', 虫害: 'success', 生理性: 'info' }
-  return map[cat] || ''
+  const map = { 真菌: 'primary', 细菌: 'warning', 病毒: 'danger', 虫害: 'success', 生理性: 'info' }
+  return map[cat] || 'info'
 }
 
 const severityTagType = (sev) => {
   const map = { 轻: 'success', 中: 'warning', 重: 'danger' }
-  return map[sev] || ''
+  return map[sev] || 'info'
 }
 </script>
 

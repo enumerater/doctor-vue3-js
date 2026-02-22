@@ -15,12 +15,12 @@
       <!-- 筛选栏 -->
       <div class="filter-bar">
         <el-radio-group v-model="filterType" size="small" @change="loadNotifications">
-          <el-radio-button label="">全部</el-radio-button>
-          <el-radio-button label="disease_alert">病害预警</el-radio-button>
-          <el-radio-button label="treatment_remind">施药提醒</el-radio-button>
-          <el-radio-button label="safety_interval">安全间隔</el-radio-button>
-          <el-radio-button label="weather_alert">天气预警</el-radio-button>
-          <el-radio-button label="system">系统通知</el-radio-button>
+          <el-radio-button value="">全部</el-radio-button>
+          <el-radio-button value="disease_alert">病害预警</el-radio-button>
+          <el-radio-button value="treatment_remind">施药提醒</el-radio-button>
+          <el-radio-button value="safety_interval">安全间隔</el-radio-button>
+          <el-radio-button value="weather_alert">天气预警</el-radio-button>
+          <el-radio-button value="system">系统通知</el-radio-button>
         </el-radio-group>
       </div>
 
