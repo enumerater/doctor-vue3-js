@@ -1,14 +1,5 @@
 <template>
-  <el-drawer v-model="visible" direction="btt" size="70%" :show-close="false" @close="onClose">
-    <template #header>
-      <div class="manager-header">
-        <h3>配置管理</h3>
-        <el-icon :size="20" class="close-icon" @click="onClose">
-          <Close />
-        </el-icon>
-      </div>
-    </template>
-
+  <el-dialog v-model="visible" title="配置管理" width="520px" :close-on-click-modal="true" @close="onClose">
     <div class="config-manager">
       <!-- 配置列表 -->
       <div class="config-list">
@@ -70,14 +61,14 @@
         <el-button type="primary" @click="confirmCreate">确定</el-button>
       </template>
     </el-dialog>
-  </el-drawer>
+  </el-dialog>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useAgentConfigStore } from '@/stores/agentConfig'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Close, StarFilled, Star, Edit, CopyDocument, Delete, Plus } from '@element-plus/icons-vue'
+import { StarFilled, Star, Edit, CopyDocument, Delete, Plus } from '@element-plus/icons-vue'
 
 const props = defineProps({
   show: {
@@ -285,37 +276,12 @@ const confirmCreate = async () => {
 @use "sass:color";
 @use '@/styles/variables.scss' as *;
 
-.manager-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-
-  h3 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: $text-primary;
-  }
-
-  .close-icon {
-    cursor: pointer;
-    color: $text-secondary;
-    transition: $transition-fast;
-
-    &:hover {
-      color: $text-primary;
-    }
-  }
-}
-
 .config-manager {
   display: flex;
   flex-direction: column;
-  height: 100%;
 
   .config-list {
-    flex: 1;
+    max-height: 400px;
     overflow-y: auto;
     padding: 8px 0;
 
