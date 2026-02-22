@@ -65,25 +65,70 @@
       </section>
 
       <!-- Result display -->
-      <section class="result-section" v-if="resultText">
+      <section class="result-section" v-if="parsedResult">
         <div class="result-card">
           <h2 class="card-title">
             <el-icon :size="20"><Document /></el-icon>
             识别结果
           </h2>
 
-          <!-- Crop type badge -->
-          <div class="result-meta" v-if="selectedCrop">
-            <el-tag type="success" effect="light" size="small">{{ selectedCrop }}</el-tag>
+          <!-- Result status banner -->
+          <div class="result-banner" :class="resultBannerClass">
+            <div class="banner-icon">
+              <el-icon :size="36">
+                <CircleCheck v-if="parsedResult.type === '健康作物'" />
+                <Warning v-else-if="parsedResult.type === '不健康作物'" />
+                <InfoFilled v-else />
+              </el-icon>
+            </div>
+            <div class="banner-content">
+              <div class="banner-type">{{ parsedResult.type }}</div>
+              <div class="banner-crop" v-if="selectedCrop">{{ selectedCrop }}</div>
+            </div>
           </div>
 
-          <!-- Markdown rendered result -->
-          <div class="markdown-content" v-html="renderedMarkdown"></div>
+          <!-- Detail section for unhealthy crops -->
+          <div v-if="parsedResult.type === '不健康作物' && parsedResult.detail" class="detail-block disease-detail">
+            <div class="detail-header">
+              <el-icon :size="18" color="#e6a23c"><Warning /></el-icon>
+              <h3>病害信息</h3>
+            </div>
+            <div class="detail-body">
+              <div class="disease-name">{{ diseaseName }}</div>
+              <div class="disease-desc" v-if="diseaseDesc">{{ diseaseDesc }}</div>
+            </div>
+          </div>
 
+          <!-- Healthy message -->
+          <div v-if="parsedResult.type === '健康作物'" class="detail-block healthy-detail">
+            <div class="detail-header">
+              <el-icon :size="18" color="#67c23a"><CircleCheck /></el-icon>
+              <h3>健康状态</h3>
+            </div>
+            <div class="detail-body">
+              <p class="healthy-msg">该作物生长状态良好，未发现明显病害症状。建议继续保持当前管理方式，定期巡检。</p>
+            </div>
+          </div>
+
+          <!-- Non-crop message -->
+          <div v-if="parsedResult.type === '非作物'" class="detail-block noncrop-detail">
+            <div class="detail-header">
+              <el-icon :size="18" color="#909399"><InfoFilled /></el-icon>
+              <h3>识别说明</h3>
+            </div>
+            <div class="detail-body">
+              <p class="noncrop-msg">
+                图片主体为<strong>{{ parsedResult.detail || '非作物内容' }}</strong>，非农作物图像，请上传农作物照片进行病害检测。
+              </p>
+            </div>
+          </div>
+
+          <!-- Action buttons -->
           <el-button
             type="primary"
             size="large"
             class="agent-analyze-btn"
+            v-if="parsedResult.type === '不健康作物'"
             @click="showAgentPopup = true"
           >
             <el-icon><Promotion /></el-icon>
@@ -120,7 +165,7 @@
 
     <!-- Agent analysis popup -->
     <AgentTransferPopup v-model:visible="showAgentPopup" source="vision" :cropType="selectedCrop"
-      :diseaseName="''" :severity="''"
+      :diseaseName="diseaseName" :severity="''"
       :confidence="0" :imageUrl="visionStore.currentTask?.imageUrl || ''"
       :thumbnailUrl="uploadedImage" :defaultPrompt="visionAgentPrompt" @confirm="handleAgentTransferConfirm" />
   </div>
@@ -133,19 +178,12 @@ import { useRouter } from 'vue-router'
 import { useVisionStore } from '@/stores/vision'
 import { useDiagnosisStore } from '@/stores/diagnosis'
 import { useSidebarStore } from '@/stores/sidebar'
-import { marked } from 'marked'
 import { ElMessage } from 'element-plus'
 import {
   Upload, UploadFilled, Close, Loading, Document,
-  Promotion
+  InfoFilled, CircleCheck, Warning, Promotion
 } from '@element-plus/icons-vue'
 import AgentTransferPopup from '@/components/AgentTransferPopup.vue'
-
-// Configure marked
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-})
 
 // Router instance
 const router = useRouter()
@@ -161,7 +199,7 @@ const isDetecting = ref(false)
 const showCropSelect = ref(false)
 const selectedCrop = ref('')
 const selectedFile = ref(null)
-const resultText = ref('')
+const resultText = ref('') // raw JSON string from backend
 
 // Async task related
 const detectingTaskId = ref(null)
@@ -169,6 +207,52 @@ const detectingStartTime = ref(null)
 const detectingElapsedTime = ref(0)
 const detectingTimer = ref(null)
 const showAgentPopup = ref(false)
+
+// Parse result JSON: { type, detail }
+const parsedResult = computed(() => {
+  if (!resultText.value) return null
+  try {
+    const data = typeof resultText.value === 'string' ? JSON.parse(resultText.value) : resultText.value
+    if (data && data.type) return data
+    return null
+  } catch {
+    return null
+  }
+})
+
+// Extract disease name and description from detail (format: "病害名称：判断依据")
+const diseaseName = computed(() => {
+  const detail = parsedResult.value?.detail
+  if (!detail) return ''
+  const idx = detail.indexOf('：')
+  if (idx === -1) {
+    const idx2 = detail.indexOf(':')
+    return idx2 === -1 ? detail : detail.substring(0, idx2)
+  }
+  return detail.substring(0, idx)
+})
+
+const diseaseDesc = computed(() => {
+  const detail = parsedResult.value?.detail
+  if (!detail) return ''
+  const idx = detail.indexOf('：')
+  if (idx === -1) {
+    const idx2 = detail.indexOf(':')
+    return idx2 === -1 ? '' : detail.substring(idx2 + 1).trim()
+  }
+  return detail.substring(idx + 1).trim()
+})
+
+// Banner class based on result type
+const resultBannerClass = computed(() => {
+  if (!parsedResult.value) return ''
+  switch (parsedResult.value.type) {
+    case '健康作物': return 'banner-healthy'
+    case '不健康作物': return 'banner-disease'
+    case '非作物': return 'banner-noncrop'
+    default: return ''
+  }
+})
 
 // Restore state from store
 const restoreFromStore = () => {
@@ -184,7 +268,7 @@ const restoreFromStore = () => {
     }
 
     if (task.result) {
-      resultText.value = typeof task.result === 'string' ? task.result : JSON.stringify(task.result)
+      resultText.value = task.result
     }
 
     if (task.status === 'detecting') {
@@ -204,20 +288,15 @@ const restoreFromStore = () => {
   }
 }
 
-// Computed: render Markdown to HTML
-const renderedMarkdown = computed(() => {
-  if (!resultText.value) return ''
-  return marked.parse(resultText.value)
-})
-
 // Agent analysis default prompt
 const visionAgentPrompt = computed(() => {
-  if (resultText.value) {
-    const truncated =
-      resultText.value.length > 500
-        ? resultText.value.substring(0, 500) + '...'
-        : resultText.value
-    return `我对${selectedCrop.value || '作物'}进行了图片识别，以下是识别结果：\n\n${truncated}\n\n请帮我进行深入分析，给出详细的防治方案和田间管理建议。`
+  const r = parsedResult.value
+  if (r && r.type === '不健康作物' && r.detail) {
+    return (
+      `我在${selectedCrop.value || '作物'}上发现了${diseaseName.value}，` +
+      `判断依据：${diseaseDesc.value || r.detail}。` +
+      `请帮我进行深入分析，给出详细的防治方案和田间管理建议。`
+    )
   }
   return ''
 })
@@ -357,13 +436,26 @@ const formatTime = (seconds) => {
 }
 
 // Save diagnosis record
-const saveDiagnosisRecord = (text) => {
+const saveDiagnosisRecord = (rawResult) => {
   const task = visionStore.currentTask
   if (!task) return
+
+  // Parse to extract type for record-level field
+  let resultType = ''
+  let detail = ''
+  try {
+    const parsed = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult
+    resultType = parsed.type || ''
+    detail = parsed.detail || ''
+  } catch {
+    // ignore parse error
+  }
+
   diagnosisStore.createDiagnosis({
     imageUrl: task.imageUrl,
     cropType: task.cropType || selectedCrop.value,
-    result: text,
+    resultType,
+    result: rawResult,
     status: 'completed',
     createdAt: new Date().toISOString(),
     elapsedTime: task.elapsedTime || 0,
@@ -411,13 +503,20 @@ const detectDisease = async () => {
       return
     }
 
-    // Treat result as text string directly
-    const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data)
-    resultText.value = text
-    visionStore.completeTask(text)
-    saveDiagnosisRecord(text)
+    // Store raw result (JSON string from backend)
+    const raw = typeof res.data === 'object' ? JSON.stringify(res.data) : res.data
+    resultText.value = raw
+    visionStore.completeTask(raw)
+    saveDiagnosisRecord(raw)
 
     ElMessage.success('识别完成！结果已更新')
+
+    // Auto-open Agent popup for diseased crops
+    if (parsedResult.value && parsedResult.value.type === '不健康作物') {
+      setTimeout(() => {
+        showAgentPopup.value = true
+      }, 1500)
+    }
 
     // Scroll to results
     setTimeout(() => {
@@ -699,124 +798,140 @@ onBeforeUnmount(() => {
 
 // Result section styles
 .result-section {
-  .result-meta {
-    margin-bottom: 1rem;
+  // Result banner
+  .result-banner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    border-radius: $radius-md;
+    margin-bottom: 1.25rem;
+    animation: fadeInUp 0.4s ease;
+
+    .banner-icon {
+      flex-shrink: 0;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      @include flex-center;
+      font-size: 1.5rem;
+    }
+
+    .banner-content {
+      flex: 1;
+    }
+
+    .banner-type {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .banner-crop {
+      font-size: 0.85rem;
+      opacity: 0.8;
+    }
+
+    &.banner-healthy {
+      background: linear-gradient(135deg, rgba(103, 194, 58, 0.1), rgba(103, 194, 58, 0.05));
+      border: 1px solid rgba(103, 194, 58, 0.3);
+      color: #529b2e;
+
+      .banner-icon {
+        background: rgba(103, 194, 58, 0.15);
+        color: #67c23a;
+      }
+    }
+
+    &.banner-disease {
+      background: linear-gradient(135deg, rgba(230, 162, 60, 0.1), rgba(230, 162, 60, 0.05));
+      border: 1px solid rgba(230, 162, 60, 0.3);
+      color: #b88230;
+
+      .banner-icon {
+        background: rgba(230, 162, 60, 0.15);
+        color: #e6a23c;
+      }
+    }
+
+    &.banner-noncrop {
+      background: linear-gradient(135deg, rgba(144, 147, 153, 0.1), rgba(144, 147, 153, 0.05));
+      border: 1px solid rgba(144, 147, 153, 0.3);
+      color: #73767a;
+
+      .banner-icon {
+        background: rgba(144, 147, 153, 0.15);
+        color: #909399;
+      }
+    }
   }
 
-  // Markdown content styles
-  .markdown-content {
-    line-height: 1.8;
-    color: $text-secondary;
-    font-size: 0.95rem;
-    margin-bottom: 2rem;
-    padding: 1.25rem;
+  // Detail blocks
+  .detail-block {
     background-color: $bg-main;
     border-radius: $radius-md;
-    border-left: 4px solid $primary;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    animation: fadeInUp 0.5s ease;
 
-    :deep(h1),
-    :deep(h2),
-    :deep(h3),
-    :deep(h4),
-    :deep(h5),
-    :deep(h6) {
-      color: $primary;
-      margin: 1.2rem 0 0.8rem;
-      font-weight: 600;
+    .detail-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0.75rem;
 
-      &:first-child {
-        margin-top: 0;
-      }
-    }
-
-    :deep(h1) { font-size: 1.3rem; }
-    :deep(h2) { font-size: 1.15rem; }
-    :deep(h3) { font-size: 1.05rem; }
-
-    :deep(p) {
-      margin: 0.8rem 0;
-      text-align: justify;
-    }
-
-    :deep(ul),
-    :deep(ol) {
-      padding-left: 1.5rem;
-      margin: 0.8rem 0;
-    }
-
-    :deep(li) {
-      margin: 0.4rem 0;
-
-      &::marker {
-        color: $primary;
-      }
-    }
-
-    :deep(strong) {
-      color: $primary;
-      font-weight: 600;
-    }
-
-    :deep(em) {
-      color: $text-primary;
-    }
-
-    :deep(blockquote) {
-      border-left: 3px solid rgba($primary, 0.4);
-      margin: 1rem 0;
-      padding: 0.5rem 1rem;
-      background-color: rgba($primary, 0.03);
-      border-radius: 0 $radius-sm $radius-sm 0;
-      color: $text-secondary;
-    }
-
-    :deep(pre) {
-      background-color: rgba(0, 0, 0, 0.03);
-      padding: 1rem;
-      border-radius: $radius-sm;
-      overflow-x: auto;
-      margin: 1rem 0;
-    }
-
-    :deep(code) {
-      background-color: $primary-light;
-      padding: 0.2rem 0.4rem;
-      border-radius: 4px;
-      color: $primary;
-      font-size: 0.9rem;
-    }
-
-    :deep(pre code) {
-      background: none;
-      padding: 0;
-    }
-
-    :deep(hr) {
-      border: none;
-      border-top: 1px solid $border;
-      margin: 1.2rem 0;
-    }
-
-    :deep(table) {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 1rem 0;
-      font-size: 0.9rem;
-
-      th, td {
-        border: 1px solid $border;
-        padding: 0.5rem 0.75rem;
-        text-align: left;
-      }
-
-      th {
-        background-color: rgba($primary, 0.05);
+      h3 {
+        font-size: 1rem;
         font-weight: 600;
         color: $text-primary;
+        margin: 0;
+      }
+    }
+
+    .detail-body {
+      padding-left: 26px;
+    }
+
+    &.disease-detail {
+      border-left: 4px solid #e6a23c;
+
+      .disease-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #b88230;
+        margin-bottom: 0.5rem;
       }
 
-      tr:nth-child(even) {
-        background-color: rgba(0, 0, 0, 0.02);
+      .disease-desc {
+        font-size: 0.95rem;
+        color: $text-secondary;
+        line-height: 1.6;
+      }
+    }
+
+    &.healthy-detail {
+      border-left: 4px solid #67c23a;
+
+      .healthy-msg {
+        font-size: 0.95rem;
+        color: $text-secondary;
+        line-height: 1.6;
+        margin: 0;
+      }
+    }
+
+    &.noncrop-detail {
+      border-left: 4px solid #909399;
+
+      .noncrop-msg {
+        font-size: 0.95rem;
+        color: $text-secondary;
+        line-height: 1.6;
+        margin: 0;
+
+        strong {
+          color: $text-primary;
+        }
       }
     }
   }
@@ -934,8 +1049,17 @@ onBeforeUnmount(() => {
     padding: 2.5rem 1rem !important;
   }
 
-  .markdown-content {
-    font-size: 0.9rem;
+  .result-banner {
+    padding: 1rem !important;
+
+    .banner-icon {
+      width: 44px !important;
+      height: 44px !important;
+    }
+
+    .banner-type {
+      font-size: 1.05rem !important;
+    }
   }
 }
 </style>

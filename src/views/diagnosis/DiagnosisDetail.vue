@@ -28,12 +28,45 @@
           <label>检测用时</label>
           <span>{{ record.elapsedTime }}秒</span>
         </div>
+        <div class="meta-row" v-if="parsedResult">
+          <label>识别类型</label>
+          <el-tag size="small" :type="resultTagType" effect="dark">{{ parsedResult.type }}</el-tag>
+        </div>
       </div>
 
       <!-- 诊断结果 -->
-      <div v-if="markdownHtml" class="result-section">
+      <div v-if="parsedResult" class="result-section">
         <h3 class="section-title">诊断结果</h3>
-        <div class="markdown-content" v-html="markdownHtml"></div>
+
+        <!-- 不健康作物 -->
+        <div v-if="parsedResult.type === '不健康作物' && parsedResult.detail" class="result-block disease-block">
+          <div class="block-header">
+            <el-icon :size="18" color="#e6a23c"><Warning /></el-icon>
+            <h4>病害信息</h4>
+          </div>
+          <div class="block-body">
+            <div class="disease-name">{{ diseaseName }}</div>
+            <div class="disease-desc" v-if="diseaseDesc">{{ diseaseDesc }}</div>
+          </div>
+        </div>
+
+        <!-- 健康作物 -->
+        <div v-if="parsedResult.type === '健康作物'" class="result-block healthy-block">
+          <div class="block-header">
+            <el-icon :size="18" color="#67c23a"><CircleCheck /></el-icon>
+            <h4>健康状态</h4>
+          </div>
+          <p class="block-msg">该作物生长状态良好，未发现明显病害症状。</p>
+        </div>
+
+        <!-- 非作物 -->
+        <div v-if="parsedResult.type === '非作物'" class="result-block noncrop-block">
+          <div class="block-header">
+            <el-icon :size="18" color="#909399"><InfoFilled /></el-icon>
+            <h4>识别说明</h4>
+          </div>
+          <p class="block-msg">图片主体为<strong>{{ parsedResult.detail || '非作物内容' }}</strong>，非农作物图像。</p>
+        </div>
       </div>
 
       <!-- 个人笔记 -->
@@ -82,8 +115,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { marked } from 'marked'
-import { Picture } from '@element-plus/icons-vue'
+import {
+  Picture, Warning, CircleCheck, InfoFilled,
+} from '@element-plus/icons-vue'
 import ContentHeader from '@/components/layout/ContentHeader.vue'
 import { useDiagnosisStore } from '@/stores/diagnosis'
 
@@ -97,11 +131,49 @@ const savingNotes = ref(false)
 
 const record = computed(() => store.currentRecord)
 
-const markdownHtml = computed(() => {
+// Parse result JSON
+const parsedResult = computed(() => {
   const r = record.value?.result
-  if (!r) return ''
-  const text = typeof r === 'string' ? r : JSON.stringify(r)
-  return marked.parse(text)
+  if (!r) return null
+  try {
+    const data = typeof r === 'string' ? JSON.parse(r) : r
+    if (data && data.type) return data
+    return null
+  } catch {
+    return null
+  }
+})
+
+// Extract disease name and description
+const diseaseName = computed(() => {
+  const detail = parsedResult.value?.detail
+  if (!detail) return ''
+  const idx = detail.indexOf('：')
+  if (idx === -1) {
+    const idx2 = detail.indexOf(':')
+    return idx2 === -1 ? detail : detail.substring(0, idx2)
+  }
+  return detail.substring(0, idx)
+})
+
+const diseaseDesc = computed(() => {
+  const detail = parsedResult.value?.detail
+  if (!detail) return ''
+  const idx = detail.indexOf('：')
+  if (idx === -1) {
+    const idx2 = detail.indexOf(':')
+    return idx2 === -1 ? '' : detail.substring(idx2 + 1).trim()
+  }
+  return detail.substring(idx + 1).trim()
+})
+
+const resultTagType = computed(() => {
+  switch (parsedResult.value?.type) {
+    case '健康作物': return 'success'
+    case '不健康作物': return 'warning'
+    case '非作物': return 'info'
+    default: return 'info'
+  }
 })
 
 onMounted(() => {
@@ -250,80 +322,64 @@ const confirmDelete = async () => {
   padding: 16px;
 }
 
-.markdown-content {
-  line-height: 1.8;
-  color: $text-secondary;
-  font-size: 14px;
-  padding: 12px;
+.result-block {
   background: $bg-main;
   border-radius: $radius-sm;
-  border-left: 4px solid $primary;
+  padding: 12px;
 
-  :deep(h1), :deep(h2), :deep(h3), :deep(h4) {
-    color: $primary;
-    margin: 1rem 0 0.5rem;
-    font-weight: 600;
+  .block-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
 
-    &:first-child {
-      margin-top: 0;
-    }
-  }
-
-  :deep(h1) { font-size: 1.2rem; }
-  :deep(h2) { font-size: 1.1rem; }
-  :deep(h3) { font-size: 1rem; }
-
-  :deep(p) {
-    margin: 0.5rem 0;
-  }
-
-  :deep(ul), :deep(ol) {
-    padding-left: 1.5rem;
-  }
-
-  :deep(li) {
-    margin: 0.3rem 0;
-
-    &::marker {
-      color: $primary;
-    }
-  }
-
-  :deep(strong) {
-    color: $primary;
-  }
-
-  :deep(blockquote) {
-    border-left: 3px solid rgba($primary, 0.4);
-    margin: 0.8rem 0;
-    padding: 0.4rem 0.8rem;
-    background-color: rgba($primary, 0.03);
-    border-radius: 0 $radius-sm $radius-sm 0;
-  }
-
-  :deep(hr) {
-    border: none;
-    border-top: 1px solid $border;
-    margin: 1rem 0;
-  }
-
-  :deep(table) {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 0.8rem 0;
-    font-size: 13px;
-
-    th, td {
-      border: 1px solid $border;
-      padding: 0.4rem 0.6rem;
-      text-align: left;
-    }
-
-    th {
-      background-color: rgba($primary, 0.05);
+    h4 {
+      font-size: 14px;
       font-weight: 600;
       color: $text-primary;
+      margin: 0;
     }
+  }
+
+  .block-body {
+    padding-left: 24px;
+  }
+
+  .block-msg {
+    font-size: 14px;
+    color: $text-secondary;
+    line-height: 1.6;
+    margin: 0;
+    padding-left: 24px;
+
+    strong {
+      color: $text-primary;
+    }
+  }
+
+  &.disease-block {
+    border-left: 4px solid #e6a23c;
+
+    .disease-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #b88230;
+      margin-bottom: 4px;
+    }
+
+    .disease-desc {
+      font-size: 14px;
+      color: $text-secondary;
+      line-height: 1.6;
+    }
+  }
+
+  &.healthy-block {
+    border-left: 4px solid #67c23a;
+  }
+
+  &.noncrop-block {
+    border-left: 4px solid #909399;
   }
 }
 

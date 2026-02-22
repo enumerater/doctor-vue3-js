@@ -8,15 +8,15 @@
         </div>
       </div>
       <div class="card-info">
-        <h3 class="card-title">{{ record.cropType || '未知作物' }}</h3>
-        <span class="card-excerpt">{{ resultExcerpt }}</span>
+        <h3 class="card-title">{{ cardTitle }}</h3>
+        <span class="card-detail" v-if="cardDetail">{{ cardDetail }}</span>
         <span class="card-time">{{ formatTime(record.createdAt) }}</span>
       </div>
       <el-icon class="card-arrow"><ArrowRight /></el-icon>
     </div>
     <div class="card-tags">
       <el-tag size="small" type="success" effect="plain">{{ record.cropType }}</el-tag>
-      <span v-if="record.elapsedTime" class="card-elapsed">{{ record.elapsedTime }}秒</span>
+      <el-tag size="small" :type="typeTagType" effect="dark">{{ parsedType }}</el-tag>
     </div>
   </div>
 </template>
@@ -31,13 +31,57 @@ const props = defineProps({
 
 defineEmits(['click'])
 
-const resultExcerpt = computed(() => {
+// Parse result JSON
+const parsedResult = computed(() => {
   const r = props.record.result
-  if (!r) return '暂无识别结果'
-  const text = typeof r === 'string' ? r : JSON.stringify(r)
-  // Strip markdown symbols for cleaner excerpt
-  const clean = text.replace(/[#*_`~>\[\]()!|]/g, '').replace(/\n+/g, ' ').trim()
-  return clean.length > 50 ? clean.substring(0, 50) + '...' : clean
+  if (!r) return null
+  try {
+    const data = typeof r === 'string' ? JSON.parse(r) : r
+    if (data && data.type) return data
+    return null
+  } catch {
+    return null
+  }
+})
+
+const parsedType = computed(() => parsedResult.value?.type || '未知')
+
+const cardTitle = computed(() => {
+  const r = parsedResult.value
+  if (!r) return props.record.cropType || '未知'
+  if (r.type === '不健康作物' && r.detail) {
+    // Extract disease name before the colon
+    const idx = r.detail.indexOf('：')
+    if (idx !== -1) return r.detail.substring(0, idx)
+    const idx2 = r.detail.indexOf(':')
+    if (idx2 !== -1) return r.detail.substring(0, idx2)
+    return r.detail
+  }
+  if (r.type === '健康作物') return '健康'
+  if (r.type === '非作物') return r.detail || '非作物'
+  return props.record.cropType || '未知'
+})
+
+const cardDetail = computed(() => {
+  const r = parsedResult.value
+  if (!r) return ''
+  if (r.type === '不健康作物' && r.detail) {
+    const idx = r.detail.indexOf('：')
+    if (idx !== -1) return r.detail.substring(idx + 1).trim()
+    const idx2 = r.detail.indexOf(':')
+    if (idx2 !== -1) return r.detail.substring(idx2 + 1).trim()
+    return ''
+  }
+  return ''
+})
+
+const typeTagType = computed(() => {
+  switch (parsedResult.value?.type) {
+    case '健康作物': return 'success'
+    case '不健康作物': return 'warning'
+    case '非作物': return 'info'
+    default: return 'info'
+  }
 })
 
 const formatTime = (dateStr) => {
@@ -119,7 +163,7 @@ const formatTime = (dateStr) => {
   text-overflow: ellipsis;
 }
 
-.card-excerpt {
+.card-detail {
   font-size: 12px;
   color: $text-secondary;
   white-space: nowrap;
@@ -144,11 +188,5 @@ const formatTime = (dateStr) => {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-}
-
-.card-elapsed {
-  margin-left: auto;
-  font-size: 12px;
-  color: $text-tertiary;
 }
 </style>
