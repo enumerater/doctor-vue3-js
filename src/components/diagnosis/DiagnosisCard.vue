@@ -8,24 +8,15 @@
         </div>
       </div>
       <div class="card-info">
-        <h3 class="card-title">{{ record.hasDisease ? record.diseaseName : '健康' }}</h3>
-        <span class="card-crop">{{ record.cropType }}</span>
+        <h3 class="card-title">{{ record.cropType || '未知作物' }}</h3>
+        <span class="card-excerpt">{{ resultExcerpt }}</span>
         <span class="card-time">{{ formatTime(record.createdAt) }}</span>
       </div>
       <el-icon class="card-arrow"><ArrowRight /></el-icon>
     </div>
     <div class="card-tags">
-      <el-tag size="small" type="info" effect="plain">{{ record.cropType }}</el-tag>
-      <el-tag
-        v-if="record.hasDisease"
-        size="small"
-        :type="severityType"
-        effect="dark"
-      >
-        {{ record.severity }}
-      </el-tag>
-      <el-tag v-else size="small" type="success" effect="dark">健康</el-tag>
-      <span class="card-confidence">{{ record.confidence }}%</span>
+      <el-tag size="small" type="success" effect="plain">{{ record.cropType }}</el-tag>
+      <span v-if="record.elapsedTime" class="card-elapsed">{{ record.elapsedTime }}秒</span>
     </div>
   </div>
 </template>
@@ -40,17 +31,13 @@ const props = defineProps({
 
 defineEmits(['click'])
 
-const severityType = computed(() => {
-  switch (props.record.severity) {
-    case '轻微':
-      return 'success'
-    case '中度':
-      return 'warning'
-    case '重度':
-      return 'danger'
-    default:
-      return 'info'
-  }
+const resultExcerpt = computed(() => {
+  const r = props.record.result
+  if (!r) return '暂无识别结果'
+  const text = typeof r === 'string' ? r : JSON.stringify(r)
+  // Strip markdown symbols for cleaner excerpt
+  const clean = text.replace(/[#*_`~>\[\]()!|]/g, '').replace(/\n+/g, ' ').trim()
+  return clean.length > 50 ? clean.substring(0, 50) + '...' : clean
 })
 
 const formatTime = (dateStr) => {
@@ -132,9 +119,13 @@ const formatTime = (dateStr) => {
   text-overflow: ellipsis;
 }
 
-.card-crop {
+.card-excerpt {
   font-size: 12px;
   color: $text-secondary;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
 }
 
 .card-time {
@@ -155,10 +146,9 @@ const formatTime = (dateStr) => {
   flex-wrap: wrap;
 }
 
-.card-confidence {
+.card-elapsed {
   margin-left: auto;
-  font-size: 13px;
-  font-weight: 600;
-  color: $primary;
+  font-size: 12px;
+  color: $text-tertiary;
 }
 </style>

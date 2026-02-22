@@ -24,85 +24,14 @@
           <label>作物类型</label>
           <el-tag size="small" type="success" effect="light">{{ record.cropType }}</el-tag>
         </div>
-        <div class="meta-row">
+        <div class="meta-row" v-if="record.elapsedTime">
           <label>检测用时</label>
           <span>{{ record.elapsedTime }}秒</span>
-        </div>
-        <div class="meta-row" v-if="record.hasDisease">
-          <label>病害名称</label>
-          <span class="disease-name">{{ record.diseaseName }}</span>
-        </div>
-        <div class="meta-row" v-else>
-          <label>健康状态</label>
-          <el-tag size="small" type="success" effect="dark">健康</el-tag>
-        </div>
-        <div class="meta-row" v-if="record.hasDisease">
-          <label>置信度</label>
-          <div class="confidence-bar">
-            <el-progress :percentage="record.confidence" :stroke-width="8" color="#4a9b5e" />
-          </div>
-        </div>
-        <div class="meta-row" v-if="record.hasDisease && record.severity">
-          <label>严重程度</label>
-          <el-tag size="small" :type="severityType" effect="dark">{{ record.severity }}</el-tag>
         </div>
       </div>
 
       <!-- 诊断结果 -->
-      <div class="result-section" v-if="structuredResult">
-        <h3 class="section-title">诊断结果</h3>
-
-        <!-- 健康描述 -->
-        <div v-if="!structuredResult.hasDisease && structuredResult.healthyDesc" class="result-block">
-          <p class="healthy-desc">{{ structuredResult.healthyDesc }}</p>
-        </div>
-
-        <!-- 病害症状 -->
-        <div v-if="structuredResult.hasDisease && structuredResult.symptoms" class="result-block">
-          <div class="block-header">
-            <el-icon :size="18" color="#4299e1"><Warning /></el-icon>
-            <h4>病害症状</h4>
-          </div>
-          <ul class="symptom-list">
-            <li v-for="(s, i) in structuredResult.symptoms" :key="i">{{ s }}</li>
-          </ul>
-        </div>
-
-        <!-- 防治方法 -->
-        <div v-if="structuredResult.hasDisease && structuredResult.prevention" class="result-block">
-          <div class="block-header">
-            <el-icon :size="18" color="#9f7aea"><CircleCheck /></el-icon>
-            <h4>防治方法</h4>
-          </div>
-          <div class="prevention-tabs">
-            <span
-              v-for="tab in preventionTabs"
-              :key="tab.key"
-              class="tab-item"
-              :class="{ active: activeTab === tab.key }"
-              @click="activeTab = tab.key"
-            >{{ tab.name }}</span>
-          </div>
-          <ul class="prevention-list">
-            <li v-for="(m, i) in currentPrevention" :key="i">{{ m }}</li>
-          </ul>
-        </div>
-
-        <!-- 注意事项 -->
-        <div
-          v-if="structuredResult.hasDisease && structuredResult.notes && structuredResult.notes.length"
-          class="result-block"
-        >
-          <div class="block-header">
-            <el-icon :size="18" color="#ed8936"><WarningFilled /></el-icon>
-            <h4>注意事项</h4>
-          </div>
-          <p class="notes-text">{{ structuredResult.notes.join('；') }}</p>
-        </div>
-      </div>
-
-      <!-- Markdown 结果 -->
-      <div v-else-if="markdownHtml" class="result-section">
+      <div v-if="markdownHtml" class="result-section">
         <h3 class="section-title">诊断结果</h3>
         <div class="markdown-content" v-html="markdownHtml"></div>
       </div>
@@ -154,9 +83,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { marked } from 'marked'
-import {
-  Picture, Warning, CircleCheck, WarningFilled,
-} from '@element-plus/icons-vue'
+import { Picture } from '@element-plus/icons-vue'
 import ContentHeader from '@/components/layout/ContentHeader.vue'
 import { useDiagnosisStore } from '@/stores/diagnosis'
 
@@ -167,41 +94,14 @@ const store = useDiagnosisStore()
 const editingNotes = ref(false)
 const notesText = ref('')
 const savingNotes = ref(false)
-const activeTab = ref('agricultural')
-
-const preventionTabs = [
-  { key: 'agricultural', name: '农业防治' },
-  { key: 'chemical', name: '化学防治' },
-  { key: 'biological', name: '生物防治' },
-]
 
 const record = computed(() => store.currentRecord)
 
-const structuredResult = computed(() => {
-  const r = record.value?.result
-  if (r && typeof r === 'object' && r.hasDisease !== undefined) return r
-  return null
-})
-
 const markdownHtml = computed(() => {
   const r = record.value?.result
-  if (typeof r === 'string') return marked.parse(r)
-  return ''
-})
-
-const severityType = computed(() => {
-  switch (record.value?.severity) {
-    case '轻微': return 'success'
-    case '中度': return 'warning'
-    case '重度': return 'danger'
-    default: return 'info'
-  }
-})
-
-const currentPrevention = computed(() => {
-  const p = structuredResult.value?.prevention
-  if (!p) return []
-  return p[activeTab.value] || []
+  if (!r) return ''
+  const text = typeof r === 'string' ? r : JSON.stringify(r)
+  return marked.parse(text)
 })
 
 onMounted(() => {
@@ -334,15 +234,6 @@ const confirmDelete = async () => {
     font-size: 14px;
     color: $text-primary;
   }
-
-  .disease-name {
-    font-weight: 600;
-    color: $primary;
-  }
-
-  .confidence-bar {
-    flex: 1;
-  }
 }
 
 .section-title {
@@ -359,88 +250,28 @@ const confirmDelete = async () => {
   padding: 16px;
 }
 
-.result-block {
-  background: $bg-main;
-  border-radius: $radius-sm;
-  padding: 12px;
-  margin-bottom: 12px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-}
-
-.block-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
-
-  h4 {
-    font-size: 14px;
-    font-weight: 600;
-    color: $text-primary;
-    margin: 0;
-  }
-}
-
-.healthy-desc {
-  color: $text-secondary;
-  line-height: 1.6;
-  margin: 0;
-}
-
-.symptom-list,
-.prevention-list {
-  margin: 0;
-  padding-left: 18px;
-  color: $text-secondary;
-  font-size: 14px;
-  line-height: 1.8;
-
-  li {
-    margin-bottom: 4px;
-  }
-}
-
-.prevention-tabs {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 10px;
-
-  .tab-item {
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: $transition-fast;
-    color: $text-secondary;
-    background: $bg-card;
-
-    &.active {
-      background: $primary-light;
-      color: $primary;
-      font-weight: 500;
-    }
-  }
-}
-
-.notes-text {
-  color: $text-secondary;
-  line-height: 1.6;
-  margin: 0;
-}
-
 .markdown-content {
   line-height: 1.8;
   color: $text-secondary;
   font-size: 14px;
+  padding: 12px;
+  background: $bg-main;
+  border-radius: $radius-sm;
+  border-left: 4px solid $primary;
 
   :deep(h1), :deep(h2), :deep(h3), :deep(h4) {
     color: $primary;
     margin: 1rem 0 0.5rem;
     font-weight: 600;
+
+    &:first-child {
+      margin-top: 0;
+    }
   }
+
+  :deep(h1) { font-size: 1.2rem; }
+  :deep(h2) { font-size: 1.1rem; }
+  :deep(h3) { font-size: 1rem; }
 
   :deep(p) {
     margin: 0.5rem 0;
@@ -450,8 +281,49 @@ const confirmDelete = async () => {
     padding-left: 1.5rem;
   }
 
+  :deep(li) {
+    margin: 0.3rem 0;
+
+    &::marker {
+      color: $primary;
+    }
+  }
+
   :deep(strong) {
     color: $primary;
+  }
+
+  :deep(blockquote) {
+    border-left: 3px solid rgba($primary, 0.4);
+    margin: 0.8rem 0;
+    padding: 0.4rem 0.8rem;
+    background-color: rgba($primary, 0.03);
+    border-radius: 0 $radius-sm $radius-sm 0;
+  }
+
+  :deep(hr) {
+    border: none;
+    border-top: 1px solid $border;
+    margin: 1rem 0;
+  }
+
+  :deep(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.8rem 0;
+    font-size: 13px;
+
+    th, td {
+      border: 1px solid $border;
+      padding: 0.4rem 0.6rem;
+      text-align: left;
+    }
+
+    th {
+      background-color: rgba($primary, 0.05);
+      font-weight: 600;
+      color: $text-primary;
+    }
   }
 }
 

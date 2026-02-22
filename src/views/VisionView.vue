@@ -64,161 +64,26 @@
         </div>
       </section>
 
-      <!-- Structured result display -->
-      <section class="result-section" v-if="structuredResult">
+      <!-- Result display -->
+      <section class="result-section" v-if="resultText">
         <div class="result-card">
           <h2 class="card-title">
             <el-icon :size="20"><Document /></el-icon>
             识别结果
           </h2>
 
-          <!-- Visual results area -->
-          <div class="visual-result">
-            <!-- Basic info card -->
-            <div class="result-card-item basic-info">
-              <div class="info-header">
-                <el-icon :size="20" color="#4a9b5e"><InfoFilled /></el-icon>
-                <h3 class="info-title">{{ structuredResult.hasDisease ? '病害基本信息' : '健康状态' }}</h3>
-              </div>
-              <div class="info-content">
-                <div class="info-row">
-                  <label>作物类型：</label>
-                  <el-tag type="success" effect="light">{{ selectedCrop }}</el-tag>
-                </div>
-
-                <!-- Healthy display -->
-                <div v-if="!structuredResult.hasDisease" class="info-row healthy-info">
-                  <label>健康状态：</label>
-                  <el-tag type="success" effect="dark">
-                    <el-icon><CircleCheck /></el-icon>
-                    健康
-                  </el-tag>
-                </div>
-                <div v-if="!structuredResult.hasDisease" class="info-row">
-                  <label>健康描述：</label>
-                  <span class="value healthy-desc">{{ structuredResult.healthyDesc }}</span>
-                </div>
-
-                <!-- Disease display -->
-                <div v-if="structuredResult.hasDisease" class="info-row">
-                  <label>病害名称：</label>
-                  <span class="value disease-name">{{ structuredResult.diseaseName }}</span>
-                </div>
-                <div v-if="structuredResult.hasDisease" class="info-row confidence-row">
-                  <label>识别置信度：</label>
-                  <div class="confidence-wrapper">
-                    <el-progress
-                      :percentage="structuredResult.confidence"
-                      :stroke-width="10"
-                      color="#4a9b5e"
-                    />
-                  </div>
-                </div>
-                <div v-if="structuredResult.hasDisease" class="info-row">
-                  <label>病害等级：</label>
-                  <el-tag :type="getSeverityType(structuredResult.severity)" effect="dark">
-                    {{ structuredResult.severity }}
-                  </el-tag>
-                </div>
-              </div>
-            </div>
-
-            <!-- Disease symptoms -->
-            <div v-if="structuredResult.hasDisease" class="result-card-item symptoms">
-              <div class="info-header">
-                <el-icon :size="20" color="#4299e1"><Warning /></el-icon>
-                <h3 class="info-title">病害症状</h3>
-              </div>
-              <div class="info-content">
-                <ul class="symptoms-list">
-                  <li v-for="(symptom, index) in structuredResult.symptoms" :key="index">
-                    {{ symptom }}
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <!-- Prevention methods -->
-            <div v-if="structuredResult.hasDisease" class="result-card-item prevention">
-              <div class="info-header">
-                <el-icon :size="20" color="#9f7aea"><CircleCheck /></el-icon>
-                <h3 class="info-title">防治方法</h3>
-              </div>
-              <div class="info-content">
-                <div class="prevention-tabs">
-                  <div class="tab-item" :class="{ active: activePreventionTab === tab.key }"
-                    v-for="tab in preventionTabs" :key="tab.key" @click="activePreventionTab = tab.key">
-                    {{ tab.name }}
-                  </div>
-                </div>
-                <div class="prevention-content">
-                  <ul v-if="activePreventionTab === 'agricultural'">
-                    <li v-for="(method, index) in structuredResult.prevention.agricultural" :key="index">
-                      {{ method }}
-                    </li>
-                  </ul>
-                  <ul v-if="activePreventionTab === 'chemical'">
-                    <li v-for="(method, index) in structuredResult.prevention.chemical" :key="index">
-                      {{ method }}
-                    </li>
-                  </ul>
-                  <ul v-if="activePreventionTab === 'biological'">
-                    <li v-for="(method, index) in structuredResult.prevention.biological" :key="index">
-                      {{ method }}
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <!-- Notes -->
-            <div v-if="structuredResult.hasDisease && structuredResult.notes && structuredResult.notes.length"
-              class="result-card-item notes">
-              <div class="info-header">
-                <el-icon :size="20" color="#ed8936"><WarningFilled /></el-icon>
-                <h3 class="info-title">注意事项</h3>
-              </div>
-              <div class="info-content">
-                <div class="notes-content">
-                  {{ structuredResult.notes.join('；') }}
-                </div>
-              </div>
-            </div>
+          <!-- Crop type badge -->
+          <div class="result-meta" v-if="selectedCrop">
+            <el-tag type="success" effect="light" size="small">{{ selectedCrop }}</el-tag>
           </div>
 
-          <!-- Markdown fallback -->
-          <div class="markdown-fallback" v-if="markdownResult">
-            <div class="fallback-title">详细说明</div>
-            <div class="markdown-content" v-html="renderedMarkdown"></div>
-          </div>
-
-          <el-button
-            type="primary"
-            size="large"
-            class="agent-analyze-btn"
-            v-if="structuredResult?.hasDisease || markdownResult"
-            @click="showAgentPopup = true"
-          >
-            <el-icon><Promotion /></el-icon>
-            发送至Agent深入分析
-          </el-button>
-          <el-button size="large" class="reset-btn" @click="resetAll">重新检测</el-button>
-        </div>
-      </section>
-
-      <!-- Markdown-only result fallback -->
-      <section class="result-section" v-if="markdownResult && !structuredResult">
-        <div class="result-card">
-          <h2 class="card-title">
-            <el-icon :size="20"><Document /></el-icon>
-            识别结果
-          </h2>
+          <!-- Markdown rendered result -->
           <div class="markdown-content" v-html="renderedMarkdown"></div>
+
           <el-button
             type="primary"
             size="large"
             class="agent-analyze-btn"
-            v-if="structuredResult?.hasDisease || markdownResult"
             @click="showAgentPopup = true"
           >
             <el-icon><Promotion /></el-icon>
@@ -229,7 +94,7 @@
       </section>
     </main>
 
-    <!-- Crop selection dialog (replaces custom modal) -->
+    <!-- Crop selection dialog -->
     <el-dialog
       v-model="showCropSelect"
       title="选择作物类型"
@@ -255,8 +120,8 @@
 
     <!-- Agent analysis popup -->
     <AgentTransferPopup v-model:visible="showAgentPopup" source="vision" :cropType="selectedCrop"
-      :diseaseName="structuredResult?.diseaseName || ''" :severity="structuredResult?.severity || ''"
-      :confidence="structuredResult?.confidence || 0" :imageUrl="visionStore.currentTask?.imageUrl || ''"
+      :diseaseName="''" :severity="''"
+      :confidence="0" :imageUrl="visionStore.currentTask?.imageUrl || ''"
       :thumbnailUrl="uploadedImage" :defaultPrompt="visionAgentPrompt" @confirm="handleAgentTransferConfirm" />
   </div>
 </template>
@@ -272,7 +137,6 @@ import { marked } from 'marked'
 import { ElMessage } from 'element-plus'
 import {
   Upload, UploadFilled, Close, Loading, Document,
-  InfoFilled, CircleCheck, Warning, WarningFilled,
   Promotion
 } from '@element-plus/icons-vue'
 import AgentTransferPopup from '@/components/AgentTransferPopup.vue'
@@ -297,16 +161,7 @@ const isDetecting = ref(false)
 const showCropSelect = ref(false)
 const selectedCrop = ref('')
 const selectedFile = ref(null)
-const markdownResult = ref('')
-// Structured result
-const structuredResult = ref(null)
-// Prevention tabs
-const preventionTabs = ref([
-  { key: 'agricultural', name: '农业防治' },
-  { key: 'chemical', name: '化学防治' },
-  { key: 'biological', name: '生物防治' },
-])
-const activePreventionTab = ref('agricultural')
+const resultText = ref('')
 
 // Async task related
 const detectingTaskId = ref(null)
@@ -329,11 +184,7 @@ const restoreFromStore = () => {
     }
 
     if (task.result) {
-      if (task.result.diseaseName && task.result.confidence) {
-        structuredResult.value = task.result
-      } else {
-        markdownResult.value = task.result
-      }
+      resultText.value = typeof task.result === 'string' ? task.result : JSON.stringify(task.result)
     }
 
     if (task.status === 'detecting') {
@@ -355,26 +206,18 @@ const restoreFromStore = () => {
 
 // Computed: render Markdown to HTML
 const renderedMarkdown = computed(() => {
-  if (!markdownResult.value) return ''
-  return marked.parse(markdownResult.value)
+  if (!resultText.value) return ''
+  return marked.parse(resultText.value)
 })
 
 // Agent analysis default prompt
 const visionAgentPrompt = computed(() => {
-  const r = structuredResult.value
-  if (r && r.hasDisease) {
-    return (
-      `我在${selectedCrop.value}上发现了${r.diseaseName}，严重程度为${r.severity}，置信度${r.confidence}%。` +
-      `主要症状：${(r.symptoms || []).join('、')}。` +
-      `请帮我进行深入分析，给出详细的防治方案和田间管理建议。`
-    )
-  }
-  if (markdownResult.value) {
+  if (resultText.value) {
     const truncated =
-      markdownResult.value.length > 500
-        ? markdownResult.value.substring(0, 500) + '...'
-        : markdownResult.value
-    return `请对以下图片识别结果进行深入分析：\n\n${truncated}\n\n请给出详细的防治方案和田间管理建议。`
+      resultText.value.length > 500
+        ? resultText.value.substring(0, 500) + '...'
+        : resultText.value
+    return `我对${selectedCrop.value || '作物'}进行了图片识别，以下是识别结果：\n\n${truncated}\n\n请帮我进行深入分析，给出详细的防治方案和田间管理建议。`
   }
   return ''
 })
@@ -435,8 +278,7 @@ const handleFileUpload = (file) => {
   const reader = new FileReader()
   reader.onload = (e) => {
     uploadedImage.value = e.target.result
-    markdownResult.value = ''
-    structuredResult.value = null
+    resultText.value = ''
   }
   reader.readAsDataURL(file)
 }
@@ -463,8 +305,7 @@ const handleDrop = (e) => {
 // Clear image
 const clearImage = () => {
   uploadedImage.value = ''
-  markdownResult.value = ''
-  structuredResult.value = null
+  resultText.value = ''
   selectedCrop.value = ''
   selectedFile.value = null
   if (fileInput.value) {
@@ -479,20 +320,6 @@ const confirmCropSelect = () => {
 }
 
 import { imageChat } from '@/axios/chat'
-
-// Get severity tag type for Element Plus
-const getSeverityType = (severity) => {
-  switch (severity) {
-    case '轻微':
-      return 'success'
-    case '中度':
-      return 'warning'
-    case '重度':
-      return 'danger'
-    default:
-      return 'info'
-  }
-}
 
 // Start timer
 const startTimer = () => {
@@ -529,19 +356,14 @@ const formatTime = (seconds) => {
   return `${mins}分${secs}秒`
 }
 
-// Disease detection logic
-const saveDiagnosisRecord = (resultData) => {
+// Save diagnosis record
+const saveDiagnosisRecord = (text) => {
   const task = visionStore.currentTask
   if (!task) return
-  const isStructured = resultData && typeof resultData === 'object' && resultData.hasDisease !== undefined
   diagnosisStore.createDiagnosis({
     imageUrl: task.imageUrl,
     cropType: task.cropType || selectedCrop.value,
-    hasDisease: isStructured ? resultData.hasDisease : false,
-    diseaseName: isStructured && resultData.diseaseName ? resultData.diseaseName : '',
-    confidence: isStructured && resultData.confidence ? resultData.confidence : 0,
-    severity: isStructured && resultData.severity ? resultData.severity : '',
-    result: resultData,
+    result: text,
     status: 'completed',
     createdAt: new Date().toISOString(),
     elapsedTime: task.elapsedTime || 0,
@@ -589,33 +411,13 @@ const detectDisease = async () => {
       return
     }
 
-    // Parse structured data
-    let resultData = null
-    try {
-      resultData = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
-      if (resultData.hasDisease !== undefined) {
-        structuredResult.value = resultData
-        visionStore.completeTask(resultData)
-        saveDiagnosisRecord(resultData)
-      } else {
-        markdownResult.value = res.data
-        visionStore.completeTask(res.data)
-        saveDiagnosisRecord(res.data)
-      }
-    } catch (e) {
-      markdownResult.value = res.data
-      visionStore.completeTask(res.data)
-      saveDiagnosisRecord(res.data)
-    }
+    // Treat result as text string directly
+    const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data)
+    resultText.value = text
+    visionStore.completeTask(text)
+    saveDiagnosisRecord(text)
 
     ElMessage.success('识别完成！结果已更新')
-
-    // Auto-open Agent popup for diseases
-    if (structuredResult.value && structuredResult.value.hasDisease) {
-      setTimeout(() => {
-        showAgentPopup.value = true
-      }, 1500)
-    }
 
     // Scroll to results
     setTimeout(() => {
@@ -645,11 +447,9 @@ const detectDisease = async () => {
 // Reset all state
 const resetAll = () => {
   uploadedImage.value = ''
-  markdownResult.value = ''
-  structuredResult.value = null
+  resultText.value = ''
   selectedCrop.value = ''
   selectedFile.value = null
-  activePreventionTab.value = 'agricultural'
   isDetecting.value = false
   detectingTaskId.value = null
   stopTimer()
@@ -687,17 +487,6 @@ onBeforeUnmount(() => {
   font-family: $font-family;
   color: $text-primary;
   position: relative;
-}
-
-// Healthy status styles
-.healthy-info {
-  display: flex;
-  align-items: center;
-}
-
-.healthy-desc {
-  color: $text-secondary;
-  line-height: 1.5;
 }
 
 // Main content area
@@ -910,207 +699,8 @@ onBeforeUnmount(() => {
 
 // Result section styles
 .result-section {
-  .visual-result {
-    margin-bottom: 2rem;
-
-    .result-card-item {
-      background-color: $bg-main;
-      border-radius: $radius-md;
-      padding: 1.25rem;
-      margin-bottom: 1rem;
-      border-left: 4px solid $primary;
-      transition: $transition;
-
-      &:hover {
-        box-shadow: $shadow-sm;
-        transform: translateY(-1px);
-      }
-
-      &.basic-info {
-        border-left-color: $primary;
-      }
-
-      &.symptoms {
-        border-left-color: #4299e1;
-      }
-
-      &.prevention {
-        border-left-color: #9f7aea;
-      }
-
-      &.notes {
-        border-left-color: #ed8936;
-      }
-
-      .info-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 1rem;
-
-        .info-title {
-          font-size: 1rem;
-          font-weight: 600;
-          color: $text-primary;
-          margin: 0;
-        }
-      }
-
-      .info-content {
-        font-size: 0.95rem;
-        color: $text-secondary;
-
-        .info-row {
-          display: flex;
-          align-items: center;
-          margin-bottom: 0.75rem;
-
-          &:last-child {
-            margin-bottom: 0;
-          }
-
-          label {
-            width: 80px;
-            color: $text-primary;
-            font-weight: 500;
-            flex-shrink: 0;
-          }
-
-          @include mobile {
-            label {
-              width: auto;
-              margin-right: 0.75rem;
-              white-space: nowrap;
-            }
-          }
-
-          .value {
-            flex: 1;
-          }
-
-          .disease-name {
-            color: $primary;
-            font-weight: 600;
-            font-size: 1.05rem;
-          }
-        }
-
-        .confidence-row {
-          align-items: flex-start;
-
-          .confidence-wrapper {
-            flex: 1;
-          }
-        }
-
-        @include mobile {
-          .confidence-row {
-            .confidence-wrapper {
-              width: 100%;
-            }
-          }
-        }
-
-        .symptoms-list {
-          margin: 0;
-          padding-left: 1.25rem;
-
-          li {
-            margin-bottom: 0.5rem;
-            position: relative;
-
-            &:last-child {
-              margin-bottom: 0;
-            }
-
-            &::before {
-              content: '\2022';
-              color: #4299e1;
-              font-weight: bold;
-              position: absolute;
-              left: -1rem;
-            }
-          }
-        }
-
-        .prevention-tabs {
-          display: flex;
-          gap: 8px;
-          margin-bottom: 1rem;
-          border-bottom: 1px solid $border;
-          padding-bottom: 0.5rem;
-
-          .tab-item {
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: $transition;
-
-            &.active {
-              background-color: $primary-light;
-              color: $primary;
-              font-weight: 500;
-            }
-
-            &:hover:not(.active) {
-              background-color: rgba(0, 0, 0, 0.03);
-            }
-          }
-        }
-
-        .prevention-content {
-          ul {
-            margin: 0;
-            padding-left: 1.25rem;
-
-            li {
-              margin-bottom: 0.5rem;
-              position: relative;
-
-              &:last-child {
-                margin-bottom: 0;
-              }
-
-              &::before {
-                content: '\2713';
-                color: #9f7aea;
-                font-weight: bold;
-                position: absolute;
-                left: -1rem;
-              }
-            }
-          }
-        }
-
-        .notes-content {
-          line-height: 1.6;
-          padding: 0.5rem;
-          background-color: rgba(237, 137, 54, 0.05);
-          border-radius: $radius-sm;
-        }
-      }
-    }
-  }
-
-  // Markdown fallback
-  .markdown-fallback {
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px dashed $border;
-
-    .fallback-title {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: $text-primary;
-      margin-bottom: 0.75rem;
-    }
-
-    .markdown-content {
-      line-height: 1.8;
-      color: $text-secondary;
-      font-size: 0.9rem;
-    }
+  .result-meta {
+    margin-bottom: 1rem;
   }
 
   // Markdown content styles
@@ -1119,6 +709,10 @@ onBeforeUnmount(() => {
     color: $text-secondary;
     font-size: 0.95rem;
     margin-bottom: 2rem;
+    padding: 1.25rem;
+    background-color: $bg-main;
+    border-radius: $radius-md;
+    border-left: 4px solid $primary;
 
     :deep(h1),
     :deep(h2),
@@ -1129,7 +723,15 @@ onBeforeUnmount(() => {
       color: $primary;
       margin: 1.2rem 0 0.8rem;
       font-weight: 600;
+
+      &:first-child {
+        margin-top: 0;
+      }
     }
+
+    :deep(h1) { font-size: 1.3rem; }
+    :deep(h2) { font-size: 1.15rem; }
+    :deep(h3) { font-size: 1.05rem; }
 
     :deep(p) {
       margin: 0.8rem 0;
@@ -1144,6 +746,10 @@ onBeforeUnmount(() => {
 
     :deep(li) {
       margin: 0.4rem 0;
+
+      &::marker {
+        color: $primary;
+      }
     }
 
     :deep(strong) {
@@ -1155,8 +761,17 @@ onBeforeUnmount(() => {
       color: $text-primary;
     }
 
+    :deep(blockquote) {
+      border-left: 3px solid rgba($primary, 0.4);
+      margin: 1rem 0;
+      padding: 0.5rem 1rem;
+      background-color: rgba($primary, 0.03);
+      border-radius: 0 $radius-sm $radius-sm 0;
+      color: $text-secondary;
+    }
+
     :deep(pre) {
-      background-color: $bg-main;
+      background-color: rgba(0, 0, 0, 0.03);
       padding: 1rem;
       border-radius: $radius-sm;
       overflow-x: auto;
@@ -1174,6 +789,35 @@ onBeforeUnmount(() => {
     :deep(pre code) {
       background: none;
       padding: 0;
+    }
+
+    :deep(hr) {
+      border: none;
+      border-top: 1px solid $border;
+      margin: 1.2rem 0;
+    }
+
+    :deep(table) {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+
+      th, td {
+        border: 1px solid $border;
+        padding: 0.5rem 0.75rem;
+        text-align: left;
+      }
+
+      th {
+        background-color: rgba($primary, 0.05);
+        font-weight: 600;
+        color: $text-primary;
+      }
+
+      tr:nth-child(even) {
+        background-color: rgba(0, 0, 0, 0.02);
+      }
     }
   }
 
@@ -1292,21 +936,6 @@ onBeforeUnmount(() => {
 
   .markdown-content {
     font-size: 0.9rem;
-  }
-
-  .result-card-item {
-    padding: 1rem;
-  }
-
-  .info-row {
-    flex-direction: column;
-    align-items: flex-start !important;
-    gap: 4px;
-
-    label {
-      width: 100% !important;
-      margin-bottom: 2px;
-    }
   }
 }
 </style>

@@ -6,14 +6,12 @@ export const useDiagnosisStore = defineStore('diagnosis', () => {
   // ====== 状态 ======
   const records = ref([])
   const currentRecord = ref(null)
-  const stats = ref({ total: 0, diseased: 0, healthy: 0, cropDistribution: [], diseaseDistribution: [] })
+  const stats = ref({ total: 0, cropDistribution: [] })
   const loading = ref(false)
   const filters = ref({
     cropType: '',
-    diseaseName: '',
     dateFrom: '',
     dateTo: '',
-    hasDisease: '', // '' = 全部, 'true' = 病害, 'false' = 健康
   })
 
   // ====== 计算属性 ======
@@ -23,13 +21,6 @@ export const useDiagnosisStore = defineStore('diagnosis', () => {
 
     if (f.cropType) {
       list = list.filter((r) => r.cropType === f.cropType)
-    }
-    if (f.diseaseName) {
-      list = list.filter((r) => r.diseaseName && r.diseaseName.includes(f.diseaseName))
-    }
-    if (f.hasDisease !== '' && f.hasDisease !== null && f.hasDisease !== undefined) {
-      const val = f.hasDisease === true || f.hasDisease === 'true'
-      list = list.filter((r) => r.hasDisease === val)
     }
     if (f.dateFrom) {
       list = list.filter((r) => r.createdAt >= f.dateFrom)
@@ -43,8 +34,6 @@ export const useDiagnosisStore = defineStore('diagnosis', () => {
   })
 
   const totalCount = computed(() => stats.value.total)
-  const diseasedCount = computed(() => stats.value.diseased)
-  const healthyCount = computed(() => stats.value.healthy)
 
   const cropTypes = computed(() => {
     const types = new Set(records.value.map((r) => r.cropType).filter(Boolean))
@@ -75,13 +64,7 @@ export const useDiagnosisStore = defineStore('diagnosis', () => {
     const record = await api.createDiagnosis(data)
     if (record) {
       records.value.unshift(record)
-      // 更新统计
       stats.value.total++
-      if (record.hasDisease) {
-        stats.value.diseased++
-      } else {
-        stats.value.healthy++
-      }
     }
     return record
   }
@@ -101,17 +84,8 @@ export const useDiagnosisStore = defineStore('diagnosis', () => {
 
   async function deleteRecord(id) {
     await api.deleteDiagnosis(id)
-    const removed = records.value.find((r) => r.id === id)
     records.value = records.value.filter((r) => r.id !== id)
-    // 更新统计
-    if (removed) {
-      stats.value.total--
-      if (removed.hasDisease) {
-        stats.value.diseased--
-      } else {
-        stats.value.healthy--
-      }
-    }
+    stats.value.total = Math.max(0, stats.value.total - 1)
   }
 
   async function fetchStats() {
@@ -125,10 +99,8 @@ export const useDiagnosisStore = defineStore('diagnosis', () => {
   function resetFilters() {
     filters.value = {
       cropType: '',
-      diseaseName: '',
       dateFrom: '',
       dateTo: '',
-      hasDisease: '',
     }
   }
 
@@ -140,8 +112,6 @@ export const useDiagnosisStore = defineStore('diagnosis', () => {
     filters,
     filteredRecords,
     totalCount,
-    diseasedCount,
-    healthyCount,
     cropTypes,
     fetchRecords,
     fetchDetail,

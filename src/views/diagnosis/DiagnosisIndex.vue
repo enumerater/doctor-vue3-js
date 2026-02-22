@@ -14,16 +14,6 @@
         <span class="stat-value">{{ store.totalCount }}</span>
         <span class="stat-label">总诊断</span>
       </div>
-      <div class="stat-divider"></div>
-      <div class="stat-item">
-        <span class="stat-value warn">{{ store.diseasedCount }}</span>
-        <span class="stat-label">发现病害</span>
-      </div>
-      <div class="stat-divider"></div>
-      <div class="stat-item">
-        <span class="stat-value safe">{{ store.healthyCount }}</span>
-        <span class="stat-label">健康</span>
-      </div>
     </div>
 
     <!-- 筛选栏 -->
@@ -43,15 +33,6 @@
         />
       </el-select>
 
-      <el-input
-        v-model="store.filters.diseaseName"
-        placeholder="搜索病害名称"
-        clearable
-        size="small"
-        class="filter-input"
-        :prefix-icon="Search"
-      />
-
       <el-date-picker
         v-model="dateRange"
         type="daterange"
@@ -63,24 +44,6 @@
         value-format="YYYY-MM-DD"
         @change="onDateChange"
       />
-
-      <div class="filter-tabs">
-        <span
-          class="tab-item"
-          :class="{ active: store.filters.hasDisease === '' }"
-          @click="store.setFilter('hasDisease', '')"
-        >全部</span>
-        <span
-          class="tab-item"
-          :class="{ active: store.filters.hasDisease === 'true' }"
-          @click="store.setFilter('hasDisease', 'true')"
-        >病害</span>
-        <span
-          class="tab-item"
-          :class="{ active: store.filters.hasDisease === 'false' }"
-          @click="store.setFilter('hasDisease', 'false')"
-        >健康</span>
-      </div>
     </div>
 
     <!-- 列表 -->
@@ -110,7 +73,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Camera, Search } from '@element-plus/icons-vue'
+import { Camera } from '@element-plus/icons-vue'
 import ContentHeader from '@/components/layout/ContentHeader.vue'
 import DiagnosisCard from '@/components/diagnosis/DiagnosisCard.vue'
 import { useDiagnosisStore } from '@/stores/diagnosis'
@@ -147,6 +110,7 @@ const goDetail = (record) => {
 .stats-bar {
   display: flex;
   align-items: center;
+  justify-content: center;
   background: $bg-card;
   border-radius: $radius-md;
   border: 1px solid $border;
@@ -159,7 +123,6 @@ const goDetail = (record) => {
 }
 
 .stat-item {
-  flex: 1;
   text-align: center;
 }
 
@@ -168,14 +131,6 @@ const goDetail = (record) => {
   font-size: 22px;
   font-weight: 700;
   color: $primary;
-
-  &.warn {
-    color: #e6a23c;
-  }
-
-  &.safe {
-    color: #67c23a;
-  }
 }
 
 .stat-label {
@@ -183,12 +138,6 @@ const goDetail = (record) => {
   font-size: 12px;
   color: $text-tertiary;
   margin-top: 2px;
-}
-
-.stat-divider {
-  width: 1px;
-  height: 32px;
-  background: $border;
 }
 
 .filter-bar {
@@ -213,49 +162,9 @@ const goDetail = (record) => {
   }
 }
 
-.filter-input {
-  width: 160px;
-
-  @include mobile {
-    width: 130px;
-  }
-}
-
 .filter-date {
   @include mobile {
     width: 100% !important;
-  }
-}
-
-.filter-tabs {
-  display: flex;
-  gap: 4px;
-  margin-left: auto;
-  background: $bg-main;
-  border-radius: 6px;
-  padding: 2px;
-
-  @include mobile {
-    margin-left: 0;
-  }
-
-  .tab-item {
-    padding: 4px 12px;
-    border-radius: 4px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: $transition-fast;
-    color: $text-secondary;
-
-    &.active {
-      background: $primary;
-      color: #fff;
-      font-weight: 500;
-    }
-
-    &:hover:not(.active) {
-      color: $primary;
-    }
   }
 }
 
