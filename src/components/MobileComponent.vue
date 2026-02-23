@@ -2,31 +2,13 @@
   <div class="mobile-login-form">
     <el-form ref="formRef" :model="formData" :rules="rules" @submit.prevent="onSubmit" label-position="top">
       <el-form-item label="手机号" prop="phone">
-        <el-input
-          v-model="formData.phone"
-          placeholder="请输入手机号"
-          prefix-icon="Iphone"
-          size="large"
-          clearable
-        />
+        <el-input v-model="formData.phone" placeholder="请输入手机号" prefix-icon="Iphone" size="large" clearable />
       </el-form-item>
       <el-form-item label="验证码" prop="code">
         <div class="code-field-row">
-          <el-input
-            v-model="formData.code"
-            placeholder="请输入验证码"
-            prefix-icon="Message"
-            size="large"
-            clearable
-          />
-          <el-button
-            type="primary"
-            plain
-            size="large"
-            class="get-code-btn"
-            :disabled="codeCooldown > 0"
-            @click="getCode"
-          >
+          <el-input v-model="formData.code" placeholder="请输入验证码" prefix-icon="Message" size="large" clearable />
+          <el-button type="primary" plain size="large" class="get-code-btn" :disabled="codeCooldown > 0"
+            @click="getCode">
             {{ codeCooldown > 0 ? `${codeCooldown}s 后重发` : '获取验证码' }}
           </el-button>
         </div>
@@ -40,19 +22,13 @@
         </el-checkbox>
       </el-form-item>
       <el-form-item>
-        <el-button
-          type="primary"
-          size="large"
-          class="submit-btn"
-          :loading="loading"
-          @click="onSubmit"
-        >
+        <el-button type="primary" size="large" class="submit-btn" :loading="loading" @click="onSubmit">
           登录
         </el-button>
       </el-form-item>
     </el-form>
 
-    <el-divider class="divider">其他方式登录</el-divider>
+    <!-- <el-divider class="divider">其他方式登录</el-divider>
     <div class="other-login">
       <div class="other-item">
         <img src="@/assets/icon/微信.svg" alt="微信" class="other-icon" />
@@ -63,7 +39,7 @@
       <div class="other-item">
         <img src="@/assets/icon/微博.svg" alt="微博" class="other-icon" />
       </div>
-    </div>
+    </div> -->
   </div>
 </template>
 

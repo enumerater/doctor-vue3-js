@@ -2,24 +2,11 @@
   <div class="password-login-form">
     <el-form ref="formRef" :model="formData" :rules="rules" @submit.prevent="onSubmit" label-position="top">
       <el-form-item label="用户名" prop="username">
-        <el-input
-          v-model="formData.username"
-          placeholder="请输入用户名"
-          prefix-icon="User"
-          size="large"
-          clearable
-        />
+        <el-input v-model="formData.username" placeholder="请输入用户名" prefix-icon="User" size="large" clearable />
       </el-form-item>
       <el-form-item label="密码" prop="password">
-        <el-input
-          v-model="formData.password"
-          type="password"
-          placeholder="请输入密码"
-          prefix-icon="Lock"
-          size="large"
-          show-password
-          clearable
-        />
+        <el-input v-model="formData.password" type="password" placeholder="请输入密码" prefix-icon="Lock" size="large"
+          show-password clearable />
       </el-form-item>
       <el-form-item>
         <el-checkbox v-model="checked" class="agree-checkbox">
@@ -30,19 +17,13 @@
         </el-checkbox>
       </el-form-item>
       <el-form-item>
-        <el-button
-          type="primary"
-          size="large"
-          class="submit-btn"
-          :loading="loading"
-          @click="onSubmit"
-        >
+        <el-button type="primary" size="large" class="submit-btn" :loading="loading" @click="onSubmit">
           登录
         </el-button>
       </el-form-item>
     </el-form>
 
-    <el-divider class="divider">其他方式登录</el-divider>
+    <!-- <el-divider class="divider">其他方式登录</el-divider>
     <div class="other-login">
       <div class="other-item">
         <img src="@/assets/icon/微信.svg" alt="微信" class="other-icon" />
@@ -53,7 +34,7 @@
       <div class="other-item">
         <img src="@/assets/icon/微博.svg" alt="微博" class="other-icon" />
       </div>
-    </div>
+    </div> -->
   </div>
 </template>
 

@@ -19,13 +19,12 @@ const props = defineProps({
 <template>
   <div class="logo-wrapper">
     <div class="logo-container">
-      <img src="@/assets/home/S-农业.png" :alt="altText" class="logo-img" />
+      <img src="@/assets/S-农业.png" :alt="altText" class="logo-img" />
       <div class="logo-glow"></div>
     </div>
     <h2 class="logo-title">
-      <span v-for="(char, index) in title" :key="index"
-            class="title-char"
-            :style="{ animationDelay: `${index * 0.05}s` }">
+      <span v-for="(char, index) in title" :key="index" class="title-char"
+        :style="{ animationDelay: `${index * 0.05}s` }">
         {{ char }}
       </span>
     </h2>
@@ -35,19 +34,25 @@ const props = defineProps({
 
 <style lang="scss" scoped>
 @keyframes logoFloat {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0) rotate(0deg);
   }
+
   50% {
     transform: translateY(-8px) rotate(2deg);
   }
 }
 
 @keyframes glowPulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.4;
     transform: scale(0.95);
   }
+
   50% {
     opacity: 0.6;
     transform: scale(1.05);
@@ -59,6 +64,7 @@ const props = defineProps({
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -70,6 +76,7 @@ const props = defineProps({
     opacity: 0;
     transform: translateY(15px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

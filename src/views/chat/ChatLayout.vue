@@ -2,10 +2,13 @@
   <div class="chat-layout">
     <!-- PC: persistent sidebar -->
     <div class="chat-sidebar" :class="{ collapsed: sidebarStore.sidebarCollapsed }" v-if="!isMobile">
-      <div class="sidebar-header" v-show="!sidebarStore.sidebarCollapsed">
-        <button class="new-chat-btn" @click="handleNewChat">
+      <div class="sidebar-top">
+        <button v-show="!sidebarStore.sidebarCollapsed" class="new-chat-btn" @click="handleNewChat">
           <el-icon><Plus /></el-icon>
           <span>新建对话</span>
+        </button>
+        <button class="collapse-btn" @click="sidebarStore.toggleSidebar()" :title="sidebarStore.sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'">
+          <el-icon><component :is="sidebarStore.sidebarCollapsed ? Expand : Fold" /></el-icon>
         </button>
       </div>
       <div class="sidebar-search" v-show="!sidebarStore.sidebarCollapsed">
@@ -25,11 +28,6 @@
       </div>
       <div class="history-list" v-show="!sidebarStore.sidebarCollapsed">
         <HistoryList />
-      </div>
-      <div class="sidebar-footer">
-        <button class="collapse-btn" @click="sidebarStore.toggleSidebar()" :title="sidebarStore.sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'">
-          <el-icon><component :is="sidebarStore.sidebarCollapsed ? Expand : Fold" /></el-icon>
-        </button>
       </div>
     </div>
 
@@ -143,27 +141,38 @@ const handleNewChat = async () => {
 
   &.collapsed {
     width: 48px;
+
+    .sidebar-top {
+      justify-content: center;
+      padding: 12px 8px;
+    }
   }
 
-  .sidebar-header {
-    padding: 16px 14px 8px;
+  .sidebar-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border-bottom: 1px solid $border;
+
+    .new-chat-btn {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .collapse-btn {
+      flex-shrink: 0;
+    }
   }
 
   .sidebar-search {
-    padding: 0 14px 12px;
+    padding: 12px 14px;
   }
 
   .history-list {
     flex: 1;
     overflow-y: auto;
     padding: 0 6px;
-  }
-
-  .sidebar-footer {
-    padding: 8px;
-    border-top: 1px solid $border;
-    display: flex;
-    justify-content: center;
   }
 }
 
