@@ -1,5 +1,5 @@
 <template>
-  <div class="mobile-login-form">
+  <div class="register-form">
     <el-form ref="formRef" :model="formData" :rules="rules" @submit.prevent="onSubmit" label-position="top">
       <el-form-item label="邮箱" prop="email">
         <el-input v-model="formData.email" placeholder="请输入邮箱" prefix-icon="Message" size="large" clearable />
@@ -13,17 +13,20 @@
           </el-button>
         </div>
       </el-form-item>
-      <el-form-item>
-        <el-checkbox v-model="checked" class="agree-checkbox">
-          我已同意
-          <a href="#" class="link" @click.prevent>用户协议</a>
-          及
-          <a href="#" class="link" @click.prevent>隐私协议</a>
-        </el-checkbox>
+      <el-form-item label="用户名" prop="username">
+        <el-input v-model="formData.username" placeholder="请输入用户名" prefix-icon="User" size="large" clearable />
+      </el-form-item>
+      <el-form-item label="密码" prop="password">
+        <el-input v-model="formData.password" type="password" placeholder="请输入密码（至少6位）" prefix-icon="Lock"
+          size="large" show-password clearable />
+      </el-form-item>
+      <el-form-item label="确认密码" prop="confirmPassword">
+        <el-input v-model="formData.confirmPassword" type="password" placeholder="请再次输入密码" prefix-icon="Lock"
+          size="large" show-password clearable />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" size="large" class="submit-btn" :loading="loading" @click="onSubmit">
-          登录
+          注册
         </el-button>
       </el-form-item>
     </el-form>
@@ -32,27 +35,33 @@
 
 <script setup>
 import { ref, reactive, onBeforeUnmount } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { useUserStore } from '@/stores/user'
-import { sendCode, emailLogin } from '@/axios/user'
+import { sendCode, register } from '@/axios/user'
 
-const router = useRouter()
-const store = useUserStore()
-const route = useRoute()
+const emit = defineEmits(['register-success'])
 
 const formRef = ref(null)
 const loading = ref(false)
-const checked = ref(false)
 const codeCooldown = ref(0)
 let cooldownTimer = null
 
 const formData = reactive({
   email: '',
   code: '',
+  username: '',
+  password: '',
+  confirmPassword: '',
 })
 
 const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+
+const validateConfirmPassword = (rule, value, callback) => {
+  if (value !== formData.password) {
+    callback(new Error('两次输入的密码不一致'))
+  } else {
+    callback()
+  }
+}
 
 const rules = {
   email: [
@@ -61,6 +70,17 @@ const rules = {
   ],
   code: [
     { required: true, message: '请输入验证码', trigger: 'blur' },
+  ],
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' },
+  ],
+  confirmPassword: [
+    { required: true, message: '请再次输入密码', trigger: 'blur' },
+    { validator: validateConfirmPassword, trigger: 'blur' },
   ],
 }
 
@@ -74,7 +94,7 @@ async function getCode() {
     return
   }
   try {
-    await sendCode({ email: formData.email, type: 'login' })
+    await sendCode({ email: formData.email, type: 'register' })
     ElMessage.success('验证码已发送')
     codeCooldown.value = 60
     cooldownTimer = setInterval(() => {
@@ -90,31 +110,22 @@ async function getCode() {
 }
 
 async function onSubmit() {
-  if (!checked.value) {
-    ElMessage.warning('请勾选我已同意')
-    return
-  }
-
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
     if (!valid) return
 
     loading.value = true
     try {
-      const res = await emailLogin({
+      await register({
         email: formData.email,
         code: formData.code,
+        username: formData.username,
+        password: formData.password,
       })
-      store.setUser({
-        token: res.data.token,
-        username: res.data.username,
-        id: res.data.id,
-        sessionId: res.data.sessionId,
-      })
-      router.push(route.query.returnUrl || '/workbench')
-      ElMessage.success('登录成功')
+      ElMessage.success('注册成功，请登录')
+      emit('register-success')
     } catch (err) {
-      ElMessage.error(err?.message || '登录失败，请重试')
+      ElMessage.error(err?.message || '注册失败，请重试')
     } finally {
       loading.value = false
     }
@@ -129,7 +140,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
-.mobile-login-form {
+.register-form {
   .el-form-item {
     margin-bottom: 20px;
   }
@@ -167,20 +178,6 @@ onBeforeUnmount(() => {
     flex-shrink: 0;
     white-space: nowrap;
     border-radius: $radius-sm;
-  }
-}
-
-.agree-checkbox {
-  font-size: 0.875rem;
-  color: $text-secondary;
-
-  .link {
-    color: $primary;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
   }
 }
 
