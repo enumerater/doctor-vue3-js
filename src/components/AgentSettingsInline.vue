@@ -112,7 +112,7 @@ import { registeredSkills } from '@/skills'
 defineProps({
   visible: Boolean,
 })
-defineEmits(['close'])
+const emit = defineEmits(['close'])
 
 const agentConfigStore = useAgentConfigStore()
 const skillsStore = useSkillsStore()
@@ -203,21 +203,24 @@ const loadCurrentConfig = () => {
   selectedConfigId.value = agentConfigStore.currentConfigId
 }
 
+const syncSkillsState = () => {
+  skillsStore.enabledSkillIds = formData.value.enabledSkillIds
+  const hasImageSkill = formData.value.enabledSkillIds.includes('disease-recognition')
+  sidebarStore.setAgentImageUploadEnabled(hasImageSkill)
+}
+
 const onConfigSelect = async (configId) => {
   if (!configId) return
   const opt = configColumns.value.find((c) => c.value === configId)
   await agentConfigStore.switchConfig(configId)
   loadCurrentConfig()
-  skillsStore.enabledSkillIds = formData.value.enabledSkillIds
-  const hasImageSkill = formData.value.enabledSkillIds.includes('disease-recognition')
-  sidebarStore.setAgentImageUploadEnabled(hasImageSkill)
-  ElMessage.success(`已切换到「${opt?.text || ''}」`)}
+  syncSkillsState()
+  ElMessage.success(`已切换到「${opt?.text || ''}」`)
+}
 
 const onConfigChanged = () => {
   loadCurrentConfig()
-  skillsStore.enabledSkillIds = formData.value.enabledSkillIds
-  const hasImageSkill = formData.value.enabledSkillIds.includes('disease-recognition')
-  sidebarStore.setAgentImageUploadEnabled(hasImageSkill)
+  syncSkillsState()
 }
 
 const saveConfig = async () => {
@@ -252,11 +255,10 @@ const saveConfig = async () => {
     if (toEnable.length > 0) await skillsStore.enableSkills(toEnable)
     if (toDisable.length > 0) await skillsStore.disableSkills(toDisable)
 
-    skillsStore.enabledSkillIds = formData.value.enabledSkillIds
-    const hasImageSkill = formData.value.enabledSkillIds.includes('disease-recognition')
-    sidebarStore.setAgentImageUploadEnabled(hasImageSkill)
+    syncSkillsState()
 
     ElMessage.success('设置已保存')
+    emit('close')
   } catch (err) {
     console.error('Save config failed:', err)
     ElMessage.error('保存失败，请重试')

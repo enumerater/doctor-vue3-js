@@ -131,6 +131,7 @@ const onSwitch = async (config) => {
     await agentConfigStore.switchConfig(config.id)
     ElMessage.success(`已切换到「${config.name}」`)
     emit('config-changed')
+    visible.value = false
   } catch (err) {
     ElMessage.error('切换失败，请重试')
   }
@@ -141,9 +142,6 @@ const onRename = (config) => {
   renamingConfigId.value = config.id
   renameValue.value = config.name
   showRenameDialog.value = true
-
-  console.log('onRename========', renamingConfigId.value)
-  console.log('onRename========', renameValue.value)
 }
 
 const confirmRename = async () => {
