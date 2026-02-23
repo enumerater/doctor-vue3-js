@@ -121,13 +121,11 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useSkillsStore } from '@/stores/skills'
-import { useAgentConfigStore } from '@/stores/agentConfig'
 import { ElMessage } from 'element-plus'
 import { Upload, Close, CircleCheckFilled, CircleCloseFilled } from '@element-plus/icons-vue'
 import { executeSkill as execSkill } from '@/skills'
 
 const skillsStore = useSkillsStore()
-const agentConfigStore = useAgentConfigStore()
 
 const emit = defineEmits(['skill-execute', 'skill-result'])
 
@@ -193,7 +191,6 @@ const executeSkill = async () => {
   try {
     // 构建执行上下文
     const context = {
-      agentConfig: agentConfigStore.currentConfig,
       conversation: null // 如果有会话上下文，可以传入
     }
 

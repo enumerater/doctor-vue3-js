@@ -33,18 +33,11 @@ export default {
   async execute(params, context) {
     // 获取位置信息
     let location = params.location
-    if (!location) {
-      const province = context.agentConfig?.province
-      const city = context.agentConfig?.city
-      if (province && city) {
-        location = `${province} ${city}`
-      }
-    }
 
     if (!location) {
       return {
         success: false,
-        error: '请提供位置信息或在Agent配置中设置默认位置',
+        error: '请提供位置信息',
         message: '无法获取天气预报：位置信息缺失'
       }
     }

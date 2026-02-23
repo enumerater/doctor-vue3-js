@@ -40,15 +40,7 @@ export default {
   async execute(params, context) {
     const { product, location, priceType = '批发价' } = params
 
-    // 如果没有提供位置，使用配置中的位置
-    let queryLocation = location
-    if (!queryLocation) {
-      const province = context.agentConfig?.province
-      const city = context.agentConfig?.city
-      if (province && city) {
-        queryLocation = `${province} ${city}`
-      }
-    }
+    const queryLocation = location
 
     try {
       // 调用价格查询API

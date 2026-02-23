@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { getMessage, saveAgentMessage } from '@/axios/chat'
 import { createSession } from '@/axios/session'
-import { setSessionAgentConfig } from '@/axios/agentConfig'
 import { useSidebarStore } from './sidebar'
 export const useChatStore = defineStore('chat', {
   state: () => ({
@@ -84,25 +83,12 @@ export const useChatStore = defineStore('chat', {
       // 第一条消息时创建会话记录，区分普通对话和Agent对话
       if (this.chatMessages.length === 0 && sessionId) {
         try {
-          const { useAgentConfigStore } = await import('@/stores/agentConfig')
-          const agentConfigStore = useAgentConfigStore()
-
           await createSession({
             userId,
             sessionTitle: trimmedContent.substring(0, 20),
             sessionId: fullSessionId,
             sessionType: sidebarStore.isAgricultureAgent ? 'agent' : 'chat', // 新增：会话类型
           })
-
-          // 如果是Agent模式，关联Agent配置到会话
-          if (sidebarStore.isAgricultureAgent && agentConfigStore.currentConfig) {
-            try {
-              console.log('关联Agent配置ID:', fullSessionId, agentConfigStore.currentConfig.id)
-              await setSessionAgentConfig(fullSessionId, agentConfigStore.currentConfig.id)
-            } catch (err) {
-              console.warn('设置会话Agent配置失败', err)
-            }
-          }
 
           // 创建会话成功后，立即刷新侧边栏历史记录
           await sidebarStore.refreshHistory()
@@ -132,7 +118,6 @@ export const useChatStore = defineStore('chat', {
     async startStreaming(content, image, userId, sessionId, TOKEN) {
       try {
         const sidebarStore = (await import('@/stores/sidebar')).useSidebarStore()
-        const agentConfigStore = (await import('@/stores/agentConfig')).useAgentConfigStore()
 
         const apiPath = sidebarStore.isAgricultureAgent
           ? '/agent/agriculture-agent'
@@ -142,11 +127,6 @@ export const useChatStore = defineStore('chat', {
         url.searchParams.append('image', image)
         url.searchParams.append('userId', userId)
         url.searchParams.append('sessionId', sessionId)
-
-        // 新增：传递Agent配置ID到后端
-        if (sidebarStore.isAgricultureAgent && agentConfigStore.currentConfig) {
-          url.searchParams.append('agentConfigId', agentConfigStore.currentConfig.id)
-        }
 
         const response = await fetch(url, {
           method: 'GET',

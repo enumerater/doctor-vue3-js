@@ -12,22 +12,13 @@
       </div>
       <div class="header-right">
         <el-button
-          v-if="sidebarStore.isAgricultureAgent && sidebarStore.agentImageUploadEnabled"
+          v-if="sidebarStore.isAgricultureAgent"
           text
           size="small"
           @click="triggerImageUpload"
           class="action-btn"
         >
           <el-icon><Upload /></el-icon>
-        </el-button>
-        <el-button
-          v-if="sidebarStore.isAgricultureAgent"
-          text
-          size="small"
-          @click="$emit('toggle-settings')"
-          class="action-btn"
-        >
-          <el-icon><Setting /></el-icon>
         </el-button>
       </div>
     </div>
@@ -82,9 +73,9 @@ import { useSidebarStore } from '@/stores/sidebar'
 import { useChatStore } from '@/stores/chat'
 import { useSkillsStore } from '@/stores/skills'
 import { upload as ossUpload } from '@/axios/oss'
-import { Upload, Setting, Promotion } from '@element-plus/icons-vue'
+import { Upload, Promotion } from '@element-plus/icons-vue'
 
-const emit = defineEmits(['send', 'toggle-settings'])
+const emit = defineEmits(['send'])
 
 const route = useRoute()
 const router = useRouter()

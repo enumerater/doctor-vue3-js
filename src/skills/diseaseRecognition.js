@@ -34,7 +34,6 @@ export default {
   // Skill执行逻辑
   async execute(params, context) {
     const { image, cropType } = params
-    const { agentConfig, conversation } = context
 
     try {
       // 1. 上传图片到服务器

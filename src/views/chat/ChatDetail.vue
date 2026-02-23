@@ -6,7 +6,6 @@ import { useSidebarStore } from '@/stores/sidebar'
 import { marked } from 'marked'
 import AgentTransferPopup from '@/components/AgentTransferPopup.vue'
 import ChatInputCard from '@/components/ChatInputCard.vue'
-import AgentSettingsInline from '@/components/AgentSettingsInline.vue'
 
 marked.setOptions({ breaks: true, gfm: true })
 
@@ -16,7 +15,6 @@ const route = useRoute()
 const router = useRouter()
 const messageList = ref(null)
 const chatInputCardRef = ref(null)
-const showAgentSettings = ref(false)
 
 // Agent step config (merged from AgentDetail)
 const getStepConfig = (type) => {
@@ -327,14 +325,9 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
     <!-- Input area -->
     <div class="input-wrapper">
       <div class="input-inner">
-      <AgentSettingsInline
-        :visible="showAgentSettings"
-        @close="showAgentSettings = false"
-      />
       <ChatInputCard
         ref="chatInputCardRef"
         @send="handleSend"
-        @toggle-settings="showAgentSettings = !showAgentSettings"
       />
       </div>
     </div>

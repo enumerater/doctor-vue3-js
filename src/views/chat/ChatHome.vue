@@ -36,14 +36,9 @@
     <!-- Input area -->
     <div class="input-wrapper">
       <div class="input-inner">
-      <AgentSettingsInline
-        :visible="showAgentSettings"
-        @close="showAgentSettings = false"
-      />
       <ChatInputCard
         ref="chatInputCardRef"
         @send="sendMessage"
-        @toggle-settings="showAgentSettings = !showAgentSettings"
       />
       </div>
     </div>
@@ -57,7 +52,6 @@ import { useSidebarStore } from '@/stores/sidebar'
 import { useChatStore } from '@/stores/chat'
 import { marked } from 'marked'
 import ChatInputCard from '@/components/ChatInputCard.vue'
-import AgentSettingsInline from '@/components/AgentSettingsInline.vue'
 import LogoSection from '@/components/LogoSection.vue'
 import AgentHotQuestionCard from '@/components/AgentHotQuestionCard.vue'
 import HotQuestionCard from '@/components/HotQuestionCard.vue'
@@ -69,7 +63,6 @@ const route = useRoute()
 const sidebarStore = useSidebarStore()
 const chatStore = useChatStore()
 
-const showAgentSettings = ref(false)
 const chatContentRef = ref(null)
 const chatInputCardRef = ref(null)
 

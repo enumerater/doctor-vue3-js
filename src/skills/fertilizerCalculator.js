@@ -68,9 +68,6 @@ export default {
           area,
           soilType,
           lastFertilization,
-          // 从context获取用户配置信息
-          province: context.agentConfig?.province,
-          city: context.agentConfig?.city
         })
       })
 

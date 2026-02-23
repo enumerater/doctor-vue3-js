@@ -7,7 +7,6 @@ import { setupVant } from './utils/vant.js'
 
 import { createPinia } from 'pinia'
 import persist from 'pinia-plugin-persistedstate'
-import { useAgentConfigStore } from '@/stores/agentConfig'
 import { useUserStore } from '@/stores/user'
 
 const pinia = createPinia()
@@ -28,6 +27,3 @@ app.mount('#app')
 const userStore = useUserStore()
 userStore.initUser()
 
-// 初始化 Agent 配置 Store（在挂载后进行）
-const agentConfigStore = useAgentConfigStore()
-agentConfigStore.fetchConfigs()
