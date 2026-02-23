@@ -8,14 +8,12 @@
         <h3 class="section-title">头像</h3>
         <div class="avatar-section">
           <el-avatar :size="80" :src="avatarUrl || undefined" class="current-avatar">
-            <el-icon :size="36"><User /></el-icon>
+            <el-icon :size="36">
+              <User />
+            </el-icon>
           </el-avatar>
-          <el-upload
-            :show-file-list="false"
-            :before-upload="beforeAvatarUpload"
-            :http-request="handleAvatarUpload"
-            accept="image/*"
-          >
+          <el-upload :show-file-list="false" :before-upload="beforeAvatarUpload" :http-request="handleAvatarUpload"
+            accept="image/*">
             <el-button type="primary" plain>更换头像</el-button>
           </el-upload>
         </div>
@@ -43,42 +41,19 @@
       <div class="settings-card">
         <h3 class="section-title">{{ hasPassword ? '修改密码' : '设置密码' }}</h3>
         <p v-if="!hasPassword" class="section-hint">您通过验证码登录，尚未设置密码。设置密码后可使用密码登录。</p>
-        <el-form
-          ref="passwordFormRef"
-          :model="passwordForm"
-          :rules="passwordRules"
-          label-position="top"
-          class="settings-form"
-        >
+        <el-form ref="passwordFormRef" :model="passwordForm" :rules="passwordRules" label-position="top"
+          class="settings-form">
           <el-form-item v-if="hasPassword" label="旧密码" prop="oldPassword">
-            <el-input
-              v-model="passwordForm.oldPassword"
-              type="password"
-              placeholder="请输入旧密码"
-              prefix-icon="Lock"
-              size="large"
-              show-password
-            />
+            <el-input v-model="passwordForm.oldPassword" type="password" placeholder="请输入旧密码" prefix-icon="Lock"
+              size="large" show-password />
           </el-form-item>
           <el-form-item label="新密码" prop="newPassword">
-            <el-input
-              v-model="passwordForm.newPassword"
-              type="password"
-              placeholder="请输入新密码（至少6位）"
-              prefix-icon="Lock"
-              size="large"
-              show-password
-            />
+            <el-input v-model="passwordForm.newPassword" type="password" placeholder="请输入新密码（至少6位）" prefix-icon="Lock"
+              size="large" show-password />
           </el-form-item>
           <el-form-item label="确认新密码" prop="confirmPassword">
-            <el-input
-              v-model="passwordForm.confirmPassword"
-              type="password"
-              placeholder="请再次输入新密码"
-              prefix-icon="Lock"
-              size="large"
-              show-password
-            />
+            <el-input v-model="passwordForm.confirmPassword" type="password" placeholder="请再次输入新密码" prefix-icon="Lock"
+              size="large" show-password />
           </el-form-item>
           <el-form-item>
             <el-button type="primary" size="large" :loading="passwordLoading" @click="savePassword">
@@ -121,8 +96,7 @@ function beforeAvatarUpload(file) {
 async function handleAvatarUpload({ file }) {
   try {
     const res = await uploadAvatar(file)
-    const url = res.data || res
-    await userStore.updateProfile({ avatar: url })
+    await userStore.updateProfile({ avatar: res.data.url })
     ElMessage.success('头像更新成功')
   } catch (err) {
     ElMessage.error(err?.message || '头像上传失败')
