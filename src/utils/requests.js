@@ -33,14 +33,21 @@ request.interceptors.request.use(
 
 request.interceptors.response.use(
   (response) => {
-    return response.data
+    const res = response.data
+    // 业务错误码拦截：code 非 200 时视为业务异常
+    if (res.code !== undefined && res.code !== 200) {
+      const err = new Error(res.msg || '请求失败')
+      err.code = res.code
+      err.data = res.data
+      return Promise.reject(err)
+    }
+    return res
   },
   (error) => {
     // 处理401错误（未授权）
     if (error.response && error.response.status === 401) {
       const userStore = useUserStore()
       userStore.logout()
-      // 可以在这里添加重定向到登录页的逻辑
       console.warn('Unauthorized, please login again')
     }
     return Promise.reject(error)

@@ -153,6 +153,14 @@ const router = createRouter({
           component: () => import('@/views/notification/NotificationIndex.vue'),
           meta: { title: '通知中心' },
         },
+
+        // ====== 个人设置 ======
+        {
+          path: 'settings',
+          name: 'settings',
+          component: () => import('@/views/settings/UserSettings.vue'),
+          meta: { title: '个人设置' },
+        },
       ],
     },
 

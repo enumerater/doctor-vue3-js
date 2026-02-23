@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useNotificationStore } from '@/stores/notification'
 import { ElDropdown, ElDropdownMenu, ElDropdownItem, ElAvatar, ElIcon, ElBadge } from 'element-plus'
-import { Menu, User, SwitchButton, Bell } from '@element-plus/icons-vue'
+import { Menu, User, SwitchButton, Bell, Setting } from '@element-plus/icons-vue'
 
 const props = defineProps({
   collapsed: Boolean,
@@ -18,13 +18,16 @@ const userStore = useUserStore()
 const notificationStore = useNotificationStore()
 
 const username = computed(() => userStore.user.username || '用户')
+const avatar = computed(() => userStore.user.avatar)
 
 onMounted(() => {
   notificationStore.fetchUnreadCount()
 })
 
 const handleCommand = (command) => {
-  if (command === 'logout') {
+  if (command === 'settings') {
+    router.push('/settings')
+  } else if (command === 'logout') {
     userStore.logout()
     router.push('/login')
   }
@@ -61,13 +64,16 @@ const goNotifications = () => {
 
       <el-dropdown trigger="click" @command="handleCommand">
         <div class="user-area">
-          <el-avatar :size="32" class="user-avatar">
+          <el-avatar :size="32" :src="avatar || undefined" class="user-avatar">
             <el-icon><User /></el-icon>
           </el-avatar>
           <span class="username" v-show="!isMobile">{{ username }}</span>
         </div>
         <template #dropdown>
           <el-dropdown-menu>
+            <el-dropdown-item command="settings" :icon="Setting">
+              个人设置
+            </el-dropdown-item>
             <el-dropdown-item command="logout" :icon="SwitchButton">
               退出登录
             </el-dropdown-item>

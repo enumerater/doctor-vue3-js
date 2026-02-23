@@ -110,6 +110,9 @@ async function onSubmit() {
         username: res.data.username,
         id: res.data.id,
         sessionId: res.data.sessionId,
+        avatar: res.data.avatar,
+        email: res.data.email,
+        hasPassword: res.data.hasPassword,
       })
       router.push(route.query.returnUrl || '/workbench')
       ElMessage.success('登录成功')

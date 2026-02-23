@@ -24,8 +24,8 @@ export const getUser = (id) => {
   })
 }
 
-// 发送邮箱验证码（注册和登录共用）
-// data: { email: string, type: 'register' | 'login' }
+// 发送邮箱验证码（登录用）
+// data: { email: string, type: 'login' }
 export const sendCode = (data) => {
   return request({ url: '/user/sendCode', method: 'post', data })
 }
@@ -36,8 +36,26 @@ export const emailLogin = (data) => {
   return request({ url: '/user/emailLogin', method: 'post', data })
 }
 
-// 注册
-// data: { email: string, code: string, username: string, password: string }
-export const register = (data) => {
-  return request({ url: '/user/register', method: 'post', data })
+// 更新个人信息
+// data: { username, avatar }
+export const updateProfile = (data) => {
+  return request({ url: '/user/profile', method: 'put', data })
+}
+
+// 修改密码
+// data: { oldPassword, newPassword }
+export const changePassword = (data) => {
+  return request({ url: '/user/password', method: 'put', data })
+}
+
+// 上传头像文件，返回 URL
+export const uploadAvatar = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/oss/upload',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
 }

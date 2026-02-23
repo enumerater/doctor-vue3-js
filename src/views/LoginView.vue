@@ -37,7 +37,7 @@
       <el-card class="login-card" shadow="always">
         <!-- Logo section -->
         <div class="card-header">
-          <LogoSection title="Chat小农" :subtitle="activeTab === 'register' ? '智慧农业助手 - 注册新账户' : '智慧农业助手 - 登录您的账户'" />
+          <LogoSection title="Chat小农" subtitle="智慧农业助手 - 登录您的账户" />
         </div>
 
         <!-- Login tabs -->
@@ -47,9 +47,6 @@
           </el-tab-pane>
           <el-tab-pane label="验证码登录" name="mobile">
             <MobileComponent />
-          </el-tab-pane>
-          <el-tab-pane label="注册" name="register">
-            <RegisterComponent @register-success="activeTab = 'password'" />
           </el-tab-pane>
         </el-tabs>
       </el-card>
@@ -66,7 +63,6 @@
 import { ref } from 'vue'
 import MobileComponent from '@/components/MobileComponent.vue'
 import PasswordComponent from '@/components/PasswordComponent.vue'
-import RegisterComponent from '@/components/RegisterComponent.vue'
 import LogoSection from '@/components/LogoSection.vue'
 
 const activeTab = ref('password')
