@@ -12,6 +12,7 @@ import {
   Setting,
 } from '@element-plus/icons-vue'
 import { useNotificationStore } from '@/stores/notification'
+import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
   collapsed: Boolean,
@@ -20,8 +21,9 @@ const props = defineProps({
 const route = useRoute()
 const router = useRouter()
 const notificationStore = useNotificationStore()
+const userStore = useUserStore()
 
-const menuItems = [
+const allMenuItems = [
   { index: '/workbench', icon: HomeFilled, label: '首页' },
   { index: '/chat', icon: ChatDotRound, label: 'chat小农' },
   { index: '/vision', icon: Camera, label: '图像诊断' },
@@ -29,8 +31,12 @@ const menuItems = [
   { index: '/knowledge', icon: Reading, label: '知识库' },
   { index: '/farm', icon: OfficeBuilding, label: '我的农场' },
   { index: '/notifications', icon: Bell, label: '通知中心', badge: true },
-  { index: '/admin', icon: Setting, label: '管理后台' },
+  { index: '/admin', icon: Setting, label: '管理后台', adminOnly: true },
 ]
+
+const menuItems = computed(() =>
+  allMenuItems.filter((item) => !item.adminOnly || userStore.isAdmin)
+)
 
 // 子路由 → 父菜单的映射（路由前缀不在 menuItems 中的情况）
 const routeAliasMap = {
@@ -45,7 +51,7 @@ const activeMenu = computed(() => {
     if (path.startsWith(prefix)) return menuIndex
   }
   // 匹配子路由
-  const match = menuItems.find(
+  const match = allMenuItems.find(
     (item) => path === item.index || (item.index !== '/' && path.startsWith(item.index))
   )
   return match?.index || '/workbench'

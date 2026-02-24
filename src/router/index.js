@@ -215,6 +215,10 @@ router.beforeEach((to) => {
   if (!localStorage.getItem('token') && !whiteList.includes(to.path)) {
     return '/login'
   }
+  // 管理后台权限：非管理员不允许访问
+  if (to.path.startsWith('/admin') && localStorage.getItem('role') !== '1') {
+    return '/workbench'
+  }
 })
 
 export default router

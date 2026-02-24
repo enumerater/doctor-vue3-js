@@ -105,6 +105,10 @@ async function onSubmit() {
         email: formData.email,
         code: formData.code,
       })
+      if (Number(res.data.status) === 0) {
+        ElMessage.error('该账号已被禁用，无法登录')
+        return
+      }
       store.setUser({
         token: res.data.token,
         username: res.data.username,
@@ -113,6 +117,8 @@ async function onSubmit() {
         avatar: res.data.avatar,
         email: res.data.email,
         hasPassword: res.data.hasPassword,
+        role: res.data.role,
+        status: res.data.status,
       })
       router.push(route.query.returnUrl || '/workbench')
       ElMessage.success('登录成功')
