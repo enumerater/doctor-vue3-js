@@ -247,6 +247,7 @@
       :close-on-click-modal="true"
       align-center
       destroy-on-close
+      class="crop-select-dialog"
     >
       <div class="crop-grid">
         <div class="crop-item" v-for="(crop, index) in cropList" :key="index"
@@ -1052,6 +1053,10 @@ onBeforeUnmount(() => {
     margin-bottom: 1.25rem;
     animation: fadeInUp 0.5s ease;
 
+    @include mobile {
+      padding: 1rem;
+    }
+
     .detail-header {
       display: flex;
       align-items: center;
@@ -1068,6 +1073,10 @@ onBeforeUnmount(() => {
 
     .detail-body {
       padding-left: 26px;
+
+      @include mobile {
+        padding-left: 0;
+      }
     }
 
     &.disease-detail {
@@ -1156,7 +1165,8 @@ onBeforeUnmount(() => {
   gap: 12px;
 
   @include mobile {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
   }
 
   .crop-item {
@@ -1260,6 +1270,10 @@ onBeforeUnmount(() => {
   border: 1px solid $border;
   padding: 16px 0;
   margin-bottom: 16px;
+
+  @include mobile {
+    padding: 12px 0;
+  }
 }
 
 .stat-item {
@@ -1272,6 +1286,10 @@ onBeforeUnmount(() => {
   font-size: 22px;
   font-weight: 700;
   color: $primary;
+
+  @include mobile {
+    font-size: 18px;
+  }
 
   &.warn {
     color: #e6a23c;
@@ -1359,5 +1377,13 @@ onBeforeUnmount(() => {
 
 .empty-state {
   padding: 40px 0;
+}
+
+// Dialog responsive
+:deep(.crop-select-dialog) {
+  @include mobile {
+    --el-dialog-width: 90% !important;
+    width: 90% !important;
+  }
 }
 </style>

@@ -104,6 +104,11 @@ const props = defineProps({
   z-index: 1;
   transition: $transition-smooth;
 
+  @include mobile {
+    width: 4rem;
+    height: 4rem;
+  }
+
   &:hover {
     transform: scale(1.1) rotate(5deg);
   }
@@ -133,6 +138,11 @@ const props = defineProps({
   justify-content: center;
   gap: 0.125rem;
 
+  @include mobile {
+    font-size: 1.35rem;
+    margin: 0.75rem 0 0.5rem 0;
+  }
+
   .title-char {
     display: inline-block;
     animation: charFadeIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -152,5 +162,9 @@ const props = defineProps({
   line-height: 1.6;
   animation: subtitleSlide 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
   font-weight: 400;
+
+  @include mobile {
+    font-size: 0.8125rem;
+  }
 }
 </style>

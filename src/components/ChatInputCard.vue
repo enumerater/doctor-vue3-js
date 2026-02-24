@@ -238,6 +238,12 @@ defineExpose({ setImages, uploadedImages })
     min-height: 24px;
     max-height: 144px; // ~6 rows
     overflow-y: auto;
+    -webkit-appearance: none;
+
+    @include mobile {
+      font-size: 16px; // Prevent iOS zoom on focus
+      max-height: 120px;
+    }
 
     &::placeholder {
       color: $text-tertiary;

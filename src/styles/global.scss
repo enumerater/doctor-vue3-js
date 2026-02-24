@@ -16,6 +16,9 @@ body {
   -moz-osx-font-smoothing: grayscale;
   color: $text-primary;
   background-color: $bg-main;
+  overflow: hidden;
+  // Prevent pull-to-refresh and overscroll bounce on mobile
+  overscroll-behavior: none;
 }
 
 #app {

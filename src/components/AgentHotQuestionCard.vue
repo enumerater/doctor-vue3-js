@@ -70,6 +70,12 @@ function handleQuestionClick(content) {
         gap: 0.75rem;
         position: relative;
 
+        @include mobile {
+            font-size: 1.05rem;
+            margin: 0 0 1rem 0;
+            padding-bottom: 0.75rem;
+        }
+
         .title-accent {
             width: 4px;
             height: 24px;
@@ -83,6 +89,10 @@ function handleQuestionClick(content) {
         display: grid;
         grid-template-columns: 1fr;
         gap: 1rem;
+
+        @include mobile {
+            gap: 0.6rem;
+        }
     }
 
     .question-item {
@@ -101,6 +111,13 @@ function handleQuestionClick(content) {
         position: relative;
         overflow: hidden;
         animation: slideInLeft 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+
+        @include mobile {
+            padding: 0.875rem 1rem;
+            font-size: 0.875rem;
+            gap: 0.75rem;
+            border-radius: $radius-sm;
+        }
 
         &::before {
             content: '';

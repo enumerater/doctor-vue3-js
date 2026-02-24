@@ -11,11 +11,10 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 export default defineConfig({
   base: '/font/',
   server: {
-    allowedHosts: [
-      'ec1162721tq84.vicp.fun',
-    ],
+    // allowedHosts: ['ec1162721tq84.vicp.fun'],
     host: '0.0.0.0',
     port: 5173,
+    cors: true,
   },
 
   plugins: [

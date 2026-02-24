@@ -127,6 +127,10 @@ const handleNewChat = async () => {
   display: flex;
   height: 100%;
   overflow: hidden;
+
+  @include mobile {
+    flex-direction: column;
+  }
 }
 
 .chat-sidebar {
@@ -296,13 +300,15 @@ const handleNewChat = async () => {
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
+  min-height: 0;
 }
 
 .mobile-toolbar {
   display: flex;
   justify-content: space-between;
-  padding: 8px 16px;
+  padding: 6px 12px;
   border-bottom: 1px solid $border;
   background: #fff;
+  flex-shrink: 0;
 }
 </style>

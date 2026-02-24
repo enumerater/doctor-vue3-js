@@ -138,15 +138,17 @@ const sendMessage = async (content, images = []) => {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  min-height: 0;
 }
 
 .chat-content {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
+  -webkit-overflow-scrolling: touch;
 
   @include mobile {
-    padding: 12px;
+    padding: 12px 8px;
   }
 }
 
@@ -158,9 +160,19 @@ const sendMessage = async (content, images = []) => {
   height: 100%;
   gap: 12px;
 
+  @include mobile {
+    justify-content: flex-start;
+    padding-top: 2rem;
+    gap: 8px;
+  }
+
   .logo-section {
     margin-bottom: 2rem;
     text-align: center;
+
+    @include mobile {
+      margin-bottom: 1rem;
+    }
   }
 
   .hot-question-card {
@@ -173,6 +185,13 @@ const sendMessage = async (content, images = []) => {
     box-sizing: border-box;
     position: relative;
     overflow: hidden;
+
+    @include mobile {
+      max-width: none;
+      padding: 1rem;
+      border-radius: $radius-md;
+      box-shadow: $shadow-sm;
+    }
 
     &::before {
       content: '';
@@ -208,13 +227,23 @@ const sendMessage = async (content, images = []) => {
 .message-bubble {
   max-width: 75%;
 
+  @include mobile {
+    max-width: 92%;
+  }
+
   .bubble-content {
     padding: 12px 16px;
     border-radius: $radius-md;
     line-height: 1.7;
     font-size: 14px;
     word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
     box-shadow: $shadow-sm;
+
+    @include mobile {
+      padding: 10px 12px;
+    }
 
     .user-message & {
       background: linear-gradient(135deg, $primary, $secondary);
@@ -239,9 +268,10 @@ const sendMessage = async (content, images = []) => {
 .input-wrapper {
   padding: 12px 20px;
   background: $bg-main;
+  flex-shrink: 0;
 
   @include mobile {
-    padding: 8px 12px;
+    padding: 8px 8px;
     padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   }
 }
