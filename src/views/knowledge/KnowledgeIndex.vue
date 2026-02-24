@@ -1,6 +1,6 @@
 <template>
   <div class="knowledge-index">
-    <ContentHeader title="病害知识库" show-back />
+    <ContentHeader title="病害知识库" />
 
     <!-- 面包屑 -->
     <div class="breadcrumb-bar">
@@ -27,7 +27,7 @@
           class="nav-card"
           @click="store.selectCategory(cat)"
         >
-          <span class="nav-icon">{{ categoryIcon(cat) }}</span>
+          <span class="nav-icon" :class="categoryClass(cat)">{{ cat[0] }}</span>
           <span class="nav-label">{{ cat }}</span>
         </div>
       </div>
@@ -44,7 +44,7 @@
           class="nav-card"
           @click="store.selectCropName(name)"
         >
-          <span class="nav-icon">{{ cropIcon(name) }}</span>
+          <span class="nav-icon" :class="cropClass(name)">{{ name[0] }}</span>
           <span class="nav-label">{{ name }}</span>
         </div>
       </div>
@@ -108,18 +108,12 @@ const goSearch = () => {
   router.push({ name: 'knowledgeSearch' })
 }
 
-const categoryIcon = (cat) => {
-  const map = { '真菌': '🍄', '细菌': '🦠', '病毒': '🧬', '虫害': '🐛', '生理性': '🌡️' }
-  return map[cat] || '🔬'
+const categoryClass = (cat) => {
+  const map = { '真菌': 'cat-fungal', '细菌': 'cat-bacterial', '病毒': 'cat-viral', '虫害': 'cat-pest', '生理性': 'cat-physio' }
+  return map[cat] || 'cat-default'
 }
 
-const cropIcon = (name) => {
-  const map = {
-    '小麦': '🌾', '水稻': '🌾', '玉米': '🌽', '番茄': '🍅', '黄瓜': '🥒',
-    '辣椒': '🌶️', '草莓': '🍓', '苹果': '🍎', '葡萄': '🍇', '白菜': '🥬',
-  }
-  return map[name] || '🌱'
-}
+const cropClass = () => 'crop-default'
 </script>
 
 <style lang="scss" scoped>
@@ -208,7 +202,23 @@ const cropIcon = (name) => {
 }
 
 .nav-icon {
-  font-size: 32px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+
+  &.cat-fungal { background: linear-gradient(135deg, #22c55e, #16a34a); }
+  &.cat-bacterial { background: linear-gradient(135deg, #f59e0b, #d97706); }
+  &.cat-viral { background: linear-gradient(135deg, #ec4899, #db2777); }
+  &.cat-pest { background: linear-gradient(135deg, #eab308, #ca8a04); }
+  &.cat-physio { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+  &.cat-default { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+  &.crop-default { background: linear-gradient(135deg, #22c55e, #15803d); }
 }
 
 .nav-label {

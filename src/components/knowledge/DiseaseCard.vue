@@ -2,7 +2,7 @@
   <div class="disease-card" :class="{ 'is-expanded': expanded }" @click="$emit('click', disease)">
     <div class="card-left">
       <div class="disease-icon" :class="categoryClass">
-        {{ categoryIcon }}
+        {{ disease.category[0] }}
       </div>
     </div>
     <div class="card-body">
@@ -32,12 +32,7 @@ defineEmits(['click'])
 
 const categoryClass = computed(() => {
   const map = { '真菌': 'cat-fungal', '细菌': 'cat-bacterial', '病毒': 'cat-viral', '虫害': 'cat-pest', '生理性': 'cat-physio' }
-  return map[props.disease.category] || 'cat-fungal'
-})
-
-const categoryIcon = computed(() => {
-  const map = { '真菌': '🍄', '细菌': '🦠', '病毒': '🧬', '虫害': '🐛', '生理性': '🌡️' }
-  return map[props.disease.category] || '🔬'
+  return map[props.disease.category] || 'cat-default'
 })
 </script>
 
@@ -79,27 +74,16 @@ const categoryIcon = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
 
-  &.cat-fungal {
-    background: #f0fdf4;
-  }
-
-  &.cat-bacterial {
-    background: #fef3c7;
-  }
-
-  &.cat-viral {
-    background: #fce7f3;
-  }
-
-  &.cat-pest {
-    background: #fef9c3;
-  }
-
-  &.cat-physio {
-    background: #e0f2fe;
-  }
+  &.cat-fungal { background: linear-gradient(135deg, #22c55e, #16a34a); }
+  &.cat-bacterial { background: linear-gradient(135deg, #f59e0b, #d97706); }
+  &.cat-viral { background: linear-gradient(135deg, #ec4899, #db2777); }
+  &.cat-pest { background: linear-gradient(135deg, #eab308, #ca8a04); }
+  &.cat-physio { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+  &.cat-default { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
 }
 
 .card-body {

@@ -61,8 +61,6 @@ onMounted(() => {
   if (sidebarStore.historyList.length === 0) {
     sidebarStore.fetchHistoryList().catch(() => {})
   }
-  // Fetch seasonal risks
-  knowledgeStore.fetchSeasonalRisks().catch(() => {})
 })
 </script>
 
