@@ -3,6 +3,7 @@ import { useUserStore } from '@/stores/user'
 
 const request = axios.create({
   baseURL: 'http://localhost:8080',
+  // baseURL: '/api/java', // 会被Nginx转发到8080
   timeout: 15000,
 })
 

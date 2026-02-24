@@ -128,6 +128,14 @@ export const useChatStore = defineStore('chat', {
         url.searchParams.append('userId', userId)
         url.searchParams.append('sessionId', sessionId)
 
+        // const baseUrl = `${window.location.origin}/api/java`
+        // const fullApiPath = `${baseUrl}${apiPath.startsWith('/') ? '' : '/'}${apiPath}`
+        // const url = new URL(fullApiPath)
+        // url.searchParams.append('prompt', content || '') // 处理空值
+        // url.searchParams.append('image', image || '')
+        // url.searchParams.append('userId', userId || '')
+        // url.searchParams.append('sessionId', sessionId || '')
+
         const response = await fetch(url, {
           method: 'GET',
           headers: { Accept: 'text/event-stream', Authorization: TOKEN },
