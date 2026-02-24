@@ -90,18 +90,6 @@ const router = createRouter({
           meta: { title: '病害知识库' },
         },
         {
-          path: 'knowledge/crop/:cropName',
-          name: 'knowledgeCrop',
-          component: () => import('@/views/knowledge/KnowledgeCropList.vue'),
-          meta: { title: '作物病害' },
-        },
-        {
-          path: 'knowledge/disease/:diseaseId',
-          name: 'knowledgeDetail',
-          component: () => import('@/views/knowledge/KnowledgeDetail.vue'),
-          meta: { title: '病害详情' },
-        },
-        {
           path: 'knowledge/search',
           name: 'knowledgeSearch',
           component: () => import('@/views/knowledge/KnowledgeSearch.vue'),

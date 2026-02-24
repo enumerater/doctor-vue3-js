@@ -18,14 +18,31 @@
       <!-- 搜索结果 -->
       <div class="result-section" v-if="store.searchResults.length > 0">
         <div class="result-header">
-          <span class="result-count">找到 {{ store.searchResults.length }} 个结果</span>
+          <span class="result-count">找到 {{ store.searchTotal }} 个结果</span>
         </div>
         <div class="result-list">
-          <DiseaseCard
-            v-for="disease in store.searchResults"
-            :key="disease.id"
-            :disease="disease"
-            @click="goDetail(disease)"
+          <template v-for="disease in store.searchResults" :key="disease.id">
+            <DiseaseCard
+              :disease="disease"
+              :expanded="expandedId === disease.id"
+              @click="toggleExpand(disease.id)"
+            />
+            <Transition name="detail-slide">
+              <DiseaseDetail
+                v-if="expandedId === disease.id"
+                :disease="disease"
+              />
+            </Transition>
+          </template>
+        </div>
+        <div class="pagination-wrap" v-if="store.searchTotal > store.searchPageSize">
+          <el-pagination
+            background
+            layout="prev, pager, next"
+            :total="store.searchTotal"
+            :page-size="store.searchPageSize"
+            :current-page="store.searchPage"
+            @current-change="onPageChange"
           />
         </div>
       </div>
@@ -62,18 +79,19 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
 import ContentHeader from '@/components/layout/ContentHeader.vue'
 import DiseaseCard from '@/components/knowledge/DiseaseCard.vue'
+import DiseaseDetail from '@/components/knowledge/DiseaseDetail.vue'
 import { useKnowledgeStore } from '@/stores/knowledge'
 
 const route = useRoute()
-const router = useRouter()
 const store = useKnowledgeStore()
 
 const keyword = ref('')
 const searched = ref(false)
+const expandedId = ref(null)
 let searchTimer = null
 
 const hotTags = ['白粉病', '锈病', '霜霉病', '晚疫病', '蚜虫', '灰霉病']
@@ -88,6 +106,7 @@ onMounted(() => {
 const doSearch = () => {
   if (!keyword.value.trim()) return
   searched.value = true
+  expandedId.value = null
   store.searchDiseases(keyword.value.trim())
 }
 
@@ -96,6 +115,7 @@ const onInput = (val) => {
   if (!val.trim()) {
     store.searchResults = []
     searched.value = false
+    expandedId.value = null
     return
   }
   searchTimer = setTimeout(() => {
@@ -108,8 +128,13 @@ const quickSearch = (tag) => {
   doSearch()
 }
 
-const goDetail = (disease) => {
-  router.push({ name: 'knowledgeDetail', params: { diseaseId: disease.id } })
+const toggleExpand = (id) => {
+  expandedId.value = expandedId.value === id ? null : id
+}
+
+const onPageChange = (page) => {
+  expandedId.value = null
+  store.changeSearchPage(page)
 }
 </script>
 
@@ -150,6 +175,33 @@ const goDetail = (disease) => {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.pagination-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  padding-bottom: 10px;
+}
+
+// DiseaseDetail 展开动画
+.detail-slide-enter-active,
+.detail-slide-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.detail-slide-enter-from,
+.detail-slide-leave-to {
+  opacity: 0;
+  max-height: 0;
+  margin-top: 0;
+}
+
+.detail-slide-enter-to,
+.detail-slide-leave-from {
+  opacity: 1;
+  max-height: 2000px;
 }
 
 // 搜索提示

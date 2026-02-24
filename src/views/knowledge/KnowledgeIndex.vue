@@ -2,83 +2,123 @@
   <div class="knowledge-index">
     <ContentHeader title="病害知识库" show-back />
 
-    <!-- 搜索栏 -->
-    <div class="search-area">
-      <el-input
-        v-model="searchVal"
-        placeholder="搜索病害名称、作物、类型..."
-        clearable
-        :prefix-icon="Search"
-        size="large"
-        @keyup.enter="handleSearch(searchVal)"
-        @focus="goSearch"
-        class="search-bar"
-      />
+    <!-- 面包屑 -->
+    <div class="breadcrumb-bar">
+      <template v-for="(crumb, idx) in store.breadcrumbs" :key="crumb.level">
+        <span v-if="idx > 0" class="crumb-sep">/</span>
+        <span
+          v-if="idx < store.breadcrumbs.length - 1"
+          class="crumb-link"
+          @click="store.navigateToLevel(crumb.level)"
+        >{{ crumb.label }}</span>
+        <span v-else class="crumb-current">{{ crumb.label }}</span>
+      </template>
+      <span class="crumb-spacer" />
+      <el-button text size="small" :icon="Search" @click="goSearch">搜索</el-button>
     </div>
 
-    <!-- 季节风险提示 -->
-    <div v-if="store.seasonalRisks.length > 0" class="risk-banner">
-      <div class="risk-header">
-        <span class="risk-icon">⚠️</span>
-        <span class="risk-title">当季病害预警</span>
-      </div>
-      <div class="risk-list">
-        <div v-for="risk in store.seasonalRisks" :key="risk.diseaseId" class="risk-item"
-          @click="goDetail(risk.diseaseId)">
-          <div class="risk-name">
-            <span class="risk-crop">{{ risk.cropName }}</span>
-            {{ risk.diseaseName }}
-          </div>
-          <div class="risk-desc">{{ risk.description }}</div>
+    <!-- Level 1: category 卡片 -->
+    <div v-if="store.currentLevel === 1" class="card-section">
+      <div v-if="store.loading" v-loading="true" class="loading-center" />
+      <div v-else-if="store.categories.length > 0" class="card-grid">
+        <div
+          v-for="cat in store.categories"
+          :key="cat"
+          class="nav-card"
+          @click="store.selectCategory(cat)"
+        >
+          <span class="nav-icon">{{ categoryIcon(cat) }}</span>
+          <span class="nav-label">{{ cat }}</span>
         </div>
       </div>
+      <el-empty v-else description="暂无分类数据" />
     </div>
 
-    <!-- 作物分类网格 -->
-    <div class="crop-section">
-      <h3 class="section-title">按作物浏览</h3>
-      <div class="crop-grid" v-if="store.crops.length > 0" v-loading="false">
-        <div v-for="crop in store.crops" :key="crop.name" class="crop-card" @click="goCropList(crop.name)">
-          <span class="crop-icon">{{ crop.icon }}</span>
-          <span class="crop-name">{{ crop.name }}</span>
-          <span class="crop-count">{{ crop.diseaseCount }}种病害</span>
+    <!-- Level 2: crop_name 卡片 -->
+    <div v-else-if="store.currentLevel === 2" class="card-section">
+      <div v-if="store.loading" v-loading="true" class="loading-center" />
+      <div v-else-if="store.cropNames.length > 0" class="card-grid">
+        <div
+          v-for="name in store.cropNames"
+          :key="name"
+          class="nav-card"
+          @click="store.selectCropName(name)"
+        >
+          <span class="nav-icon">{{ cropIcon(name) }}</span>
+          <span class="nav-label">{{ name }}</span>
         </div>
       </div>
-      <div v-else-if="store.loading" v-loading="true" class="loading-center" />
+      <el-empty v-else description="该分类下暂无作物" />
+    </div>
+
+    <!-- Level 3: disease 列表 -->
+    <div v-else class="disease-section">
+      <div v-if="store.loading" v-loading="true" class="loading-center" />
+      <template v-else>
+        <div v-if="store.diseases.length > 0" class="disease-list">
+          <template v-for="disease in store.diseases" :key="disease.id">
+            <DiseaseCard
+              :disease="disease"
+              :expanded="store.expandedDiseaseId === disease.id"
+              @click="store.toggleDiseaseExpand(disease.id)"
+            />
+            <Transition name="detail-slide">
+              <DiseaseDetail
+                v-if="store.expandedDiseaseId === disease.id"
+                :disease="disease"
+              />
+            </Transition>
+          </template>
+        </div>
+        <el-empty v-else description="该作物下暂无病害数据" />
+        <div v-if="store.diseasesTotal > store.pageSize" class="pagination-wrap">
+          <el-pagination
+            background
+            layout="prev, pager, next"
+            :total="store.diseasesTotal"
+            :page-size="store.pageSize"
+            :current-page="store.currentPage"
+            @current-change="store.changePage"
+          />
+        </div>
+      </template>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
 import ContentHeader from '@/components/layout/ContentHeader.vue'
+import DiseaseCard from '@/components/knowledge/DiseaseCard.vue'
+import DiseaseDetail from '@/components/knowledge/DiseaseDetail.vue'
 import { useKnowledgeStore } from '@/stores/knowledge'
 
 const store = useKnowledgeStore()
 const router = useRouter()
-const searchVal = ref('')
 
 onMounted(() => {
-  store.fetchCrops()
-  store.fetchSeasonalRisks()
+  if (store.currentLevel === 1) {
+    store.fetchCategories()
+  }
 })
 
 const goSearch = () => {
   router.push({ name: 'knowledgeSearch' })
 }
 
-const handleSearch = (val) => {
-  router.push({ name: 'knowledgeSearch', query: { q: val } })
+const categoryIcon = (cat) => {
+  const map = { '真菌': '🍄', '细菌': '🦠', '病毒': '🧬', '虫害': '🐛', '生理性': '🌡️' }
+  return map[cat] || '🔬'
 }
 
-const goCropList = (cropName) => {
-  router.push({ name: 'knowledgeCrop', params: { cropName } })
-}
-
-const goDetail = (diseaseId) => {
-  router.push({ name: 'knowledgeDetail', params: { diseaseId } })
+const cropIcon = (name) => {
+  const map = {
+    '小麦': '🌾', '水稻': '🌾', '玉米': '🌽', '番茄': '🍅', '黄瓜': '🥒',
+    '辣椒': '🌶️', '草莓': '🍓', '苹果': '🍎', '葡萄': '🍇', '白菜': '🥬',
+  }
+  return map[name] || '🌱'
 }
 </script>
 
@@ -87,115 +127,54 @@ const goDetail = (diseaseId) => {
   padding-bottom: 20px;
 }
 
-.search-area {
-  padding: 0 24px 16px;
-
-  @include mobile {
-    padding: 0 16px 16px;
-  }
-}
-
-.search-bar {
-  :deep(.el-input__wrapper) {
-    border-radius: $radius-xl;
-    background: $bg-card;
-    border: 1px solid $border;
-    box-shadow: none;
-  }
-}
-
-// 风险预警
-.risk-banner {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  border-radius: $radius-md;
-  padding: 14px 16px;
-  margin: 0 24px 20px;
-  border: 1px solid #fcd34d;
-
-  @include mobile {
-    margin: 0 16px 20px;
-  }
-}
-
-.risk-header {
+// 面包屑
+.breadcrumb-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.risk-icon {
-  font-size: 16px;
-}
-
-.risk-title {
+  padding: 8px 24px 16px;
   font-size: 14px;
-  font-weight: 600;
-  color: #92400e;
+  flex-wrap: wrap;
+  gap: 4px;
+
+  @include mobile {
+    padding: 8px 16px 16px;
+  }
 }
 
-.risk-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.crumb-sep {
+  color: $text-tertiary;
+  margin: 0 2px;
 }
 
-.risk-item {
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 10px;
-  padding: 10px 12px;
+.crumb-link {
+  color: $primary;
   cursor: pointer;
   transition: $transition-fast;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.9);
-  }
-
-  &:active {
-    transform: scale(0.98);
+    opacity: 0.8;
   }
 }
 
-.risk-name {
-  font-size: 13px;
+.crumb-current {
+  color: $text-primary;
   font-weight: 600;
-  color: #78350f;
-  margin-bottom: 3px;
 }
 
-.risk-crop {
-  background: #92400e;
-  color: #fff;
-  font-size: 11px;
-  padding: 1px 6px;
-  border-radius: 6px;
-  margin-right: 6px;
-  font-weight: 500;
+.crumb-spacer {
+  flex: 1;
 }
 
-.risk-desc {
-  font-size: 12px;
-  color: #a16207;
-  line-height: 1.4;
-}
-
-// 作物分类
-.crop-section {
+// 卡片区域
+.card-section {
   padding: 0 24px;
 
   @include mobile {
     padding: 0 16px;
   }
-
-  .section-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: $text-primary;
-    margin: 0 0 14px 0;
-  }
 }
 
-.crop-grid {
+.card-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
@@ -205,12 +184,12 @@ const goDetail = (diseaseId) => {
   }
 }
 
-.crop-card {
+.nav-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 16px 10px;
+  gap: 8px;
+  padding: 20px 10px;
   background: $bg-card;
   border-radius: $radius-md;
   border: 1px solid $border;
@@ -228,19 +207,55 @@ const goDetail = (diseaseId) => {
   }
 }
 
-.crop-icon {
+.nav-icon {
   font-size: 32px;
 }
 
-.crop-name {
+.nav-label {
   font-size: 14px;
   font-weight: 600;
   color: $text-primary;
 }
 
-.crop-count {
-  font-size: 11px;
-  color: $text-tertiary;
+// 病害列表
+.disease-section {
+  padding: 0 24px;
+
+  @include mobile {
+    padding: 0 16px;
+  }
+}
+
+.disease-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pagination-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+// DiseaseDetail 展开动画
+.detail-slide-enter-active,
+.detail-slide-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.detail-slide-enter-from,
+.detail-slide-leave-to {
+  opacity: 0;
+  max-height: 0;
+  margin-top: 0;
+}
+
+.detail-slide-enter-to,
+.detail-slide-leave-from {
+  opacity: 1;
+  max-height: 2000px;
 }
 
 .loading-center {

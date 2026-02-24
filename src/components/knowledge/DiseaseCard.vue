@@ -1,5 +1,5 @@
 <template>
-  <div class="disease-card" @click="$emit('click', disease)">
+  <div class="disease-card" :class="{ 'is-expanded': expanded }" @click="$emit('click', disease)">
     <div class="card-left">
       <div class="disease-icon" :class="categoryClass">
         {{ categoryIcon }}
@@ -7,8 +7,7 @@
     </div>
     <div class="card-body">
       <div class="card-header">
-        <span class="disease-name">{{ disease.name }}</span>
-        <span class="severity-tag" :class="'severity-' + disease.severity">{{ disease.severity }}</span>
+        <span class="disease-name">{{ disease.diseaseName }}</span>
       </div>
       <div class="card-meta">
         <span class="meta-item">{{ disease.cropName }}</span>
@@ -16,7 +15,7 @@
         <span class="meta-item">{{ disease.category }}</span>
       </div>
     </div>
-    <el-icon class="card-arrow"><ArrowRight /></el-icon>
+    <el-icon class="card-arrow" :class="{ 'arrow-rotated': expanded }"><ArrowRight /></el-icon>
   </div>
 </template>
 
@@ -26,6 +25,7 @@ import { ArrowRight } from '@element-plus/icons-vue'
 
 const props = defineProps({
   disease: { type: Object, required: true },
+  expanded: { type: Boolean, default: false },
 })
 
 defineEmits(['click'])
@@ -59,6 +59,11 @@ const categoryIcon = computed(() => {
 
   &:active {
     transform: scale(0.98);
+  }
+
+  &.is-expanded {
+    border-color: $primary;
+    box-shadow: 0 0 0 1px rgba($primary, 0.2);
   }
 }
 
@@ -118,29 +123,6 @@ const categoryIcon = computed(() => {
   text-overflow: ellipsis;
 }
 
-.severity-tag {
-  flex-shrink: 0;
-  font-size: 11px;
-  padding: 1px 8px;
-  border-radius: 10px;
-  font-weight: 500;
-
-  &.severity-轻 {
-    background: #dcfce7;
-    color: #166534;
-  }
-
-  &.severity-中 {
-    background: #fef3c7;
-    color: #92400e;
-  }
-
-  &.severity-重 {
-    background: #fee2e2;
-    color: #991b1b;
-  }
-}
-
 .card-meta {
   display: flex;
   align-items: center;
@@ -158,5 +140,11 @@ const categoryIcon = computed(() => {
   color: $text-tertiary;
   font-size: 14px;
   margin-left: 8px;
+  transition: transform 0.3s ease;
+
+  &.arrow-rotated {
+    transform: rotate(90deg);
+    color: $primary;
+  }
 }
 </style>
