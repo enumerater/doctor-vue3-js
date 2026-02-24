@@ -5,11 +5,8 @@
             热门问题
         </h3>
         <div class="question-list">
-            <div class="question-item"
-                 v-for="(question, index) in agentQuestions"
-                 :key="question.id"
-                 :style="{ animationDelay: `${index * 0.1}s` }"
-                 @click="handleQuestionClick(question.content)">
+            <div class="question-item" v-for="(question, index) in agentQuestions" :key="question.id"
+                :style="{ animationDelay: `${index * 0.1}s` }" @click="handleQuestionClick(question.content)">
                 <span class="question-number">{{ index + 1 }}</span>
                 <span class="question-text">{{ question.content }}</span>
                 <span class="question-arrow">→</span>
@@ -27,9 +24,9 @@ const router = useRouter()
 
 // Agent专用的复杂问题列表
 const agentQuestions = [
-    { id: 1, content: '玉米锈病怎么治' },
-    { id: 2, content: '玉米这是什么病怎么治疗' },
-    { id: 3, content: '葡萄这是什么病怎么治疗' },
+    { id: 1, content: '今天天气怎么样' },
+    { id: 2, content: '看看我的诊断历史' },
+    { id: 3, content: '玉米锈病' },
 ]
 
 function handleQuestionClick(content) {
@@ -45,14 +42,15 @@ function handleQuestionClick(content) {
 @use '@/styles/variables.scss' as *;
 
 @keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .agent-hot-question-card {
