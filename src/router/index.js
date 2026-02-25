@@ -182,6 +182,12 @@ const router = createRouter({
           component: () => import('@/views/admin/AdminFeedback.vue'),
           meta: { title: '反馈审核' },
         },
+        {
+          path: 'announcement',
+          name: 'adminAnnouncement',
+          component: () => import('@/views/admin/AdminAnnouncement.vue'),
+          meta: { title: '公告推送' },
+        },
       ],
     },
 

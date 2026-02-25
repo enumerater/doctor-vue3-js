@@ -17,9 +17,16 @@ export const getCategories = () =>
 export const getCropNames = (category) =>
   safeRequest({ url: '/knowledge/diseases/crop_names', method: 'get', params: { category } })
 
-// 分页查询病害列表（支持 category、crop_name 筛选）
-export const getDiseases = (params = {}) =>
-  safeRequest({ url: '/knowledge/diseases', method: 'get', params })
+// 分页查询病害列表（支持 category、cropName 筛选）
+export const getDiseases = (params = {}) => {
+  const query = {}
+  if (params.page) query.page = params.page
+  if (params.pageSize) query.pageSize = params.pageSize
+  if (params.category) query.category = params.category
+  if (params.cropName) query.cropName = params.cropName
+  if (params.keyword) query.keyword = params.keyword
+  return safeRequest({ url: '/knowledge/diseases', method: 'get', params: query })
+}
 
 // 搜索病害
 export const searchDiseases = (keyword, page = 1, pageSize = 20) =>

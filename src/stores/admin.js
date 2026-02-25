@@ -49,10 +49,26 @@ export const useAdminStore = defineStore('admin', () => {
     loading.value = true
     try {
       const res = await knowledgeApi.getDiseaseList(params)
-      knowledgeList.value = res.list
-      knowledgeTotal.value = res.total
+      const list = res.records || res.list || []
+      // pics 是后端 JSON 字符串，解析为数组方便前端使用
+      knowledgeList.value = list.map((item) => ({
+        ...item,
+        parsedPics: parsePics(item.pics),
+      }))
+      knowledgeTotal.value = res.total || 0
     } finally {
       loading.value = false
+    }
+  }
+
+  function parsePics(pics) {
+    if (!pics) return []
+    if (Array.isArray(pics)) return pics
+    try {
+      const arr = JSON.parse(pics)
+      return Array.isArray(arr) ? arr : []
+    } catch {
+      return pics.split(',').filter(Boolean)
     }
   }
 

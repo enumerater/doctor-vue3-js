@@ -3,26 +3,24 @@
     <div class="page-header">
       <h2 class="page-title">知识库管理</h2>
       <el-button type="primary" @click="openCreate">
-        <el-icon><Plus /></el-icon>
+        <el-icon>
+          <Plus />
+        </el-icon>
         新增病害
       </el-button>
     </div>
 
     <!-- 筛选栏 -->
     <div class="filter-bar">
-      <el-input
-        v-model="filters.keyword"
-        placeholder="搜索病害名称或作物..."
-        clearable
-        @clear="handleSearch"
-        @keyup.enter="handleSearch"
-        style="width: 240px;"
-      >
+      <el-input v-model="filters.keyword" placeholder="搜索病害名称或作物..." clearable @clear="handleSearch"
+        @keyup.enter="handleSearch" style="width: 240px;">
         <template #prefix>
-          <el-icon><Search /></el-icon>
+          <el-icon>
+            <Search />
+          </el-icon>
         </template>
       </el-input>
-      <el-select v-model="filters.cropName" placeholder="作物筛选" clearable @change="handleSearch" style="width: 130px;">
+      <!-- <el-select v-model="filters.cropName" placeholder="作物筛选" clearable @change="handleSearch" style="width: 130px;">
         <el-option v-for="c in cropOptions" :key="c" :label="c" :value="c" />
       </el-select>
       <el-select v-model="filters.category" placeholder="分类筛选" clearable @change="handleSearch" style="width: 130px;">
@@ -31,25 +29,23 @@
         <el-option label="病毒" value="病毒" />
         <el-option label="虫害" value="虫害" />
         <el-option label="生理性" value="生理性" />
-      </el-select>
+      </el-select> -->
     </div>
 
     <!-- 表格 -->
     <div class="table-card">
-      <el-table :data="store.knowledgeList" v-loading="store.loading" stripe>
+      <el-table :data="store.knowledgeList" v-loading="store.loading" stripe height="100%">
         <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="name" label="病害名称" min-width="140" />
+        <el-table-column prop="diseaseName" label="病害名称" width="160" show-overflow-tooltip />
         <el-table-column prop="cropName" label="作物" width="90" />
         <el-table-column prop="category" label="分类" width="80">
           <template #default="{ row }">
             <el-tag size="small" :type="categoryTagType(row.category)">{{ row.category }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="severity" label="严重度" width="80">
-          <template #default="{ row }">
-            <el-tag size="small" :type="severityTagType(row.severity)">{{ row.severity }}</el-tag>
-          </template>
-        </el-table-column>
+        <el-table-column prop="chineseName" label="中文名" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="englishName" label="英文名" min-width="120" show-overflow-tooltip />
+
         <el-table-column label="操作" width="140" fixed="right">
           <template #default="{ row }">
             <el-button size="small" type="primary" text @click="openEdit(row)">编辑</el-button>
@@ -61,31 +57,21 @@
 
     <div class="table-footer">
       <span class="total-info">共 {{ store.knowledgeTotal }} 条记录</span>
-      <el-pagination
-        v-if="store.knowledgeTotal > pageSize"
-        :current-page="currentPage"
-        :page-size="pageSize"
-        :total="store.knowledgeTotal"
-        layout="prev, pager, next"
-        @current-change="handlePageChange"
-      />
+      <el-pagination :current-page="currentPage" :page-size="pageSize" :page-sizes="[10, 20, 50]"
+        :total="store.knowledgeTotal" layout="total, sizes, prev, pager, next" @current-change="handlePageChange"
+        @size-change="handleSizeChange" />
     </div>
 
     <!-- 新建/编辑弹窗 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="editingItem ? '编辑病害' : '新增病害'"
-      width="680px"
-      @closed="resetForm"
-      destroy-on-close
-    >
+    <el-dialog v-model="dialogVisible" :title="editingItem ? '编辑病害' : '新增病害'" width="680px" @closed="resetForm"
+      destroy-on-close>
       <el-form :model="form" label-position="top" class="knowledge-form">
         <!-- 基本信息 -->
         <div class="form-section-title">基本信息</div>
         <el-row :gutter="16">
           <el-col :span="8">
             <el-form-item label="病害名称" required>
-              <el-input v-model="form.name" placeholder="如：小麦锈病" />
+              <el-input v-model="form.diseaseName" placeholder="如：小麦锈病" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -93,7 +79,7 @@
               <el-input v-model="form.cropName" placeholder="如：小麦" />
             </el-form-item>
           </el-col>
-          <el-col :span="4">
+          <el-col :span="8">
             <el-form-item label="分类">
               <el-select v-model="form.category" style="width: 100%;">
                 <el-option label="真菌" value="真菌" />
@@ -104,64 +90,49 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="4">
-            <el-form-item label="严重度">
-              <el-select v-model="form.severity" style="width: 100%;">
-                <el-option label="轻" value="轻" />
-                <el-option label="中" value="中" />
-                <el-option label="重" value="重" />
-              </el-select>
+        </el-row>
+
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="中文名">
+              <el-input v-model="form.chineseName" placeholder="如：小麦条锈病" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="英文名">
+              <el-input v-model="form.englishName" placeholder="如：Wheat Stripe Rust" />
             </el-form-item>
           </el-col>
         </el-row>
 
-        <!-- 症状描述 -->
-        <div class="form-section-title">症状描述</div>
+        <!-- 简介 -->
+        <div class="form-section-title">简介</div>
         <el-form-item>
-          <el-input v-model="form.symptomsText" type="textarea" :rows="3" placeholder="典型症状描述" />
+          <el-input v-model="form.introduction" type="textarea" :rows="3" placeholder="病害简介描述" />
         </el-form-item>
 
-        <!-- 发病条件 -->
-        <div class="form-section-title">发病条件</div>
-        <el-row :gutter="16">
-          <el-col :span="6">
-            <el-form-item label="适宜温度">
-              <el-input v-model="form.conditionsTemperature" placeholder="如：10-20°C" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="适宜湿度">
-              <el-input v-model="form.conditionsHumidity" placeholder="如：> 80%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="高发季节">
-              <el-input v-model="form.conditionsSeason" placeholder="如：春季(3-5月)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="易感生育期">
-              <el-input v-model="form.conditionsStage" placeholder="如：拔节期至灌浆期" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <!-- 传播途径 -->
-        <div class="form-section-title">传播途径</div>
+        <!-- 症状特征 -->
+        <div class="form-section-title">症状特征</div>
         <el-form-item>
-          <el-input v-model="form.transmission" type="textarea" :rows="2" placeholder="传播途径描述" />
+          <el-input v-model="form.symbol" type="textarea" :rows="3" placeholder="典型症状特征描述" />
+        </el-form-item>
+
+        <!-- 发病因素 -->
+        <div class="form-section-title">发病因素</div>
+        <el-form-item>
+          <el-input v-model="form.factor" type="textarea" :rows="3" placeholder="发病因素描述" />
         </el-form-item>
 
         <!-- 防治方法 -->
         <div class="form-section-title">防治方法</div>
-        <el-form-item label="农业防治">
-          <el-input v-model="form.preventionAgricultural" type="textarea" :rows="2" placeholder="农业防治措施" />
+        <el-form-item>
+          <el-input v-model="form.prevention" type="textarea" :rows="4" placeholder="防治方法描述" />
         </el-form-item>
-        <el-form-item label="化学防治">
-          <el-input v-model="form.preventionChemical" type="textarea" :rows="2" placeholder="化学防治方法及用药" />
-        </el-form-item>
-        <el-form-item label="生物防治">
-          <el-input v-model="form.preventionBiological" type="textarea" :rows="2" placeholder="生物防治方法" />
+
+        <!-- 病害图片 -->
+        <div class="form-section-title">病害图片</div>
+        <el-form-item>
+          <el-input v-model="form.pics" type="textarea" :rows="2" placeholder="图片URL，每行一个或用逗号分隔" />
         </el-form-item>
       </el-form>
 
@@ -184,7 +155,7 @@ const dialogVisible = ref(false)
 const editingItem = ref(null)
 const saving = ref(false)
 const currentPage = ref(1)
-const pageSize = 20
+const pageSize = ref(20)
 
 const cropOptions = ['小麦', '水稻', '玉米', '番茄', '黄瓜', '辣椒', '草莓', '苹果', '葡萄', '白菜']
 
@@ -195,19 +166,16 @@ const filters = reactive({
 })
 
 const defaultForm = {
-  name: '',
+  diseaseName: '',
   cropName: '',
   category: '真菌',
-  severity: '中',
-  symptomsText: '',
-  conditionsTemperature: '',
-  conditionsHumidity: '',
-  conditionsSeason: '',
-  conditionsStage: '',
-  transmission: '',
-  preventionAgricultural: '',
-  preventionChemical: '',
-  preventionBiological: '',
+  chineseName: '',
+  englishName: '',
+  introduction: '',
+  symbol: '',
+  factor: '',
+  prevention: '',
+  pics: '',
 }
 
 const form = reactive({ ...defaultForm })
@@ -222,7 +190,7 @@ const handleSearch = () => {
 }
 
 const fetchList = () => {
-  const params = { page: currentPage.value, pageSize }
+  const params = { page: currentPage.value, pageSize: pageSize.value }
   if (filters.keyword) params.keyword = filters.keyword
   if (filters.cropName) params.cropName = filters.cropName
   if (filters.category) params.category = filters.category
@@ -234,6 +202,12 @@ const handlePageChange = (page) => {
   fetchList()
 }
 
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+  fetchList()
+}
+
 const openCreate = () => {
   editingItem.value = null
   Object.assign(form, defaultForm)
@@ -242,27 +216,26 @@ const openCreate = () => {
 
 const openEdit = (row) => {
   editingItem.value = row
+  // parsedPics 已在 store 中解析好
+  const picsArr = row.parsedPics || []
   Object.assign(form, {
-    name: row.name || '',
+    diseaseName: row.diseaseName || '',
     cropName: row.cropName || '',
     category: row.category || '真菌',
-    severity: row.severity || '中',
-    symptomsText: row.symptomsText || '',
-    conditionsTemperature: row.conditionsTemperature || '',
-    conditionsHumidity: row.conditionsHumidity || '',
-    conditionsSeason: row.conditionsSeason || '',
-    conditionsStage: row.conditionsStage || '',
-    transmission: row.transmission || '',
-    preventionAgricultural: row.preventionAgricultural || '',
-    preventionChemical: row.preventionChemical || '',
-    preventionBiological: row.preventionBiological || '',
+    chineseName: row.chineseName || '',
+    englishName: row.englishName || '',
+    introduction: row.introduction || '',
+    symbol: row.symbol || '',
+    factor: row.factor || '',
+    prevention: row.prevention || '',
+    pics: picsArr.join('\n'),
   })
   dialogVisible.value = true
 }
 
 const handleDelete = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定删除「${row.name}」吗？`, '删除确认', {
+    await ElMessageBox.confirm(`确定删除「${row.diseaseName}」吗？`, '删除确认', {
       confirmButtonText: '删除',
       cancelButtonText: '取消',
       type: 'warning',
@@ -275,13 +248,19 @@ const handleDelete = async (row) => {
 }
 
 const handleSave = async () => {
-  if (!form.name || !form.cropName) {
+  if (!form.diseaseName || !form.cropName) {
     ElMessage.warning('请填写病害名称和所属作物')
     return
   }
   saving.value = true
   try {
     const data = { ...form }
+    // pics: 将换行/逗号分隔的URL转为JSON数组字符串，匹配后端字段格式
+    const picsArr = data.pics
+      ? data.pics.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean)
+      : []
+    data.pics = JSON.stringify(picsArr)
+
     if (editingItem.value) {
       await store.updateKnowledge(editingItem.value.id, data)
       ElMessage.success('已更新')
@@ -307,23 +286,25 @@ const categoryTagType = (cat) => {
   const map = { 真菌: 'primary', 细菌: 'warning', 病毒: 'danger', 虫害: 'success', 生理性: 'info' }
   return map[cat] || 'info'
 }
-
-const severityTagType = (sev) => {
-  const map = { 轻: 'success', 中: 'warning', 重: 'danger' }
-  return map[sev] || 'info'
-}
 </script>
 
 <style lang="scss" scoped>
 .admin-knowledge {
-  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 48px);
+
+  @include mobile {
+    height: calc(100vh - 82px);
+  }
 }
 
 .page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
 }
 
 .page-title {
@@ -336,11 +317,14 @@ const severityTagType = (sev) => {
 .filter-bar {
   display: flex;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
 }
 
 .table-card {
   @include card-base;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 
   :deep(.el-table) {
@@ -353,7 +337,8 @@ const severityTagType = (sev) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 12px;
+  padding-top: 12px;
+  flex-shrink: 0;
 }
 
 .total-info {

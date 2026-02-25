@@ -84,6 +84,7 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
 
   // 选择作物 → 进入 Level 3
   async function selectCropName(name, page = 1) {
+    console.log(name)
     selectedCropName.value = name
     currentLevel.value = 3
     currentPage.value = page
@@ -92,7 +93,7 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     try {
       const res = await api.getDiseases({
         category: selectedCategory.value,
-        crop_name: name,
+        crop_name: selectedCropName.value,
         page,
         pageSize: pageSize.value,
       })

@@ -26,6 +26,10 @@
           <el-icon><ChatLineSquare /></el-icon>
           <span>反馈审核</span>
         </el-menu-item>
+        <el-menu-item index="/admin/announcement">
+          <el-icon><Bell /></el-icon>
+          <span>公告推送</span>
+        </el-menu-item>
       </el-menu>
       <div class="admin-back">
         <el-button type="primary" @click="goBack">
@@ -51,7 +55,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { DataBoard, User, Reading, ChatLineSquare, ArrowLeft, HomeFilled } from '@element-plus/icons-vue'
+import { DataBoard, User, Reading, ChatLineSquare, Bell, ArrowLeft, HomeFilled } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
