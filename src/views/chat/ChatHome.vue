@@ -5,7 +5,7 @@
       <!-- Empty state -->
       <div v-if="chatStore.chatMessages.length === 0" class="empty-state">
         <template v-if="sidebarStore.isAgricultureAgent">
-          <LogoSection class="logo-section" title="Agent小农" subtitle="专业农业智能助手" altText="Agent小农" />
+          <LogoSection class="logo-section" title="Agent小农" subtitle="会思考、会调工具的农业智能体" altText="Agent小农" />
           <AgentHotQuestionCard class="hot-question-card" />
         </template>
         <template v-else>

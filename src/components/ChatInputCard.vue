@@ -27,7 +27,7 @@
       <textarea
         ref="textareaRef"
         v-model="chatStore.inputValue"
-        placeholder="请输入您的问题..."
+        :placeholder="sidebarStore.isAgricultureAgent ? '描述问题、上传图片，Agent会思考并调用工具为您分析...' : '请输入您的问题...'"
         class="chat-textarea"
         rows="1"
         @input="autoResize"
