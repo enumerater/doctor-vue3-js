@@ -24,6 +24,11 @@
         <span class="stat-value safe">{{ store.healthyCount }}</span>
         <span class="stat-label">健康</span>
       </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-value other">{{ store.nonCropCount }}</span>
+        <span class="stat-label">非作物</span>
+      </div>
     </div>
 
     <!-- 筛选栏 -->
@@ -166,6 +171,10 @@ const goDetail = (record) => {
 
   &.safe {
     color: #67c23a;
+  }
+
+  &.other {
+    color: #909399;
   }
 }
 

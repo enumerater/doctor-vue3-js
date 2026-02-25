@@ -34,6 +34,9 @@ export const useDiagnosisStore = defineStore('diagnosis', () => {
   })
 
   const totalCount = computed(() => stats.value.total)
+  const diseasedCount = computed(() => stats.value.diseased || 0)
+  const healthyCount = computed(() => stats.value.healthy || 0)
+  const nonCropCount = computed(() => stats.value.nonCrop || 0)
 
   const cropTypes = computed(() => {
     const types = new Set(records.value.map((r) => r.cropType).filter(Boolean))
@@ -112,6 +115,9 @@ export const useDiagnosisStore = defineStore('diagnosis', () => {
     filters,
     filteredRecords,
     totalCount,
+    diseasedCount,
+    healthyCount,
+    nonCropCount,
     cropTypes,
     fetchRecords,
     fetchDetail,
