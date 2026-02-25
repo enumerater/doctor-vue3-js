@@ -9,7 +9,7 @@
         active: item.id === sidebarStore.activeItemId,
         'is-agent': item.sessionType === 'agent'
       }" v-for="item in sidebarStore.filteredHistory" :key="item.id"
-        @click="sidebarStore.selectHistoryItem(item.sessionId, item.sessionType)">
+        @click="handleSelectItem(item.sessionId, item.sessionType)">
         <el-badge is-dot v-if="item.unread" class="unread-dot" />
 
         <!-- Agent标识图标 -->
@@ -32,10 +32,16 @@
 
 <script setup>
 import { useSidebarStore } from '@/stores/sidebar'
-import { onMounted } from 'vue'
+import { onMounted, inject } from 'vue'
 import { Sunny, Delete } from '@element-plus/icons-vue'
 
 const sidebarStore = useSidebarStore()
+const showHistory = inject('showHistory', null)
+
+const handleSelectItem = (sessionId, sessionType) => {
+  sidebarStore.selectHistoryItem(sessionId, sessionType)
+  if (showHistory) showHistory.value = false
+}
 
 onMounted(() => {
   sidebarStore.fetchHistoryList()

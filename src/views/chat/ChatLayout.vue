@@ -31,25 +31,19 @@
       </div>
     </div>
 
-    <!-- Mobile: history drawer -->
-    <el-drawer
-      v-if="isMobile"
-      v-model="showHistory"
-      direction="ltr"
-      size="68%"
-      :modal="false"
-      :append-to-body="false"
-      :lock-scroll="false"
-      :show-close="false"
-      class="history-drawer"
-    >
-      <template #header>
+    <!-- Mobile: full-page history view -->
+    <div class="mobile-history-page" v-if="isMobile && showHistory">
+      <div class="mobile-history-header">
+        <button class="back-btn" @click="showHistory = false">
+          <el-icon><ArrowLeft /></el-icon>
+          <span>返回</span>
+        </button>
         <button class="new-chat-btn mobile" @click="handleNewChat">
           <el-icon><Plus /></el-icon>
           <span>新建对话</span>
         </button>
-      </template>
-      <div class="drawer-search">
+      </div>
+      <div class="mobile-history-search">
         <div class="search-box">
           <el-icon class="search-icon"><Search /></el-icon>
           <input
@@ -64,11 +58,13 @@
           ><CircleClose /></el-icon>
         </div>
       </div>
-      <HistoryList />
-    </el-drawer>
+      <div class="mobile-history-list">
+        <HistoryList />
+      </div>
+    </div>
 
     <!-- Main content -->
-    <div class="chat-main">
+    <div class="chat-main" v-show="!isMobile || !showHistory">
 
       <!-- Mobile: toolbar -->
       <div class="mobile-toolbar" v-if="isMobile">
@@ -89,7 +85,7 @@ import { useRouter } from 'vue-router'
 import { useSidebarStore } from '@/stores/sidebar'
 import { useChatStore } from '@/stores/chat'
 import HistoryList from '@/components/HistoryList.vue'
-import { Plus, Search, CircleClose, List, Fold, Expand } from '@element-plus/icons-vue'
+import { Plus, Search, CircleClose, List, Fold, Expand, ArrowLeft } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const sidebarStore = useSidebarStore()
@@ -294,12 +290,59 @@ const handleNewChat = async () => {
   }
 }
 
-.drawer-search {
-  padding: 0 12px 12px;
-}
+.mobile-history-page {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: $bg-main;
 
-:deep(.history-drawer) {
-  box-shadow: $shadow-md;
+  .mobile-history-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid $border;
+    background: #fff;
+    flex-shrink: 0;
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px;
+      border: 1px solid $border;
+      border-radius: $radius-sm;
+      background: $bg-card;
+      color: $text-secondary;
+      font-size: 14px;
+      cursor: pointer;
+      transition: $transition-fast;
+
+      &:active {
+        background: $border;
+      }
+
+      .el-icon {
+        font-size: 16px;
+      }
+    }
+
+    .new-chat-btn {
+      flex: 1;
+    }
+  }
+
+  .mobile-history-search {
+    padding: 12px 14px;
+    flex-shrink: 0;
+  }
+
+  .mobile-history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 6px;
+  }
 }
 
 .chat-main {
