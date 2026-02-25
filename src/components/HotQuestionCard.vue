@@ -109,8 +109,8 @@ function handleQuestionClick(content) {
   animation: slideInLeft 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 
   @include mobile {
-    padding: 0.875rem 1rem;
-    font-size: 0.875rem;
+    padding: 0.75rem 0.9rem;
+    font-size: 0.85rem;
     gap: 0.75rem;
     border-radius: $radius-sm;
   }

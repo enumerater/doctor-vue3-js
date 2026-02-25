@@ -45,11 +45,11 @@ const goNotifications = () => {
 <template>
   <header class="top-header">
     <div class="header-left">
-      <el-icon class="menu-toggle" @click="emit('toggle-sidebar')" :size="20">
+      <el-icon v-show="!isMobile" class="menu-toggle" @click="emit('toggle-sidebar')" :size="20">
         <Menu />
       </el-icon>
       <div class="logo" @click="goHome">
-        <span class="logo-icon">🌿</span>
+        <img class="logo-icon" src="@/assets/icon.png" alt="logo" />
         <span class="logo-text">小农</span>
       </div>
     </div>
@@ -129,7 +129,9 @@ const goNotifications = () => {
   user-select: none;
 
   .logo-icon {
-    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
   }
 
   .logo-text {

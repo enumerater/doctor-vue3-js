@@ -157,12 +157,12 @@ const sendMessage = async (content, images = []) => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  min-height: 100%;
   gap: 12px;
 
   @include mobile {
     justify-content: flex-start;
-    padding-top: 2rem;
+    padding-top: 1rem;
     gap: 8px;
   }
 
@@ -171,7 +171,7 @@ const sendMessage = async (content, images = []) => {
     text-align: center;
 
     @include mobile {
-      margin-bottom: 1rem;
+      margin-bottom: 0.5rem;
     }
   }
 
@@ -188,7 +188,7 @@ const sendMessage = async (content, images = []) => {
 
     @include mobile {
       max-width: none;
-      padding: 1rem;
+      padding: 0.85rem;
       border-radius: $radius-md;
       box-shadow: $shadow-sm;
     }

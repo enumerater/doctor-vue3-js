@@ -19,7 +19,7 @@ const props = defineProps({
 <template>
   <div class="logo-wrapper">
     <div class="logo-container">
-      <img src="@/assets/S-农业.png" :alt="altText" class="logo-img" />
+      <img src="@/assets/icon.png" :alt="altText" class="logo-img" />
       <div class="logo-glow"></div>
     </div>
     <h2 class="logo-title">

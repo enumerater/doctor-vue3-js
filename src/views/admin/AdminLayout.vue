@@ -2,7 +2,7 @@
   <div class="admin-layout">
     <div class="admin-sidebar">
       <div class="admin-logo">
-        <span class="logo-icon">🌿</span>
+        <img class="logo-icon" src="@/assets/icon.png" alt="logo" />
         <span class="logo-text">管理后台</span>
       </div>
       <el-menu
@@ -96,7 +96,9 @@ const goBack = () => {
   border-bottom: 1px solid $border;
 
   .logo-icon {
-    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
   }
 
   .logo-text {

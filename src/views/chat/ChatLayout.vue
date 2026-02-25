@@ -36,8 +36,12 @@
       v-if="isMobile"
       v-model="showHistory"
       direction="ltr"
-      size="75%"
+      size="68%"
+      :modal="false"
+      :append-to-body="false"
+      :lock-scroll="false"
       :show-close="false"
+      class="history-drawer"
     >
       <template #header>
         <button class="new-chat-btn mobile" @click="handleNewChat">
@@ -292,6 +296,10 @@ const handleNewChat = async () => {
 
 .drawer-search {
   padding: 0 12px 12px;
+}
+
+:deep(.history-drawer) {
+  box-shadow: $shadow-md;
 }
 
 .chat-main {
