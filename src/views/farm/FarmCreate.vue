@@ -20,10 +20,6 @@
           <el-form-item label="所在位置" prop="location">
             <el-input v-model="form.location" placeholder="省/市/区（选填）" />
           </el-form-item>
-
-          <el-form-item label="总面积(亩)" prop="area">
-            <el-input v-model="form.area" type="number" placeholder="请输入面积" />
-          </el-form-item>
         </div>
 
         <div class="form-actions">
@@ -55,12 +51,10 @@ const formRef = ref(null)
 const form = reactive({
   name: '',
   location: '',
-  area: '',
 })
 
 const rules = {
   name: [{ required: true, message: '请输入农场名称', trigger: 'blur' }],
-  area: [{ required: true, message: '请输入面积', trigger: 'blur' }],
 }
 
 const onSubmit = async () => {
@@ -70,7 +64,7 @@ const onSubmit = async () => {
     const farm = await store.createFarm({
       name: form.name,
       location: form.location || undefined,
-      area: Number(form.area),
+      area: 0,
     })
     if (farm) {
       ElMessage.success('创建成功')

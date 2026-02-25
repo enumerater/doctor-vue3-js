@@ -18,7 +18,7 @@
       <div class="overview-card">
         <div class="overview-stats">
           <div class="stat-item">
-            <span class="stat-value">{{ store.currentFarm.area || 0 }}</span>
+            <span class="stat-value">{{ farmArea }}</span>
             <span class="stat-label">总面积(亩)</span>
           </div>
           <div class="stat-divider"></div>
@@ -86,6 +86,12 @@ onMounted(() => {
 const cropCount = computed(() => {
   const plots = store.currentFarm?.plots || []
   return new Set(plots.map((p) => p.cropType).filter(Boolean)).size
+})
+
+const farmArea = computed(() => {
+  const plots = store.currentFarm?.plots || []
+  const sum = plots.reduce((s, p) => s + (Number(p.area) || 0), 0)
+  return parseFloat(sum.toFixed(1))
 })
 
 const goAddPlot = () => {
