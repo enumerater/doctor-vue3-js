@@ -16,11 +16,10 @@ const router = useRouter()
 const messageList = ref(null)
 const chatInputCardRef = ref(null)
 
-// Agent step config (merged from AgentDetail)
+// Agent step config
 const getStepConfig = (type) => {
   const configs = {
     think: { title: '思考汇总结果', icon: '', color: '#059669' },
-
     final_result: { title: '诊断总结报告', icon: '', color: '#059669' },
     default: { title: '分析结果', icon: '', color: '#6B7280' },
   }
@@ -59,9 +58,47 @@ const hasAgentSteps = (msg) => {
   return msg.steps && msg.steps.length > 0
 }
 
+// --- 管理每个消息中折叠面板的展开状态 ---
+const activeCollapseMap = reactive({})
+
+watch(
+  () => messages.value,
+  (newMsgs) => {
+    if (!newMsgs) return
+    newMsgs.forEach((msg, index) => {
+      const key = msg.id || index
+      if (hasAgentSteps(msg) && !activeCollapseMap[key]) {
+        activeCollapseMap[key] = [msg.steps.length - 1]
+      }
+    })
+  },
+  { deep: true, immediate: true }
+)
+
 const parseMarkdown = (content) => {
   if (!content) return ''
   try { return marked.parse(content) } catch { return content }
+}
+
+// --- 智能解析复杂内容（处理包含“参考资料”的JSON结构） ---
+const parseComplexContent = (rawContent) => {
+  if (!rawContent) return { type: 'markdown', data: '' }
+
+  let contentToParse = rawContent.trim()
+  if (contentToParse.startsWith('```')) {
+    contentToParse = contentToParse.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
+  }
+
+  try {
+    const parsed = JSON.parse(contentToParse)
+    if (parsed && typeof parsed === 'object' && (parsed['参考资料'] || parsed['回答'])) {
+      return { type: 'json', data: parsed }
+    }
+  } catch (e) {
+    // 静默失败，回退到普通 markdown
+  }
+
+  return { type: 'markdown', data: rawContent }
 }
 
 const formatTime = (timeStr) => {
@@ -131,7 +168,7 @@ const handleDislike = (msg) => {
   dislikedMsgIds.value.has(msg.id) ? dislikedMsgIds.value.delete(msg.id) : (dislikedMsgIds.value.add(msg.id), likedMsgIds.value.delete(msg.id))
 }
 
-// Send message via ChatInputCard
+// Send message
 const handleSend = (content, images) => {
   const userId = localStorage.getItem('id')
   let stored = String(chatStore.currentSessionId || localStorage.getItem('sessionId') || '')
@@ -173,7 +210,6 @@ const scrollToBottom = () => {
 
 watch(() => messages.value.length, () => nextTick(scrollToBottom))
 watch(() => { const l = messages.value[messages.value.length - 1]; return l?.messageContent || '' }, () => nextTick(scrollToBottom))
-// Also watch agent steps changes for auto-scroll
 watch(
   () => {
     const lastMsg = messages.value[messages.value.length - 1]
@@ -205,7 +241,7 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
 
         <div v-for="(msg, index) in messages" :key="msg.id || index" class="message-item"
           :class="{ 'user-message': msg.messageRole === '0', 'robot-message': msg.messageRole === '1' }">
-          <!-- User message -->
+
           <div v-if="msg.messageRole === '0'" class="message-bubble">
             <div v-if="msg.isImageMessage" class="image-preview-container">
               <div v-for="(imageUrl, imgIdx) in getImagesFromMessage(msg)" :key="imgIdx" class="img-item">
@@ -216,28 +252,71 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
             <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
           </div>
 
-          <!-- Robot message: Agent chain timeline OR normal markdown -->
           <template v-else>
-            <!-- Agent chain timeline -->
             <div v-if="hasAgentSteps(msg)" class="agent-chain-wrapper">
-              <div class="chain-timeline">
+              <el-collapse v-model="activeCollapseMap[msg.id || index]" class="chain-timeline custom-collapse">
+
                 <div v-for="(step, sIdx) in msg.steps" :key="sIdx"
                   :class="['step-node', `type-${step.type}`, { 'is-processing': step.status === 'processing' }]">
+
                   <div v-if="step.type === 'status'" class="status-line">
                     <div class="node-dot"></div>
                     <div class="status-text">{{ step.content }}</div>
                     <div class="loading-spinner" v-if="step.status === 'processing'"></div>
                   </div>
 
-                  <div v-else class="data-card">
-                    <div class="card-header">
-                      <span class="card-icon">{{ getStepConfig(step.type).icon }}</span>
-                      <span class="card-title">{{ getStepConfig(step.type).title }}</span>
+                  <el-collapse-item v-else :name="sIdx" class="data-collapse-item">
+                    <template #title>
+                      <div class="collapse-header">
+                        <span class="card-icon" v-if="getStepConfig(step.type).icon">{{ getStepConfig(step.type).icon
+                          }}</span>
+                        <span class="card-title" :style="{ color: getStepConfig(step.type).color }">{{
+                          getStepConfig(step.type).title }}</span>
+                        <div class="loading-spinner" v-if="step.status === 'processing'" style="margin-left: 8px;">
+                        </div>
+                      </div>
+                    </template>
+
+                    <div class="step-content-container">
+                      <template v-for="parsed in [parseComplexContent(step.content)]" :key="'parsed-' + sIdx">
+
+                        <template v-if="parsed.type === 'json'">
+                          <div class="markdown-body" v-if="parsed.data['回答']" v-html="parseMarkdown(parsed.data['回答'])">
+                          </div>
+
+                          <div class="reference-section" v-if="parsed.data['参考资料'] && parsed.data['参考资料'].length">
+                            <div class="ref-title">参考资料</div>
+                            <div class="ref-cards-wrapper">
+                              <el-tooltip v-for="(refItem, rIdx) in parsed.data['参考资料']" :key="rIdx" effect="light"
+                                placement="top" :show-after="200">
+                                <template #content>
+                                  <div class="ref-tooltip-content">
+                                    <div class="ref-tt-title">{{ refItem.title }}</div>
+                                    <div class="ref-tt-desc" :title="refItem.content">{{ refItem.content }}</div>
+                                  </div>
+                                </template>
+                                <a :href="refItem.url" target="_blank" class="ref-card" @click.stop>
+                                  <svg class="ref-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                  </svg>
+                                  <span class="ref-text">{{ refItem.title }}</span>
+                                </a>
+                              </el-tooltip>
+                            </div>
+                          </div>
+                        </template>
+
+                        <template v-else>
+                          <div class="markdown-body" v-html="parseMarkdown(parsed.data)"></div>
+                        </template>
+                      </template>
                     </div>
-                    <div class="card-body markdown-body" v-html="parseMarkdown(step.content)"></div>
-                  </div>
+
+                  </el-collapse-item>
                 </div>
-              </div>
+              </el-collapse>
 
               <div v-if="msg.messageContent" class="msg-actions agent-actions">
                 <el-button text size="small" @click="handleCopy(msg)">复制</el-button>
@@ -245,7 +324,6 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
               <div class="message-time agent-time">{{ formatTime(msg.messageTime) }}</div>
             </div>
 
-            <!-- Normal markdown bubble -->
             <div v-else class="message-bubble">
               <div class="bubble-content" v-html="parseMarkdown(msg.messageContent)"></div>
 
@@ -311,7 +389,6 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
       </div>
     </div>
 
-    <!-- Input area -->
     <div class="input-wrapper">
       <div class="input-inner">
         <ChatInputCard ref="chatInputCardRef" @send="handleSend" />
@@ -343,7 +420,7 @@ $border-light: rgba(5, 150, 105, 0.1);
   width: 100%;
   -webkit-overflow-scrolling: touch;
 
-  @include mobile {
+  @media (max-width: 768px) {
     padding: 12px 8px;
   }
 }
@@ -367,7 +444,7 @@ $border-light: rgba(5, 150, 105, 0.1);
 
   .empty-text {
     font-size: 14px;
-    color: $text-secondary;
+    color: #6b7280;
   }
 }
 
@@ -384,7 +461,7 @@ $border-light: rgba(5, 150, 105, 0.1);
     justify-content: flex-start;
   }
 
-  @include mobile {
+  @media (max-width: 768px) {
     margin-bottom: 14px;
   }
 }
@@ -392,35 +469,35 @@ $border-light: rgba(5, 150, 105, 0.1);
 .message-bubble {
   max-width: 80%;
 
-  @include mobile {
+  @media (max-width: 768px) {
     max-width: 92%;
   }
 
   .bubble-content {
     padding: 12px 16px;
-    border-radius: $radius-md;
+    border-radius: 8px;
     line-height: 1.7;
     font-size: 14px;
     word-wrap: break-word;
     overflow-wrap: break-word;
     word-break: break-word;
-    box-shadow: $shadow-sm;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 
-    @include mobile {
+    @media (max-width: 768px) {
       padding: 10px 12px;
       font-size: 14px;
     }
 
     .user-message & {
-      background: linear-gradient(135deg, $primary, $secondary);
+      background: linear-gradient(135deg, $primary-green, #10b981);
       color: white;
       border-bottom-right-radius: 4px;
     }
 
     .robot-message & {
       background: #fff;
-      color: $text-primary;
-      border: 1px solid $border;
+      color: #1f2937;
+      border: 1px solid #e5e7eb;
       border-bottom-left-radius: 4px;
     }
 
@@ -483,12 +560,12 @@ $border-light: rgba(5, 150, 105, 0.1);
 
     .robot-message & {
       :deep(strong) {
-        color: $primary;
+        color: $primary-green;
       }
 
       :deep(code) {
-        background: $primary-light;
-        color: $primary;
+        background: rgba(5, 150, 105, 0.1);
+        color: $primary-green;
       }
 
       :deep(pre) {
@@ -498,14 +575,14 @@ $border-light: rgba(5, 150, 105, 0.1);
       :deep(h1),
       :deep(h2),
       :deep(h3) {
-        color: $primary;
+        color: $primary-green;
       }
     }
   }
 
   .message-time {
     font-size: 12px;
-    color: $text-tertiary;
+    color: #9ca3af;
     margin-top: 4px;
     text-align: right;
     padding: 0 4px;
@@ -525,7 +602,7 @@ $border-light: rgba(5, 150, 105, 0.1);
     padding: 3px 6px;
     flex-wrap: wrap;
 
-    @include mobile {
+    @media (max-width: 768px) {
       gap: 1px;
       padding: 2px 4px;
     }
@@ -546,7 +623,7 @@ $border-light: rgba(5, 150, 105, 0.1);
     padding: 0;
     outline: none;
 
-    @include mobile {
+    @media (max-width: 768px) {
       width: 28px;
       height: 28px;
     }
@@ -556,7 +633,7 @@ $border-light: rgba(5, 150, 105, 0.1);
       height: 15px;
       flex-shrink: 0;
 
-      @include mobile {
+      @media (max-width: 768px) {
         width: 14px;
         height: 14px;
       }
@@ -583,9 +660,8 @@ $border-light: rgba(5, 150, 105, 0.1);
       padding: 0 10px;
       gap: 4px;
       font-size: 12px;
-      font-family: inherit;
 
-      @include mobile {
+      @media (max-width: 768px) {
         padding: 0 8px;
         font-size: 11px;
       }
@@ -603,7 +679,7 @@ $border-light: rgba(5, 150, 105, 0.1);
     margin: 0 3px;
     flex-shrink: 0;
 
-    @include mobile {
+    @media (max-width: 768px) {
       margin: 0 1px;
       height: 14px;
     }
@@ -629,122 +705,238 @@ $border-light: rgba(5, 150, 105, 0.1);
   }
 }
 
-// Agent chain timeline styles (merged from AgentDetail)
+// ==========================================
+// Agent Chain Timeline & Element Plus Collapse
+// ==========================================
 .agent-chain-wrapper {
   align-self: flex-start;
   width: 90%;
   max-width: 600px;
 
-  @include mobile {
+  @media (max-width: 768px) {
     width: 100%;
     max-width: none;
   }
+}
 
-  .chain-timeline {
-    position: relative;
-    padding-left: 1.5rem;
-    border-left: 2px dashed rgba($primary-green, 0.2);
-    margin-left: 0.5rem;
+.chain-timeline {
+  position: relative;
+  padding-left: 1.5rem;
+  border-left: 2px dashed rgba($primary-green, 0.2);
+  margin-left: 0.5rem;
 
-    @include mobile {
-      padding-left: 1rem;
-      margin-left: 0.25rem;
-    }
+  @media (max-width: 768px) {
+    padding-left: 1rem;
+    margin-left: 0.25rem;
   }
 }
 
-.step-node {
-  position: relative;
-  margin-bottom: 1rem;
+.custom-collapse {
+  border: none;
+  --el-collapse-border-color: transparent;
 
-  .status-line {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.85rem;
-    color: #6b7280;
+  .step-node {
+    position: relative;
+    margin-bottom: 1rem;
 
-    .node-dot {
-      position: absolute;
-      left: -1.5rem;
-      width: 10px;
-      height: 10px;
-      background: white;
-      border: 2px solid $primary-green;
-      border-radius: 50%;
-      transform: translateX(-40%);
-      z-index: 2;
-    }
-  }
-
-  .data-card {
-    background: white;
-    border-radius: 12px;
-    border: 1px solid $border-light;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    overflow: hidden;
-    transition: transform 0.2s;
-
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    }
-
-    .card-header {
-      padding: 8px 12px;
-      background: rgba($primary-green, 0.03);
-      border-bottom: 1px solid $border-light;
+    .status-line {
       display: flex;
       align-items: center;
       gap: 8px;
+      font-size: 0.85rem;
+      color: #6b7280;
+      margin-bottom: 8px;
 
-      .card-title {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: #374151;
+      .node-dot {
+        position: absolute;
+        left: -1.5rem;
+        width: 10px;
+        height: 10px;
+        background: white;
+        border: 2px solid $primary-green;
+        border-radius: 50%;
+        transform: translateX(-40%);
+        z-index: 2;
       }
     }
 
-    .card-body {
-      padding: 12px;
-      font-size: 0.93rem;
-      line-height: 1.6;
-      color: #1f2937;
-      overflow-wrap: break-word;
-      word-break: break-word;
+    .data-collapse-item {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid $border-light;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+      transition: transform 0.2s;
 
-      :deep(pre) {
-        overflow-x: auto;
-        max-width: 100%;
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       }
 
-      :deep(table) {
-        display: block;
-        overflow-x: auto;
-        max-width: 100%;
-      }
-
-      :deep(img) {
-        max-width: 100%;
+      :deep(.el-collapse-item__header) {
+        border-bottom: none;
         height: auto;
+        line-height: normal;
+        padding: 10px 12px;
+        background: rgba($primary-green, 0.03);
+
+        &.is-active {
+          border-bottom: 1px solid $border-light;
+        }
       }
 
-      @include mobile {
-        padding: 10px;
-        font-size: 0.875rem;
+      :deep(.el-collapse-item__wrap) {
+        border-bottom: none;
+        background-color: transparent;
       }
+
+      :deep(.el-collapse-item__content) {
+        padding: 0;
+      }
+    }
+  }
+
+  .collapse-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #374151;
     }
   }
 }
 
-.type-final_result .data-card {
+.type-final_result .data-collapse-item {
   border: 1.5px solid rgba($primary-green, 0.4);
 
-  .card-header {
+  :deep(.el-collapse-item__header) {
     background: rgba($primary-green, 0.08);
   }
 }
 
+// === Markdown 样式 ===
+.step-content-container {
+  padding-bottom: 8px;
+}
+
+.markdown-body {
+  padding: 12px;
+  font-size: 0.93rem;
+  line-height: 1.6;
+  color: #1f2937;
+  overflow-wrap: break-word;
+  word-break: break-word;
+
+  :deep(pre) {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  :deep(table) {
+    display: block;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  :deep(img) {
+    max-width: 100%;
+    height: auto;
+  }
+
+  @media (max-width: 768px) {
+    padding: 10px;
+    font-size: 0.875rem;
+  }
+}
+
+// === 参考资料小卡片与悬浮窗样式 ===
+.reference-section {
+  margin: 0 12px 12px;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px dashed rgba($primary-green, 0.3);
+
+  .ref-title {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+
+  .ref-cards-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ref-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: #374151;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    max-width: 220px;
+    cursor: pointer;
+
+    &:hover {
+      border-color: $primary-green;
+      background: rgba($primary-green, 0.05);
+      color: $primary-green;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .ref-icon {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .ref-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}
+
+/* Tooltip 内部的自定义气泡结构样式（因为插槽在模板内，Scoped样式是可以生效的） */
+.ref-tooltip-content {
+  max-width: 280px;
+  padding: 4px;
+
+  .ref-tt-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #111827;
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+
+  .ref-tt-desc {
+    font-size: 12px;
+    color: #4b5563;
+    line-height: 1.5;
+    /* 多行截断 */
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// Utilities
 .loading-spinner {
   width: 12px;
   height: 12px;
@@ -773,10 +965,10 @@ $border-light: rgba(5, 150, 105, 0.1);
 // Input wrapper
 .input-wrapper {
   padding: 12px 20px;
-  background: $bg-main;
+  background: #f8faf9;
   flex-shrink: 0;
 
-  @include mobile {
+  @media (max-width: 768px) {
     padding: 8px 8px;
     padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   }
