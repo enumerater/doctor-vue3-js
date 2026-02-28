@@ -8,29 +8,6 @@
       </template>
     </ContentHeader>
 
-    <!-- 统计摘要 -->
-    <div class="stats-bar">
-      <div class="stat-item">
-        <span class="stat-value">{{ store.totalCount }}</span>
-        <span class="stat-label">总诊断</span>
-      </div>
-      <div class="stat-divider"></div>
-      <div class="stat-item">
-        <span class="stat-value warn">{{ store.diseasedCount }}</span>
-        <span class="stat-label">不健康</span>
-      </div>
-      <div class="stat-divider"></div>
-      <div class="stat-item">
-        <span class="stat-value safe">{{ store.healthyCount }}</span>
-        <span class="stat-label">健康</span>
-      </div>
-      <div class="stat-divider"></div>
-      <div class="stat-item">
-        <span class="stat-value other">{{ store.nonCropCount }}</span>
-        <span class="stat-label">非作物</span>
-      </div>
-    </div>
-
     <!-- 筛选栏 -->
     <div class="filter-bar">
       <el-select
@@ -39,6 +16,7 @@
         clearable
         size="small"
         class="filter-select"
+        @change="val => store.setFilter('cropType', val)"
       >
         <el-option
           v-for="crop in store.cropTypes"
@@ -138,57 +116,6 @@ const goDetail = (record) => {
 <style lang="scss" scoped>
 .diagnosis-index {
   padding-bottom: 20px;
-}
-
-.stats-bar {
-  display: flex;
-  align-items: center;
-  background: $bg-card;
-  border-radius: $radius-md;
-  border: 1px solid $border;
-  padding: 16px 0;
-  margin: 0 24px 16px;
-
-  @include mobile {
-    margin: 0 16px 12px;
-  }
-}
-
-.stat-item {
-  flex: 1;
-  text-align: center;
-}
-
-.stat-value {
-  display: block;
-  font-size: 22px;
-  font-weight: 700;
-  color: $primary;
-
-  &.warn {
-    color: #e6a23c;
-  }
-
-  &.safe {
-    color: #67c23a;
-  }
-
-  &.other {
-    color: #909399;
-  }
-}
-
-.stat-label {
-  display: block;
-  font-size: 12px;
-  color: $text-tertiary;
-  margin-top: 2px;
-}
-
-.stat-divider {
-  width: 1px;
-  height: 32px;
-  background: $border;
 }
 
 .filter-bar {

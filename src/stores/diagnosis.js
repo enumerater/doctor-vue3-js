@@ -145,8 +145,10 @@ export const useDiagnosisStore = defineStore('diagnosis', () => {
     resetFilters,
     // computed
     cropTypes: computed(() => {
-      // 从统计数据或者全量获取（如果后端支持）
-      // 这里暂时保留从已有 records 提取逻辑，或者由用户通过 search 指定
+      // 优先从统计数据获取全量作物列表，避免筛选后列表缩小
+      if (stats.value.cropDistribution && stats.value.cropDistribution.length > 0) {
+        return stats.value.cropDistribution.map(item => item.name)
+      }
       const types = new Set(records.value.map((r) => r.cropType).filter(Boolean))
       return [...types]
     }),

@@ -216,24 +216,6 @@
 
     <!-- History tab -->
     <div class="history-content" v-show="activeTab === 'history'">
-      <!-- Stats bar -->
-      <div class="stats-bar">
-        <div class="stat-item">
-          <span class="stat-value">{{ diagnosisStore.totalCount }}</span>
-          <span class="stat-label">总诊断</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-value warn">{{ diagnosisStore.diseasedCount }}</span>
-          <span class="stat-label">不健康</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-value safe">{{ diagnosisStore.healthyCount }}</span>
-          <span class="stat-label">健康</span>
-        </div>
-      </div>
-
       <!-- Filter bar -->
       <div class="filter-bar">
         <el-select
@@ -242,6 +224,7 @@
           clearable
           size="small"
           class="filter-select"
+          @change="val => diagnosisStore.setFilter('cropType', val)"
         >
           <el-option
             v-for="crop in diagnosisStore.cropTypes"
@@ -1459,57 +1442,6 @@ onBeforeUnmount(() => {
   @include mobile {
     padding: 0.75rem 1rem 1.5rem;
   }
-}
-
-.stats-bar {
-  display: flex;
-  align-items: center;
-  background: $bg-card;
-  border-radius: $radius-md;
-  border: 1px solid $border;
-  padding: 16px 0;
-  margin-bottom: 16px;
-
-  @include mobile {
-    padding: 12px 0;
-  }
-}
-
-.stat-item {
-  flex: 1;
-  text-align: center;
-}
-
-.stat-value {
-  display: block;
-  font-size: 22px;
-  font-weight: 700;
-  color: $primary;
-
-  @include mobile {
-    font-size: 18px;
-  }
-
-  &.warn {
-    color: #e6a23c;
-  }
-
-  &.safe {
-    color: #67c23a;
-  }
-}
-
-.stat-label {
-  display: block;
-  font-size: 12px;
-  color: $text-tertiary;
-  margin-top: 2px;
-}
-
-.stat-divider {
-  width: 1px;
-  height: 32px;
-  background: $border;
 }
 
 .filter-bar {
