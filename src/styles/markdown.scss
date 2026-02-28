@@ -1,0 +1,160 @@
+// Markdown styles for chat bubbles
+@use './variables.scss' as *;
+
+.markdown-body {
+  font-size: 14px;
+  line-height: 1.6;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+
+  p {
+    margin: 0.5em 0;
+    &:first-child { margin-top: 0; }
+    &:last-child { margin-bottom: 0; }
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    margin: 0.8em 0 0.4em;
+    font-weight: 600;
+    line-height: 1.25;
+    color: inherit;
+  }
+
+  h1 { font-size: 1.25em; }
+  h2 { font-size: 1.15em; }
+  h3 { font-size: 1.05em; }
+
+  strong {
+    font-weight: 600;
+    color: inherit;
+  }
+
+  em {
+    font-style: italic;
+  }
+
+  ul, ol {
+    margin: 0.5em 0;
+    padding-left: 1.5em;
+  }
+
+  li {
+    margin: 0.2em 0;
+  }
+
+  code {
+    padding: 0.2em 0.4em;
+    margin: 0;
+    font-size: 85%;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+    font-family: monospace;
+  }
+
+  pre {
+    margin: 0.8em 0;
+    padding: 12px;
+    overflow: auto;
+    font-size: 85%;
+    line-height: 1.45;
+    background-color: #f6f8fa;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+
+    code {
+      padding: 0;
+      margin: 0;
+      background-color: transparent;
+      border: 0;
+      font-size: 100%;
+      word-break: normal;
+      white-space: pre;
+    }
+  }
+
+  blockquote {
+    padding: 0 1em;
+    color: #6a737d;
+    border-left: 0.25em solid #dfe2e5;
+    margin: 0.5em 0;
+  }
+
+  table {
+    display: block;
+    width: 100%;
+    overflow: auto;
+    border-spacing: 0;
+    border-collapse: collapse;
+    margin: 0.8em 0;
+
+    tr {
+      background-color: #fff;
+      border-top: 1px solid #c6cbd1;
+      &:nth-child(2n) {
+        background-color: #f6f8fa;
+      }
+    }
+
+    th, td {
+      padding: 6px 13px;
+      border: 1px solid #dfe2e5;
+    }
+
+    th {
+      font-weight: 600;
+    }
+  }
+
+  img {
+    max-width: 100%;
+    box-sizing: content-box;
+    background-color: #fff;
+  }
+
+  hr {
+    height: 0.25em;
+    padding: 0;
+    margin: 1.2em 0;
+    background-color: #e1e4e8;
+    border: 0;
+  }
+
+  // Adjustments for user messages (usually on dark/primary background)
+  .user-message & {
+    color: white;
+    
+    code {
+      background-color: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+    
+    pre {
+      background-color: rgba(0, 0, 0, 0.1);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: white;
+      
+      code {
+        background-color: transparent;
+      }
+    }
+
+    blockquote {
+      color: rgba(255, 255, 255, 0.8);
+      border-left-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    table {
+      tr {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-top-color: rgba(255, 255, 255, 0.2);
+        &:nth-child(2n) {
+          background-color: rgba(255, 255, 255, 0.1);
+        }
+      }
+      th, td {
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+    }
+  }
+}

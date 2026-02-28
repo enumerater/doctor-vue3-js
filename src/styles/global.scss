@@ -1,5 +1,6 @@
 // 全局重置与通用样式
 @use './variables.scss' as *;
+@use './markdown.scss' as *;
 
 * {
   margin: 0;

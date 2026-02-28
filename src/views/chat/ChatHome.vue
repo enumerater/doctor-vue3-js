@@ -26,7 +26,7 @@
           }"
         >
           <div class="message-bubble">
-            <div class="bubble-content" v-html="parseMarkdown(msg.messageContent)"></div>
+            <div class="bubble-content markdown-body" v-html="parseMarkdown(msg.messageContent)"></div>
             <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
           </div>
         </div>
@@ -96,8 +96,12 @@ watch(
 const parseMarkdown = (content) => {
   if (!content) return ''
   try {
-    return marked.parse(content)
-  } catch {
+    // For marked v17+, marked.parse is the standard way.
+    // Ensure content is a string.
+    const strContent = String(content)
+    return marked.parse(strContent)
+  } catch (err) {
+    console.error('Markdown parsing failed:', err)
     return content
   }
 }

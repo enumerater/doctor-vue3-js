@@ -96,7 +96,15 @@ watch(
 
 const parseMarkdown = (content) => {
   if (!content) return ''
-  try { return marked.parse(content) } catch { return content }
+  try {
+    // For marked v17+, marked.parse is the standard way.
+    // Ensure content is a string.
+    const strContent = String(content)
+    return marked.parse(strContent)
+  } catch (err) {
+    console.error('Markdown parsing failed:', err)
+    return content
+  }
 }
 
 // --- 智能解析复杂内容（处理包含“参考资料”的JSON结构） ---
@@ -267,7 +275,7 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
                 <img :src="imageUrl" alt="上传图片" />
               </div>
             </div>
-            <div class="bubble-content" v-html="parseMarkdown(msg.messageContent)"></div>
+            <div class="bubble-content markdown-body" v-html="parseMarkdown(msg.messageContent)"></div>
             <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
           </div>
 
@@ -366,7 +374,7 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
             </div>
 
             <div v-else class="message-bubble">
-              <div class="bubble-content" v-html="parseMarkdown(msg.messageContent)"></div>
+              <div class="bubble-content markdown-body" v-html="parseMarkdown(msg.messageContent)"></div>
 
               <div v-if="msg.messageContent" class="msg-actions">
                 <div class="action-bar">
@@ -541,84 +549,6 @@ $border-light: rgba(5, 150, 105, 0.1);
       border: 1px solid #e5e7eb;
       border-bottom-left-radius: 4px;
     }
-
-    // Markdown styles
-    :deep(h1),
-    :deep(h2),
-    :deep(h3) {
-      margin: 0.3em 0;
-      font-weight: 600;
-    }
-
-    :deep(h1) {
-      font-size: 1.1em;
-    }
-
-    :deep(h2) {
-      font-size: 1.05em;
-    }
-
-    :deep(h3) {
-      font-size: 1em;
-    }
-
-    :deep(p) {
-      margin: 0.3em 0;
-    }
-
-    :deep(ul),
-    :deep(ol) {
-      padding-left: 1.2em;
-      margin: 0.4em 0;
-    }
-
-    :deep(code) {
-      padding: 0.1em 0.3em;
-      border-radius: 4px;
-      font-size: 0.85em;
-    }
-
-    :deep(pre) {
-      padding: 0.5em;
-      border-radius: 8px;
-      overflow-x: auto;
-      margin: 0.5em 0;
-      font-size: 0.85em;
-      max-width: 100%;
-    }
-
-    :deep(table) {
-      display: block;
-      overflow-x: auto;
-      max-width: 100%;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    :deep(img) {
-      max-width: 100%;
-      height: auto;
-    }
-
-    .robot-message & {
-      :deep(strong) {
-        color: $primary-green;
-      }
-
-      :deep(code) {
-        background: rgba(5, 150, 105, 0.1);
-        color: $primary-green;
-      }
-
-      :deep(pre) {
-        background: rgba(0, 0, 0, 0.04);
-      }
-
-      :deep(h1),
-      :deep(h2),
-      :deep(h3) {
-        color: $primary-green;
-      }
-    }
   }
 
   .message-time {
@@ -787,10 +717,11 @@ $border-light: rgba(5, 150, 105, 0.1);
     .status-line {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       font-size: 0.85rem;
-      color: #6b7280;
-      padding: 4px 0;
+      color: #94a3b8;
+      padding: 6px 12px;
+      letter-spacing: 0.01em;
 
       .node-dot {
         position: absolute;
@@ -931,91 +862,28 @@ $border-light: rgba(5, 150, 105, 0.1);
 
 // === Markdown 样式修正 ===
 .step-content-container {
-  padding-bottom: 8px;
-}
-
-.markdown-body {
   padding: 16px 20px;
-  font-size: 0.95rem;
-  line-height: 1.8;
-  color: #374151;
-  overflow-wrap: break-word;
-  word-break: break-word;
+  background: #fff;
 
-  :deep(p) {
-    margin: 0.8em 0;
-  }
+  .markdown-body {
+    color: #4b5563; // 稳重的中灰色
+    font-size: 0.9rem;
+    line-height: 1.8;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    letter-spacing: 0.01em;
 
-  :deep(ul),
-  :deep(ol) {
-    padding-left: 1.5em; // 增加左边距，防止小圆点被切
-    margin: 1em 0;
-    list-style-position: outside; // 确保圆点在内容区域内
-  }
-
-  :deep(li) {
-    margin-bottom: 0.5em;
-    padding-left: 0.2em;
-    
-    // 确保圆点显示完整
-    &::marker {
-      color: $primary-green;
+    :deep(p) {
+      margin: 0.6em 0;
     }
-  }
 
-  :deep(h1), :deep(h2), :deep(h3) {
-    color: #111827;
-    margin-top: 1.5em;
-    margin-bottom: 0.8em;
-    font-weight: 700;
-  }
-
-  :deep(strong) {
-    color: #111827;
-    font-weight: 600;
-  }
-
-  :deep(pre) {
-    overflow-x: auto;
-    max-width: 100%;
-    background: #f8fafc;
-    border-radius: 10px;
-    padding: 16px;
-    border: 1px solid #e2e8f0;
-  }
-
-  :deep(table) {
-    display: block;
-    overflow-x: auto;
-    max-width: 100%;
-    border-collapse: collapse;
-    margin: 1.5em 0;
-    
-    th, td {
-      border: 1px solid #e2e8f0;
-      padding: 10px 14px;
-    }
-    
-    th {
-      background: #f8fafc;
+    :deep(strong) {
+      color: #374151; // 加粗文字稍微深一点，保持对比度
       font-weight: 600;
     }
-  }
-
-  @media (max-width: 768px) {
-    padding: 12px 16px;
-    font-size: 0.9rem;
-  }
-}
-
-@keyframes fadeInSlideRight {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+    
+    :deep(ul), :deep(ol) {
+      padding-left: 1.2em;
+    }
   }
 }
 
