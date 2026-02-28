@@ -56,7 +56,7 @@
                   :key="item.name"
                   class="crop-item"
                   :class="{ active: form.cropType === item.name }"
-                  @click="form.cropType = item.name"
+                  @click="selectCrop(item.name)"
                 >
                   <span class="crop-icon">{{ item.icon }}</span>
                   <span class="crop-name">{{ item.name }}</span>
@@ -72,6 +72,9 @@
                 >
                   <span class="crop-icon">✨</span>
                   <span class="crop-name">其他</span>
+                  <div class="check-badge" v-if="isCustomCrop">
+                    <el-icon><Check /></el-icon>
+                  </div>
                 </div>
               </div>
             </el-form-item>
@@ -153,7 +156,7 @@ const form = reactive({
   soilType: '',
 })
 
-const isCustomCrop = ref(false)
+const isCustomCrop = computed(() => form.cropType === 'custom')
 
 const rules = {
   name: [{ required: true, message: '请输入地块名称', trigger: 'blur' }],
@@ -171,8 +174,11 @@ const cropItems = [
 
 const soilOptions = ['壤土', '砂壤土', '砂土', '粘土', '粘壤土']
 
+const selectCrop = (name) => {
+  form.cropType = name
+}
+
 const handleCustomCropClick = () => {
-  isCustomCrop.value = true
   form.cropType = 'custom'
 }
 
@@ -268,12 +274,12 @@ const onSubmit = async () => {
 
 .crop-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
 
   @include mobile {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
   }
 }
 
@@ -281,27 +287,42 @@ const onSubmit = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 12px 4px;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 8px;
   border-radius: $radius-md;
   border: 1px solid $border;
-  background: $bg-main;
+  background: $bg-card;
   cursor: pointer;
-  transition: $transition-smooth;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  min-height: 84px;
 
-  .crop-icon { font-size: 24px; }
-  .crop-name { font-size: 12px; color: $text-secondary; font-weight: 500; }
+  .crop-icon { 
+    font-size: 28px;
+    transition: transform 0.3s ease;
+  }
+  
+  .crop-name { 
+    font-size: 13px; 
+    color: $text-secondary; 
+    font-weight: 500;
+  }
 
   &:hover {
     border-color: $primary;
-    background: $primary-light;
+    background: rgba($primary, 0.04);
     transform: translateY(-2px);
+    
+    .crop-icon {
+      transform: scale(1.1);
+    }
   }
 
   &.active {
     background: $primary;
     border-color: $primary;
+    box-shadow: 0 4px 12px rgba($primary, 0.2);
     
     .crop-name { color: white; }
     .crop-icon { transform: scale(1.1); }
@@ -309,6 +330,12 @@ const onSubmit = async () => {
 
   &.custom {
     border-style: dashed;
+    background: transparent;
+
+    &.active {
+      background: $primary;
+      border-style: solid;
+    }
   }
 }
 
