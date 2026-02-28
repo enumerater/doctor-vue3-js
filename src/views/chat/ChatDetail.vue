@@ -67,40 +67,51 @@ const isAgentFinished = (msg) => {
 // --- 管理每个消息中折叠面板的展开状态 ---
 const activeCollapseMap = reactive({})
 
+// 优化 watcher，避免深层监听导致的性能问题
 watch(
-  () => messages.value,
-  (newMsgs) => {
-    if (!newMsgs) return
-    newMsgs.forEach((msg, index) => {
-      const key = msg.id || index
+  () => messages.value.length,
+  (newLen, oldLen) => {
+    if (newLen > (oldLen || 0)) {
+      const msg = messages.value[newLen - 1]
+      const key = msg.id || (newLen - 1)
       if (hasAgentSteps(msg) && !activeCollapseMap[key]) {
-        // 查找最后一个非总结报告的步骤索引
-        const intermediateSteps = msg.steps.filter(s => s.type !== 'final_result' && s.type !== 'status')
-        const hasFinalResult = msg.steps.some(s => s.type === 'final_result')
-        
-        if (hasFinalResult) {
-          // 如果有了总结报告，中间过程默认折叠
-          activeCollapseMap[key] = []
-        } else if (intermediateSteps.length > 0) {
-          // 如果还在处理中，展开最后一个中间步骤
-          const lastIntermediateIdx = msg.steps.findLastIndex(s => s.type !== 'final_result' && s.type !== 'status')
-          if (lastIntermediateIdx !== -1) {
-            activeCollapseMap[key] = [lastIntermediateIdx]
+        activeCollapseMap[key] = [msg.steps.length - 1]
+      }
+    }
+  },
+  { immediate: true }
+)
+
+// 专门针对步骤更新的监听
+watch(
+  () => messages.value.map(m => m.steps?.length || 0),
+  (newLengths, oldLengths) => {
+    newLengths.forEach((len, idx) => {
+      if (len > (oldLengths?.[idx] || 0)) {
+        const msg = messages.value[idx]
+        const key = msg.id || idx
+        if (hasAgentSteps(msg)) {
+          const lastIdx = len - 1
+          if (!activeCollapseMap[key]) activeCollapseMap[key] = []
+          if (!activeCollapseMap[key].includes(lastIdx)) {
+            // 如果是正在处理的步骤，保持展开
+            if (msg.steps[lastIdx].status === 'processing') {
+              activeCollapseMap[key] = [lastIdx]
+            }
           }
         }
       }
     })
-  },
-  { deep: true, immediate: true }
+  }
 )
 
 const parseMarkdown = (content) => {
   if (!content) return ''
   try {
-    // For marked v17+, marked.parse is the standard way.
-    // Ensure content is a string.
     const strContent = String(content)
-    return marked.parse(strContent)
+    // 确保同步调用
+    const html = marked.parse(strContent)
+    return typeof html === 'string' ? html : String(html)
   } catch (err) {
     console.error('Markdown parsing failed:', err)
     return content
@@ -111,18 +122,36 @@ const parseMarkdown = (content) => {
 const parseComplexContent = (rawContent) => {
   if (!rawContent) return { type: 'markdown', data: '' }
 
-  let contentToParse = rawContent.trim()
+  let contentToParse = String(rawContent).trim()
+  
+  // 尝试去除可能的 markdown 代码块标记
   if (contentToParse.startsWith('```')) {
     contentToParse = contentToParse.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
   }
 
   try {
-    const parsed = JSON.parse(contentToParse)
-    if (parsed && typeof parsed === 'object' && (parsed['参考资料'] || parsed['回答'])) {
-      return { type: 'json', data: parsed }
+    // 只有当看起来像完整 JSON 时才尝试解析
+    if (contentToParse.startsWith('{') && contentToParse.endsWith('}')) {
+      const parsed = JSON.parse(contentToParse)
+      if (parsed && typeof parsed === 'object' && (parsed['参考资料'] || parsed['回答'])) {
+        return { type: 'json', data: parsed }
+      }
     }
   } catch (e) {
-    // 静默失败，回退到普通 markdown
+    // 解析失败，可能是流式传输中的不完整 JSON
+  }
+
+  // 针对流式传输中的不完整 JSON 进行启发式提取
+  if (contentToParse.includes('"回答"')) {
+    const match = contentToParse.match(/"回答"\s*:\s*"(.*)/)
+    if (match) {
+      let partial = match[1]
+      // 移除尾部可能的引号和逗号（如果存在）
+      partial = partial.replace(/\\"/g, '"').replace(/\\n/g, '\n')
+      if (partial.endsWith('"')) partial = partial.slice(0, -1)
+      if (partial.endsWith('",')) partial = partial.slice(0, -3)
+      return { type: 'json', data: { '回答': partial } }
+    }
   }
 
   return { type: 'markdown', data: rawContent }

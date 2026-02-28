@@ -96,10 +96,10 @@ watch(
 const parseMarkdown = (content) => {
   if (!content) return ''
   try {
-    // For marked v17+, marked.parse is the standard way.
-    // Ensure content is a string.
     const strContent = String(content)
-    return marked.parse(strContent)
+    // 确保同步解析并返回字符串
+    const html = marked.parse(strContent)
+    return typeof html === 'string' ? html : String(html)
   } catch (err) {
     console.error('Markdown parsing failed:', err)
     return content

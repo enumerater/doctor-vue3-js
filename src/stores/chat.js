@@ -177,30 +177,49 @@ export const useChatStore = defineStore('chat', {
                     }
                   })
 
-                  // 推入新状态
-                  currentMsg.steps.push({
-                    type: 'status',
-                    content: data.message,
-                    status: data.status, // 后端传来的可能是 'processing' 或 'completed'
-                    timestamp: data.timestamp,
-                  })
+                  // 检查是否已经存在相同内容的 status，避免重复
+                  const existingStatus = currentMsg.steps.find(s => s.type === 'status' && s.content === data.message)
+                  if (existingStatus) {
+                    existingStatus.status = data.status
+                  } else {
+                    // 推入新状态
+                    currentMsg.steps.push({
+                      type: 'status',
+                      content: data.message,
+                      status: data.status, // 后端传来的可能是 'processing' 或 'completed'
+                      timestamp: data.timestamp,
+                    })
+                  }
                 } else if (data.type) {
                   // ✅ 核心修复：当开始传数据卡片时，之前的状态肯定也完成了
                   currentMsg.steps.forEach((step) => {
                     if (step.status === 'processing') step.status = 'completed'
                   })
 
-                  currentMsg.steps.push({
-                    type: data.type,
-                    content: data.content,
-                    timestamp: data.timestamp,
-                  })
+                  // 检查是否是当前正在更新的步骤类型
+                  const lastStep = currentMsg.steps[currentMsg.steps.length - 1]
+                  if (lastStep && lastStep.type === data.type && data.type !== 'status') {
+                    // 如果是相同类型的步骤，则更新其内容（支持流式累加或覆盖）
+                    // 注意：这里需要根据后端协议决定是 += 还是直接 =
+                    // 通常 streaming 会发送增量或者全量。从之前的代码看，这里似乎是覆盖或者新的内容
+                    if (data.content !== undefined) {
+                      lastStep.content = data.content
+                    }
+                  } else {
+                    currentMsg.steps.push({
+                      type: data.type,
+                      content: data.content,
+                      timestamp: data.timestamp,
+                      status: 'processing' // 标记为正在处理
+                    })
+                  }
 
                   if (data.type === 'final_result') {
                     currentMsg.messageContent = data.content
                   }
                 }
               } catch (e) {
+                // 如果 chunk 不是有效的 JSON，则追加到主内容（普通流式或 Agent 的异常情况）
                 currentMsg.messageContent += chunk
               }
             }
