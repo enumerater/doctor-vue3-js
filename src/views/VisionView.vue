@@ -51,34 +51,45 @@
               @change="handleFileChange" />
           </div>
 
-          <!-- Crop Selection (Permanently Visible) -->
-          <div class="crop-selection-section">
-            <div class="selection-header">
-              <h3 class="selection-title">选择作物类型</h3>
-              <el-input
-                v-model="cropSearchKeyword"
-                placeholder="搜索作物..."
-                :prefix-icon="Search"
-                clearable
-                class="crop-search-input"
-              />
-            </div>
-            
-            <div class="crop-list-container" v-loading="knowledgeStore.loading">
-              <div v-if="filteredCrops.length > 0" class="crop-grid-new">
-                <div 
-                  v-for="crop in filteredCrops" 
-                  :key="crop"
-                  class="crop-item-new"
-                  :class="{ active: selectedCrop === crop }"
-                  @click="selectedCrop = crop"
-                >
-                  <span class="crop-name">{{ crop }}</span>
+          <!-- Crop Selection (Refactored to Collapse) -->
+          <el-collapse v-model="activeCollapseNames" class="crop-selection-collapse">
+            <el-collapse-item name="crop">
+              <template #title>
+                <div class="selection-header-title">
+                  <el-icon><Menu /></el-icon>
+                  <span>选择作物类型：</span>
+                  <el-tag v-if="selectedCrop" type="success" size="small" class="selected-tag">{{ selectedCrop }}</el-tag>
+                  <span v-else class="unselected-tip">未选择</span>
+                </div>
+              </template>
+
+              <div class="crop-selection-inner">
+                <el-input
+                  v-model="cropSearchKeyword"
+                  placeholder="搜索作物..."
+                  :prefix-icon="Search"
+                  clearable
+                  class="crop-search-input"
+                  @click.stop
+                />
+                
+                <div class="crop-list-container" v-loading="knowledgeStore.loading">
+                  <div v-if="filteredCrops.length > 0" class="crop-grid-new">
+                    <div 
+                      v-for="crop in filteredCrops" 
+                      :key="crop"
+                      class="crop-item-new"
+                      :class="{ active: selectedCrop === crop }"
+                      @click="selectedCrop = crop"
+                    >
+                      <span class="crop-name">{{ crop }}</span>
+                    </div>
+                  </div>
+                  <el-empty v-else :image-size="40" description="未找到匹配作物" />
                 </div>
               </div>
-              <el-empty v-else :image-size="60" description="未找到匹配作物" />
-            </div>
-          </div>
+            </el-collapse-item>
+          </el-collapse>
 
           <!-- Detecting status -->
           <div v-if="isDetecting" class="detecting-status">
@@ -349,7 +360,7 @@ import { usePlotDiagnosisStore } from '@/stores/plot_diagnosis'
 import { ElMessage } from 'element-plus'
 import {
   Upload, UploadFilled, Close, Loading, Document,
-  InfoFilled, CircleCheck, Warning, Promotion, Camera, Clock, Link, Search
+  InfoFilled, CircleCheck, Warning, Promotion, Camera, Clock, Link, Search, Menu
 } from '@element-plus/icons-vue'
 import AgentTransferPopup from '@/components/AgentTransferPopup.vue'
 import DiagnosisCard from '@/components/diagnosis/DiagnosisCard.vue'
@@ -374,6 +385,7 @@ const selectedFile = ref(null)
 const resultText = ref('') // raw JSON string from backend
 const activeTab = ref('detect')
 const cropSearchKeyword = ref('')
+const activeCollapseNames = ref(['crop'])
 
 // Async task related
 const detectingTaskId = ref(null)
@@ -1279,55 +1291,76 @@ onBeforeUnmount(() => {
   }
 }
 
-// Crop selection section
-.crop-selection-section {
+// Crop selection section (Refactored to Collapse)
+.crop-selection-collapse {
   margin-bottom: 1.75rem;
-  background: #fcfcfc;
   border: 1px solid $border;
   border-radius: $radius-md;
-  padding: 1rem;
+  overflow: hidden;
+  background: #fff;
 
-  .selection-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    gap: 1rem;
-
-    @include mobile {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
-    }
-
-    .selection-title {
-      font-size: 1rem;
-      font-weight: 600;
-      color: $text-primary;
-      margin: 0;
-      white-space: nowrap;
-    }
-
-    .crop-search-input {
-      width: 200px;
-      @include mobile {
-        width: 100%;
-      }
+  :deep(.el-collapse-item__header) {
+    padding: 0 1rem;
+    height: 48px;
+    background: #fcfcfc;
+    border-bottom: none;
+    
+    &.is-active {
+      border-bottom: 1px solid $border;
     }
   }
 
+  :deep(.el-collapse-item__content) {
+    padding: 1rem;
+    background: #fff;
+  }
+
+  :deep(.el-collapse-item__wrap) {
+    border-bottom: none;
+  }
+
+  .selection-header-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: $text-primary;
+
+    .selected-tag {
+      margin-left: 4px;
+    }
+    
+    .unselected-tip {
+      font-size: 12px;
+      color: $text-tertiary;
+      font-weight: normal;
+      margin-left: 4px;
+    }
+  }
+
+  .crop-selection-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .crop-search-input {
+    width: 100%;
+  }
+
   .crop-list-container {
-    max-height: 240px;
+    max-height: 200px;
     overflow-y: auto;
     padding: 2px;
     
     // Custom scrollbar
     &::-webkit-scrollbar {
-      width: 6px;
+      width: 4px;
     }
     &::-webkit-scrollbar-thumb {
       background: rgba($primary, 0.2);
-      border-radius: 3px;
+      border-radius: 2px;
     }
     &::-webkit-scrollbar-track {
       background: transparent;
@@ -1352,7 +1385,6 @@ onBeforeUnmount(() => {
     &:hover {
       border-color: $primary-light;
       background: rgba($primary, 0.05);
-      transform: translateY(-1px);
     }
 
     &.active {
