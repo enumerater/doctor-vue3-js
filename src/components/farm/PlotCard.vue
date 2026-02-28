@@ -1,30 +1,57 @@
 <template>
   <div class="plot-card" @click="$emit('click', plot)">
-    <div class="card-left">
-      <span class="crop-icon">{{ cropIcon }}</span>
-    </div>
-    <div class="card-body">
-      <div class="plot-header">
-        <span class="plot-name">{{ plot.name }}</span>
-        <span class="stage-tag" v-if="plot.growthStage">{{ plot.growthStage }}</span>
+    <div class="card-inner">
+      <div class="card-icon-section">
+        <div class="crop-icon-wrapper">
+          <span class="crop-icon">{{ cropIcon }}</span>
+          <div class="status-dot" :class="{ 'has-stage': !!plot.growthStage }"></div>
+        </div>
       </div>
-      <div class="plot-meta">
-        <span class="meta-item">{{ plot.cropType }}</span>
-        <span class="meta-divider">|</span>
-        <span class="meta-item">{{ plot.area }}亩</span>
-        <template v-if="plot.sowingDate">
-          <span class="meta-divider">|</span>
-          <span class="meta-item">播种 {{ plot.sowingDate }}</span>
-        </template>
+      
+      <div class="card-content-section">
+        <div class="plot-header">
+          <h4 class="plot-name">{{ plot.name }}</h4>
+          <span class="stage-badge" v-if="plot.growthStage">
+            <el-icon><Monitor /></el-icon>
+            {{ plot.growthStage }}
+          </span>
+        </div>
+        
+        <div class="plot-details">
+          <div class="detail-item">
+            <span class="label">作物:</span>
+            <span class="value">{{ plot.cropType }}</span>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-item">
+            <span class="label">面积:</span>
+            <span class="value">{{ plot.area }} 亩</span>
+          </div>
+          <template v-if="plot.sowingDate">
+            <div class="detail-divider"></div>
+            <div class="detail-item">
+              <span class="label">已播种:</span>
+              <span class="value">{{ formatDate(plot.sowingDate) }}</span>
+            </div>
+          </template>
+        </div>
+      </div>
+      
+      <div class="card-action-section">
+        <div class="arrow-container">
+          <el-icon><ArrowRight /></el-icon>
+        </div>
       </div>
     </div>
-    <el-icon class="card-arrow"><ArrowRight /></el-icon>
+    
+    <!-- Decorative background element -->
+    <div class="card-decoration"></div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import { ArrowRight } from '@element-plus/icons-vue'
+import { ArrowRight, Monitor } from '@element-plus/icons-vue'
 
 const props = defineProps({
   plot: { type: Object, required: true },
@@ -40,44 +67,97 @@ const cropIcon = computed(() => {
   }
   return map[props.plot.cropType] || '🌱'
 })
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  const parts = dateStr.split('-')
+  if (parts.length === 3) return `${parts[1]}-${parts[2]}`
+  return dateStr
+}
 </script>
 
 <style lang="scss" scoped>
 .plot-card {
-  display: flex;
-  align-items: center;
-  padding: 14px 16px;
+  position: relative;
   background: $bg-card;
-  border-radius: $radius-sm;
+  border-radius: $radius-md;
   border: 1px solid $border;
   cursor: pointer;
-  transition: $transition-fast;
+  transition: $transition-smooth;
+  overflow: hidden;
+  padding: 1px;
 
   &:hover {
-    border-color: rgba($primary, 0.3);
-    box-shadow: $shadow-sm;
+    transform: translateX(4px);
+    border-color: rgba($primary, 0.4);
+    box-shadow: $shadow-md;
+
+    .arrow-container {
+      background: $primary;
+      color: white;
+      transform: scale(1.1);
+    }
+
+    .crop-icon-wrapper {
+      transform: scale(1.05) rotate(-5deg);
+    }
+
+    .card-decoration {
+      opacity: 0.05;
+      transform: scale(1.2) rotate(10deg);
+    }
   }
 
   &:active { transform: scale(0.98); }
 }
 
-.card-left {
-  flex-shrink: 0;
-  margin-right: 12px;
+.card-inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  gap: 16px;
 }
 
-.crop-icon {
+.card-icon-section {
+  flex-shrink: 0;
+}
+
+.crop-icon-wrapper {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  background: linear-gradient(135deg, $primary-light, #ffffff);
+  border: 1px solid rgba($primary, 0.1);
+  border-radius: $radius-md;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  font-size: 22px;
-  background: $primary-light;
-  border-radius: 10px;
+  transition: $transition-smooth;
 }
 
-.card-body {
+.crop-icon {
+  font-size: 30px;
+}
+
+.status-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: $border;
+  border: 2px solid $bg-card;
+
+  &.has-stage {
+    background: #48bb78;
+    box-shadow: 0 0 0 2px rgba(#48bb78, 0.2);
+  }
+}
+
+.card-content-section {
   flex: 1;
   min-width: 0;
 }
@@ -85,46 +165,91 @@ const cropIcon = computed(() => {
 .plot-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
   gap: 8px;
-  margin-bottom: 4px;
 }
 
 .plot-name {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
   color: $text-primary;
+  margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.stage-tag {
-  flex-shrink: 0;
-  font-size: 11px;
-  padding: 1px 8px;
-  border-radius: 10px;
-  background: #dcfce7;
-  color: #166534;
-  font-weight: 500;
-}
-
-.plot-meta {
+.stage-badge {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  background: $primary-light;
+  color: $primary;
+  border-radius: 20px;
+  white-space: nowrap;
+
+  .el-icon { font-size: 12px; }
+}
+
+.plot-details {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.label {
+  font-size: 11px;
+  color: $text-tertiary;
+}
+
+.value {
   font-size: 12px;
-  color: $text-tertiary;
-  flex-wrap: wrap;
+  font-weight: 600;
+  color: $text-secondary;
 }
 
-.meta-divider {
-  color: $border;
+.detail-divider {
+  width: 1px;
+  height: 12px;
+  background: $border;
 }
 
-.card-arrow {
+.card-action-section {
   flex-shrink: 0;
+}
+
+.arrow-container {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: $bg-main;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: $text-tertiary;
-  font-size: 14px;
-  margin-left: 8px;
+  transition: $transition-smooth;
+}
+
+.card-decoration {
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, $primary 0%, transparent 70%);
+  opacity: 0;
+  transition: $transition-smooth;
+  pointer-events: none;
+  z-index: 1;
 }
 </style>

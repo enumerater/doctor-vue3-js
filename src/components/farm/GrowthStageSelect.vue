@@ -1,15 +1,23 @@
 <template>
   <div class="growth-stage-select">
-    <div class="stage-label">选择生长阶段</div>
-    <div class="stage-list">
+    <div class="stage-header">
+      <el-icon><TrendCharts /></el-icon>
+      <span class="header-text">当前生长阶段 ({{ cropType || '通用' }})</span>
+    </div>
+    
+    <div class="stage-grid">
       <div
-        v-for="stage in stages"
+        v-for="(stage, index) in stages"
         :key="stage"
-        class="stage-option"
+        class="stage-chip"
         :class="{ active: modelValue === stage }"
         @click="$emit('update:modelValue', stage)"
       >
-        {{ stage }}
+        <div class="chip-number">{{ index + 1 }}</div>
+        <span class="chip-text">{{ stage }}</span>
+        <div class="chip-indicator" v-if="modelValue === stage">
+          <el-icon><Check /></el-icon>
+        </div>
       </div>
     </div>
   </div>
@@ -17,6 +25,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { TrendCharts, Check } from '@element-plus/icons-vue'
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -45,38 +54,101 @@ const stages = computed(() => stageMap[props.cropType] || defaultStages)
 
 <style lang="scss" scoped>
 .growth-stage-select {
-  padding: 4px 0;
+  padding: 8px 0;
 }
 
-.stage-label {
-  font-size: 13px;
-  color: $text-secondary;
-  margin-bottom: 10px;
-}
-
-.stage-list {
+.stage-header {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
+  margin-bottom: 16px;
+  color: $text-secondary;
+  
+  .header-text {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  
+  .el-icon {
+    color: $primary;
+    font-size: 16px;
+  }
 }
 
-.stage-option {
-  font-size: 13px;
-  padding: 6px 14px;
-  border-radius: 16px;
+.stage-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+
+  @include mobile {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.stage-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
   background: $bg-main;
   border: 1px solid $border;
-  color: $text-secondary;
+  border-radius: 12px;
   cursor: pointer;
-  transition: $transition-fast;
+  transition: $transition-smooth;
 
-  &:active { transform: scale(0.95); }
+  &:hover {
+    border-color: rgba($primary, 0.4);
+    background: $bg-card;
+    transform: translateY(-2px);
+  }
 
   &.active {
-    background: $primary;
+    background: linear-gradient(135deg, $primary, $primary-hover);
     border-color: $primary;
-    color: #fff;
-    font-weight: 500;
+    box-shadow: 0 4px 12px rgba($primary, 0.2);
+    
+    .chip-number { background: rgba(255, 255, 255, 0.2); color: white; }
+    .chip-text { color: white; font-weight: 700; }
   }
+
+  &:active { transform: scale(0.96); }
+}
+
+.chip-number {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: $border;
+  color: $text-tertiary;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  transition: $transition-fast;
+}
+
+.chip-text {
+  font-size: 13px;
+  color: $text-primary;
+  font-weight: 500;
+}
+
+.chip-indicator {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  background: #ffffff;
+  color: $primary;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 </style>

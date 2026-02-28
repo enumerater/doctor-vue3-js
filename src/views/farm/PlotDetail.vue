@@ -2,102 +2,130 @@
   <div class="plot-detail-page">
     <ContentHeader :title="store.currentPlot?.name || '地块详情'" :showBack="true">
       <template #actions>
-        <el-button text class="action-btn" @click="goEdit">
-          <el-icon><Edit /></el-icon>
-        </el-button>
-        <el-button text class="action-btn danger" @click="handleDelete">
-          <el-icon><Delete /></el-icon>
-        </el-button>
+        <div class="header-actions">
+          <el-button text class="action-btn" @click="goEdit">
+            <el-icon><Edit /></el-icon>
+          </el-button>
+          <el-button text class="action-btn danger" @click="handleDelete">
+            <el-icon><Delete /></el-icon>
+          </el-button>
+        </div>
       </template>
     </ContentHeader>
 
-    <div class="plot-detail" v-if="store.currentPlot">
-      <!-- 基本信息 -->
-      <div class="info-card">
-        <div class="info-header">
-          <span class="crop-icon">{{ cropIcon }}</span>
-          <div class="info-main">
-            <h2 class="plot-name">{{ store.currentPlot.name }}</h2>
-            <span class="stage-badge">{{ store.currentPlot.growthStage || '未设置' }}</span>
+    <div class="plot-content" v-if="store.currentPlot">
+      <!-- 1. Hero Info Card -->
+      <div class="hero-card">
+        <div class="hero-main">
+          <div class="crop-avatar">
+            <span class="avatar-icon">{{ cropIcon }}</span>
+            <div class="avatar-ring"></div>
           </div>
-        </div>
-        <div class="info-grid">
-          <div class="info-item">
-            <span class="info-label">作物类型</span>
-            <span class="info-value">{{ store.currentPlot.cropType }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">面积</span>
-            <span class="info-value">{{ store.currentPlot.area }}亩</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">播种日期</span>
-            <span class="info-value">{{ store.currentPlot.sowingDate || '-' }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">土壤类型</span>
-            <span class="info-value">{{ store.currentPlot.soilType || '-' }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 更新生长阶段 -->
-      <div class="stage-section">
-        <div class="section-header">
-          <h3 class="section-title">生长阶段</h3>
-          <el-button type="primary" text size="small" @click="showStageDialog = true">
-            更新阶段
-          </el-button>
-        </div>
-
-        <!-- 生长阶段时间线 -->
-        <div class="stage-timeline" v-if="store.currentPlot.stageHistory?.length > 0">
-          <div
-            v-for="(record, i) in store.currentPlot.stageHistory"
-            :key="i"
-            class="timeline-item"
-            :class="{ current: i === store.currentPlot.stageHistory.length - 1 }"
-          >
-            <div class="timeline-dot"></div>
-            <div class="timeline-content">
-              <span class="timeline-stage">{{ record.stage }}</span>
-              <span class="timeline-date">{{ record.date }}</span>
+          <div class="hero-info">
+            <div class="title-row">
+              <h2 class="plot-name">{{ store.currentPlot.name }}</h2>
+              <span class="stage-tag" v-if="store.currentPlot.growthStage">
+                {{ store.currentPlot.growthStage }}
+              </span>
+            </div>
+            <div class="hero-meta">
+              <span class="meta-item"><el-icon><Collection /></el-icon> {{ store.currentPlot.cropType }}</span>
+              <span class="meta-divider"></span>
+              <span class="meta-item"><el-icon><Compass /></el-icon> {{ store.currentPlot.area }} 亩</span>
             </div>
           </div>
         </div>
-        <div v-else class="no-stage">暂无生长阶段记录</div>
+        
+        <div class="hero-grid">
+          <div class="grid-item">
+            <span class="grid-label">播种日期</span>
+            <span class="grid-value">{{ store.currentPlot.sowingDate || '未设置' }}</span>
+          </div>
+          <div class="grid-item">
+            <span class="grid-label">土壤类型</span>
+            <span class="grid-value">{{ store.currentPlot.soilType || '常规土壤' }}</span>
+          </div>
+          <div class="grid-item">
+            <span class="grid-label">累计诊断</span>
+            <span class="grid-value">{{ diagnosisStore.records.length }} 次</span>
+          </div>
+        </div>
       </div>
 
-      <!-- 诊断记录 -->
-      <div class="diagnosis-section">
+      <!-- 2. Growth Journey -->
+      <div class="section-card journey-section">
         <div class="section-header">
-          <h3 class="section-title">诊断记录</h3>
+          <div class="section-title-group">
+            <el-icon class="title-icon"><TrendCharts /></el-icon>
+            <h3 class="section-title">生长旅程</h3>
+          </div>
+          <el-button type="primary" size="small" round @click="showStageDialog = true">
+            更新状态
+          </el-button>
+        </div>
+
+        <div class="journey-timeline" v-if="store.currentPlot.stageHistory?.length > 0">
+          <div
+            v-for="(record, i) in [...store.currentPlot.stageHistory].reverse()"
+            :key="i"
+            class="journey-item"
+            :class="{ latest: i === 0 }"
+          >
+            <div class="journey-node">
+              <div class="node-dot"></div>
+              <div class="node-line" v-if="i !== store.currentPlot.stageHistory.length - 1"></div>
+            </div>
+            <div class="journey-content">
+              <div class="journey-header">
+                <span class="journey-stage">{{ record.stage }}</span>
+                <span class="journey-date">{{ formatDateShort(record.date) }}</span>
+              </div>
+              <div class="journey-desc" v-if="i === 0">当前处于此阶段</div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty-journey">
+          <el-icon><Calendar /></el-icon>
+          <p>暂无生长记录，点击上方按钮更新</p>
+        </div>
+      </div>
+
+      <!-- 3. Diagnosis History -->
+      <div class="section-card diagnosis-section">
+        <div class="section-header">
+          <div class="section-title-group">
+            <el-icon class="title-icon"><List /></el-icon>
+            <h3 class="section-title">诊断历史</h3>
+          </div>
+        </div>
+
+        <div v-if="diagnosisStore.loading" class="diagnosis-loading">
+          <el-skeleton :rows="3" animated />
         </div>
         
-        <div v-if="diagnosisStore.loading" v-loading="true" class="diagnosis-loading"></div>
         <div v-else-if="diagnosisStore.records.length > 0" class="diagnosis-list">
           <div 
             v-for="record in sortedRecords" 
             :key="record.id" 
-            class="diagnosis-item"
+            class="diagnosis-card"
             @click="goRecordDetail(record)"
           >
-            <div class="item-icon" :class="record.type.toLowerCase()">
+            <div class="diag-icon" :class="record.type.toLowerCase()">
               <el-icon v-if="record.type === 'IMAGE'"><Picture /></el-icon>
               <el-icon v-else><ChatDotRound /></el-icon>
             </div>
-            <div class="item-content">
-              <div class="item-header">
-                <span class="item-title">{{ record.title || (record.type === 'IMAGE' ? '病害识别' : '对话诊断') }}</span>
-                <span class="item-date">{{ formatDate(record.createdAt) }}</span>
+            <div class="diag-body">
+              <div class="diag-header">
+                <span class="diag-title">{{ record.title || (record.type === 'IMAGE' ? '病害识别' : '对话诊断') }}</span>
+                <span class="diag-date">{{ formatDate(record.createdAt) }}</span>
               </div>
-              <p class="item-preview">{{ record.content || '查看详情...' }}</p>
+              <p class="diag-preview">{{ record.content || '点击查看详细诊断结果与建议...' }}</p>
             </div>
-            <div class="item-actions" @click.stop>
+            <div class="diag-actions" @click.stop>
               <el-button 
                 type="danger" 
                 text 
-                size="small" 
+                circle
                 :icon="Delete"
                 @click="handleDeleteDiagnosis(record.id)"
               />
@@ -105,29 +133,41 @@
             <el-icon class="arrow-icon"><ArrowRight /></el-icon>
           </div>
         </div>
-        <el-empty v-else description="暂无诊断记录" :image-size="60" />
+        
+        <div v-else class="empty-diagnosis">
+          <div class="empty-illustration">🔍</div>
+          <p>该地块暂无诊断记录</p>
+        </div>
       </div>
     </div>
 
+    <!-- Loading & Empty States -->
     <div v-else-if="store.loading" v-loading="true" class="loading-center"></div>
     <el-empty v-else description="未找到地块信息" />
 
-    <!-- 生长阶段选择弹窗 -->
+    <!-- Stage Update Dialog -->
     <el-dialog
       v-model="showStageDialog"
       title="更新生长阶段"
-      width="500px"
-      :close-on-click-modal="true"
+      width="90%"
+      max-width="500px"
+      class="custom-dialog"
+      :align-center="true"
     >
-      <GrowthStageSelect
-        v-model="selectedStage"
-        :cropType="store.currentPlot?.cropType"
-      />
+      <div class="dialog-body">
+        <p class="dialog-tip">记录作物当前的生长状态，以便获得更精准的建议。</p>
+        <GrowthStageSelect
+          v-model="selectedStage"
+          :cropType="store.currentPlot?.cropType"
+        />
+      </div>
       <template #footer>
-        <el-button @click="showStageDialog = false">取消</el-button>
-        <el-button type="primary" @click="confirmStage" :disabled="!selectedStage">
-          确认更新
-        </el-button>
+        <div class="dialog-footer">
+          <el-button @click="showStageDialog = false" round>取消</el-button>
+          <el-button type="primary" @click="confirmStage" :disabled="!selectedStage" round class="confirm-btn">
+            确认更新
+          </el-button>
+        </div>
       </template>
     </el-dialog>
   </div>
@@ -137,7 +177,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Edit, Delete, Picture, ChatDotRound, ArrowRight } from '@element-plus/icons-vue'
+import { 
+  Edit, Delete, Picture, ChatDotRound, ArrowRight, 
+  TrendCharts, Collection, Compass, List, Calendar
+} from '@element-plus/icons-vue'
 import ContentHeader from '@/components/layout/ContentHeader.vue'
 import GrowthStageSelect from '@/components/farm/GrowthStageSelect.vue'
 import { useFarmStore } from '@/stores/farm'
@@ -174,7 +217,14 @@ const sortedRecords = computed(() => {
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
-  return `${date.getMonth() + 1}-${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
+  return `${date.getMonth() + 1}月${date.getDate()}日 ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+const formatDateShort = (dateStr) => {
+  if (!dateStr) return ''
+  const parts = dateStr.split('-')
+  if (parts.length === 3) return `${parts[1]}/${parts[2]}`
+  return dateStr
 }
 
 const goEdit = () => {
@@ -192,12 +242,12 @@ const goRecordDetail = (record) => {
 const handleDeleteDiagnosis = async (id) => {
   try {
     await ElMessageBox.confirm(
-      '确定要取消此诊断记录与地块的关联吗？此操作不会删除原始诊断记录。',
-      '确认删除',
+      '确定要取消此诊断记录与地块的关联吗？',
+      '确认解除',
       { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
     )
     await diagnosisStore.deleteRecord(id)
-    ElMessage.success('已解除绑定')
+    ElMessage.success('已解除关联')
   } catch {
     // cancelled
   }
@@ -206,12 +256,12 @@ const handleDeleteDiagnosis = async (id) => {
 const handleDelete = async () => {
   try {
     await ElMessageBox.confirm(
-      '删除地块后数据不可恢复',
-      '确认删除',
+      '删除地块后相关生长数据将永久消失，是否继续？',
+      '确认删除地块',
       { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
     )
     await store.deletePlot(farmId, plotId)
-    ElMessage.success('已删除')
+    ElMessage.success('已成功删除地块')
     router.back()
   } catch {
     // 取消
@@ -224,7 +274,7 @@ const confirmStage = async () => {
     stage: selectedStage.value,
     date: new Date().toISOString().slice(0, 10),
   })
-  ElMessage.success('已更新')
+  ElMessage.success('生长阶段已更新')
   showStageDialog.value = false
   selectedStage.value = ''
 }
@@ -232,98 +282,147 @@ const confirmStage = async () => {
 
 <style lang="scss" scoped>
 .plot-detail-page {
-  padding-bottom: 20px;
+  min-height: 100vh;
+  background: $bg-main;
+  padding-bottom: 40px;
 }
 
-.plot-detail {
+.plot-content {
   padding: 0 24px;
+  max-width: 800px;
+  margin: 0 auto;
 
-  @include mobile {
-    padding: 0 16px;
-  }
+  @include mobile { padding: 0 16px; }
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .action-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: $bg-card;
+  border: 1px solid $border;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  background: $primary-light;
-  color: $primary;
+  color: $text-secondary;
   transition: $transition-fast;
 
-  &.danger { background: #fee2e2; color: $danger; }
-  &:active { transform: scale(0.9); }
+  &:hover { color: $primary; border-color: $primary; }
+  &.danger:hover { color: $danger; border-color: $danger; }
 }
 
-// 信息卡片
-.info-card {
+// Hero Card
+.hero-card {
   background: $bg-card;
-  border-radius: $radius-md;
+  border-radius: $radius-lg;
   border: 1px solid $border;
-  padding: 16px;
-  margin-bottom: 20px;
+  padding: 24px;
+  box-shadow: $shadow-md;
+  margin-bottom: 24px;
 }
 
-.info-header {
+.hero-main {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px dashed $border;
+}
+
+.crop-avatar {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  flex-shrink: 0;
+
+  .avatar-icon {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, $primary-light, #ffffff);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    position: relative;
+    z-index: 2;
+    border: 1px solid rgba($primary, 0.1);
+  }
+
+  .avatar-ring {
+    position: absolute;
+    inset: -6px;
+    border-radius: 24px;
+    border: 2px solid rgba($primary, 0.1);
+    z-index: 1;
+  }
+}
+
+.hero-info { flex: 1; }
+
+.title-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 14px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid rgba($border, 0.5);
+  margin-bottom: 8px;
+  flex-wrap: wrap;
 }
-
-.crop-icon {
-  font-size: 32px;
-  width: 50px;
-  height: 50px;
-  background: $primary-light;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.info-main { flex: 1; }
 
 .plot-name {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 800;
   color: $text-primary;
-  margin: 0 0 4px;
+  margin: 0;
 }
 
-.stage-badge {
+.stage-tag {
   font-size: 12px;
-  padding: 2px 10px;
-  border-radius: 10px;
-  background: #dcfce7;
-  color: #166534;
-  font-weight: 500;
+  font-weight: 600;
+  padding: 3px 12px;
+  background: $primary;
+  color: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 10px rgba($primary, 0.2);
 }
 
-.info-grid {
+.hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: $text-tertiary;
+  font-size: 14px;
+
+  .meta-item { display: flex; align-items: center; gap: 4px; }
+  .meta-divider { width: 1px; height: 12px; background: $border; }
+}
+
+.hero-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
 }
 
-.info-item {
+.grid-item {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+
+  .grid-label { font-size: 11px; color: $text-tertiary; font-weight: 500; }
+  .grid-value { font-size: 15px; color: $text-primary; font-weight: 700; }
 }
 
-.info-label { font-size: 12px; color: $text-tertiary; }
-.info-value { font-size: 14px; color: $text-primary; font-weight: 500; }
-
-// 生长阶段
-.stage-section {
+// Section Cards
+.section-card {
+  background: $bg-card;
+  border-radius: $radius-lg;
+  border: 1px solid $border;
+  padding: 20px;
   margin-bottom: 24px;
 }
 
@@ -331,166 +430,149 @@ const confirmStage = async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 20px;
+}
+
+.section-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.title-icon {
+  font-size: 20px;
+  color: $primary;
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   color: $text-primary;
   margin: 0;
 }
 
-// 时间线
-.stage-timeline {
+// Journey Timeline
+.journey-timeline {
   position: relative;
-  padding-left: 24px;
+  padding-left: 8px;
 }
 
-.timeline-item {
-  position: relative;
-  padding-bottom: 18px;
-  padding-left: 16px;
+.journey-item {
+  display: flex;
+  gap: 16px;
+  padding-bottom: 24px;
 
-  &:not(:last-child)::before {
-    content: '';
-    position: absolute;
-    left: -24px + 6px;
-    top: 14px;
-    bottom: 0;
-    width: 2px;
-    background: $border;
-  }
-
-  &.current .timeline-dot {
-    background: $primary;
-    box-shadow: 0 0 0 4px rgba($primary, 0.2);
-  }
-
-  &.current .timeline-stage {
-    color: $primary;
-    font-weight: 600;
+  &:last-child { padding-bottom: 0; }
+  
+  &.latest {
+    .node-dot { 
+      background: $primary; 
+      box-shadow: 0 0 0 4px rgba($primary, 0.2); 
+    }
+    .journey-stage { color: $primary; font-weight: 700; }
   }
 }
 
-.timeline-dot {
-  position: absolute;
-  left: -24px + 2px;
-  top: 4px;
-  width: 10px;
-  height: 10px;
+.journey-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 14px;
+}
+
+.node-dot {
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: $border;
-  border: 2px solid $bg-card;
+  border: 2px solid white;
+  z-index: 2;
 }
 
-.timeline-content {
+.node-line {
+  width: 2px;
+  flex: 1;
+  background: $border;
+  margin: 4px 0;
+}
+
+.journey-content {
+  flex: 1;
+  padding-top: -2px;
+}
+
+.journey-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 4px;
 }
 
-.timeline-stage {
-  font-size: 14px;
-  color: $text-secondary;
-}
+.journey-stage { font-size: 15px; color: $text-primary; }
+.journey-date { font-size: 12px; color: $text-tertiary; }
+.journey-desc { font-size: 12px; color: $primary; opacity: 0.8; font-weight: 500; }
 
-.timeline-date {
-  font-size: 12px;
-  color: $text-tertiary;
-}
-
-.no-stage {
-  font-size: 13px;
-  color: $text-tertiary;
+.empty-journey {
   text-align: center;
-  padding: 20px 0;
+  padding: 30px 0;
+  color: $text-tertiary;
+  .el-icon { font-size: 32px; margin-bottom: 10px; opacity: 0.3; }
+  p { font-size: 14px; margin: 0; }
 }
 
-// 诊断记录
-.diagnosis-section {
-  margin-bottom: 20px;
-}
-
-.diagnosis-loading {
-  height: 100px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
+// Diagnosis List
 .diagnosis-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.diagnosis-item {
+.diagnosis-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: $bg-card;
+  gap: 16px;
+  padding: 16px;
   border-radius: $radius-md;
-  border: 1px solid $border;
+  background: $bg-main;
+  border: 1px solid transparent;
   cursor: pointer;
   transition: $transition-fast;
+  position: relative;
 
   &:hover {
+    background: white;
     border-color: $primary;
     box-shadow: $shadow-sm;
     transform: translateY(-2px);
+    
+    .arrow-icon { transform: translateX(4px); color: $primary; }
   }
 
-  &:active {
-    transform: scale(0.98);
-  }
-
-  .item-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+  .diag-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 22px;
     flex-shrink: 0;
 
-    &.image {
-      background: rgba($primary, 0.1);
-      color: $primary;
-    }
-
-    &.chat {
-      background: rgba(#6366f1, 0.1);
-      color: #6366f1;
-    }
+    &.image { background: rgba($primary, 0.1); color: $primary; }
+    &.chat { background: rgba(#6366f1, 0.1); color: #6366f1; }
   }
 
-  .item-content {
-    flex: 1;
-    min-width: 0;
-  }
+  .diag-body { flex: 1; min-width: 0; }
 
-  .item-header {
+  .diag-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
     margin-bottom: 4px;
   }
 
-  .item-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: $text-primary;
-  }
-
-  .item-date {
-    font-size: 12px;
-    color: $text-tertiary;
-  }
-
-  .item-preview {
+  .diag-title { font-size: 15px; font-weight: 700; color: $text-primary; }
+  .diag-date { font-size: 11px; color: $text-tertiary; }
+  .diag-preview {
     font-size: 12px;
     color: $text-secondary;
     margin: 0;
@@ -499,25 +581,55 @@ const confirmStage = async () => {
     text-overflow: ellipsis;
   }
 
-  .item-actions {
-    display: none;
+  .diag-actions {
+    opacity: 0;
+    transition: $transition-fast;
     margin-right: 8px;
   }
 
-  &:hover .item-actions {
-    display: block;
-  }
+  &:hover .diag-actions { opacity: 1; }
 
   .arrow-icon {
-    font-size: 14px;
-    color: $text-tertiary;
+    font-size: 16px;
+    color: $border;
+    transition: $transition-smooth;
   }
+}
+
+.empty-diagnosis {
+  text-align: center;
+  padding: 40px 20px;
+  
+  .empty-illustration { font-size: 40px; margin-bottom: 16px; filter: grayscale(1); opacity: 0.5; }
+  p { color: $text-tertiary; font-size: 14px; margin: 0; }
 }
 
 .loading-center {
   display: flex;
   justify-content: center;
-  padding: 60px 0;
-  min-height: 120px;
+  padding: 80px 0;
+}
+
+// Dialog Styling
+.custom-dialog {
+  border-radius: $radius-lg;
+  
+  :deep(.el-dialog__header) {
+    margin-right: 0;
+    padding: 20px 24px;
+    border-bottom: 1px solid $border;
+  }
+
+  :deep(.el-dialog__title) { font-weight: 800; font-size: 18px; }
+
+  .dialog-body { padding: 10px 0; }
+  .dialog-tip { font-size: 13px; color: $text-tertiary; margin-bottom: 20px; }
+  
+  .dialog-footer {
+    display: flex;
+    gap: 12px;
+    .el-button { flex: 1; height: 44px; }
+    .confirm-btn { font-weight: 700; }
+  }
 }
 </style>
