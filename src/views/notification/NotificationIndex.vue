@@ -42,7 +42,7 @@
             <el-radio-button value="">全部</el-radio-button>
             <el-radio-button value="system">系统通知</el-radio-button>
             <el-radio-button value="disease_alert">病害预警</el-radio-button>
-            <el-radio-button value="treatment_remind">施药提醒</el-radio-button>
+            <el-radio-button value="guide">农事指南</el-radio-button>
             <el-radio-button value="weather_alert">天气预警</el-radio-button>
           </el-radio-group>
         </div>
@@ -85,8 +85,7 @@
                 <div class="ntf-icon" :class="item.type">
                   <el-icon :size="20">
                     <WarningFilled v-if="item.type === 'disease_alert'" />
-                    <Clock v-if="item.type === 'treatment_remind'" />
-                    <CircleCheck v-if="item.type === 'safety_interval'" />
+                    <Notebook v-if="item.type === 'guide'" />
                     <Cloudy v-if="item.type === 'weather_alert'" />
                     <Bell v-if="item.type === 'system'" />
                   </el-icon>
@@ -163,7 +162,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  WarningFilled, Clock, CircleCheck, Cloudy, Bell, Delete, Search
+  WarningFilled, Clock, CircleCheck, Cloudy, Bell, Delete, Search, Notebook
 } from '@element-plus/icons-vue'
 import ContentHeader from '@/components/layout/ContentHeader.vue'
 import { useNotificationStore } from '@/stores/notification'
@@ -280,7 +279,7 @@ const getTypeName = (type) => {
   const map = {
     system: '系统通知',
     disease_alert: '病害预警',
-    treatment_remind: '施药提醒',
+    guide: '农事指南',
     weather_alert: '天气预警'
   }
   return map[type] || '通知'
@@ -290,7 +289,7 @@ const getTypeTag = (type) => {
   const map = {
     system: 'info',
     disease_alert: 'danger',
-    treatment_remind: 'warning',
+    guide: 'success',
     weather_alert: 'primary'
   }
   return map[type] || ''
@@ -421,8 +420,8 @@ const getTypeTag = (type) => {
   position: relative;
 
   &.disease_alert { background: rgba($danger, 0.1); color: $danger; }
-  &.treatment_remind { background: rgba($severity-moderate, 0.1); color: $severity-moderate; }
-  &.weather_alert { background: rgba($primary, 0.1); color: $primary; }
+  &.guide { background: rgba($primary, 0.1); color: $primary; }
+  &.weather_alert { background: rgba(#4299e1, 0.1); color: #4299e1; }
   &.system { background: rgba($text-secondary, 0.1); color: $text-secondary; }
 
   .priority-tag {
