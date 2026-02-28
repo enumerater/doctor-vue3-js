@@ -68,7 +68,20 @@ watch(
     newMsgs.forEach((msg, index) => {
       const key = msg.id || index
       if (hasAgentSteps(msg) && !activeCollapseMap[key]) {
-        activeCollapseMap[key] = [msg.steps.length - 1]
+        // 查找最后一个非总结报告的步骤索引
+        const intermediateSteps = msg.steps.filter(s => s.type !== 'final_result' && s.type !== 'status')
+        const hasFinalResult = msg.steps.some(s => s.type === 'final_result')
+        
+        if (hasFinalResult) {
+          // 如果有了总结报告，中间过程默认折叠
+          activeCollapseMap[key] = []
+        } else if (intermediateSteps.length > 0) {
+          // 如果还在处理中，展开最后一个中间步骤
+          const lastIntermediateIdx = msg.steps.findLastIndex(s => s.type !== 'final_result' && s.type !== 'status')
+          if (lastIntermediateIdx !== -1) {
+            activeCollapseMap[key] = [lastIntermediateIdx]
+          }
+        }
       }
     })
   },
@@ -255,71 +268,93 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
           <template v-else>
             <div v-if="hasAgentSteps(msg)" class="agent-chain-wrapper">
               <el-collapse v-model="activeCollapseMap[msg.id || index]" class="chain-timeline custom-collapse">
+                <template v-for="(step, sIdx) in msg.steps" :key="sIdx">
+                  <div v-if="step.type !== 'final_result'"
+                    :class="['step-node', `type-${step.type}`, { 'is-processing': step.status === 'processing' }]">
 
-                <div v-for="(step, sIdx) in msg.steps" :key="sIdx"
-                  :class="['step-node', `type-${step.type}`, { 'is-processing': step.status === 'processing' }]">
-
-                  <div v-if="step.type === 'status'" class="status-line">
-                    <div class="node-dot"></div>
-                    <div class="status-text">{{ step.content }}</div>
-                    <div class="loading-spinner" v-if="step.status === 'processing'"></div>
-                  </div>
-
-                  <el-collapse-item v-else :name="sIdx" class="data-collapse-item">
-                    <template #title>
-                      <div class="collapse-header">
-                        <span class="card-icon" v-if="getStepConfig(step.type).icon">{{ getStepConfig(step.type).icon
-                          }}</span>
-                        <span class="card-title" :style="{ color: getStepConfig(step.type).color }">{{
-                          getStepConfig(step.type).title }}</span>
-                        <div class="loading-spinner" v-if="step.status === 'processing'" style="margin-left: 8px;">
-                        </div>
-                      </div>
-                    </template>
-
-                    <div class="step-content-container">
-                      <template v-for="parsed in [parseComplexContent(step.content)]" :key="'parsed-' + sIdx">
-
-                        <template v-if="parsed.type === 'json'">
-                          <div class="markdown-body" v-if="parsed.data['回答']" v-html="parseMarkdown(parsed.data['回答'])">
-                          </div>
-
-                          <div class="reference-section" v-if="parsed.data['参考资料'] && parsed.data['参考资料'].length">
-                            <div class="ref-title">参考资料</div>
-                            <div class="ref-cards-wrapper">
-                              <el-tooltip v-for="(refItem, rIdx) in parsed.data['参考资料']" :key="rIdx" effect="light"
-                                placement="top" :show-after="200">
-                                <template #content>
-                                  <div class="ref-tooltip-content">
-                                    <div class="ref-tt-title">{{ refItem.title }}</div>
-                                    <div class="ref-tt-desc" :title="refItem.content">{{ refItem.content }}</div>
-                                  </div>
-                                </template>
-                                <a :href="refItem.url" target="_blank" class="ref-card" @click.stop>
-                                  <svg class="ref-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                                  </svg>
-                                  <span class="ref-text">{{ refItem.title }}</span>
-                                </a>
-                              </el-tooltip>
-                            </div>
-                          </div>
-                        </template>
-
-                        <template v-else>
-                          <div class="markdown-body" v-html="parseMarkdown(parsed.data)"></div>
-                        </template>
-                      </template>
+                    <div v-if="step.type === 'status'" class="status-line">
+                      <div class="node-dot"></div>
+                      <div class="status-text">{{ step.content }}</div>
+                      <div class="loading-spinner" v-if="step.status === 'processing'"></div>
                     </div>
 
-                  </el-collapse-item>
-                </div>
+                    <el-collapse-item v-else :name="sIdx" class="data-collapse-item">
+                      <template #title>
+                        <div class="collapse-header">
+                          <span class="card-icon" v-if="getStepConfig(step.type).icon">{{ getStepConfig(step.type).icon
+                            }}</span>
+                          <span class="card-title" :style="{ color: getStepConfig(step.type).color }">{{
+                            getStepConfig(step.type).title }}</span>
+                          <div class="loading-spinner" v-if="step.status === 'processing'" style="margin-left: 8px;">
+                          </div>
+                        </div>
+                      </template>
+
+                      <div class="step-content-container">
+                        <template v-for="parsed in [parseComplexContent(step.content)]" :key="'parsed-' + sIdx">
+                          <template v-if="parsed.type === 'json'">
+                            <div class="markdown-body" v-if="parsed.data['回答']" v-html="parseMarkdown(parsed.data['回答'])">
+                            </div>
+                            <div class="reference-section" v-if="parsed.data['参考资料'] && parsed.data['参考资料'].length">
+                              <div class="ref-title">参考资料</div>
+                              <div class="ref-cards-wrapper">
+                                <el-tooltip v-for="(refItem, rIdx) in parsed.data['参考资料']" :key="rIdx" effect="light"
+                                  placement="top" :show-after="200">
+                                  <template #content>
+                                    <div class="ref-tooltip-content">
+                                      <div class="ref-tt-title">{{ refItem.title }}</div>
+                                      <div class="ref-tt-desc" :title="refItem.content">{{ refItem.content }}</div>
+                                    </div>
+                                  </template>
+                                  <a :href="refItem.url" target="_blank" class="ref-card" @click.stop>
+                                    <svg class="ref-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                    </svg>
+                                    <span class="ref-text">{{ refItem.title }}</span>
+                                  </a>
+                                </el-tooltip>
+                              </div>
+                            </div>
+                          </template>
+                          <template v-else>
+                            <div class="markdown-body" v-html="parseMarkdown(parsed.data)"></div>
+                          </template>
+                        </template>
+                      </div>
+                    </el-collapse-item>
+                  </div>
+                </template>
               </el-collapse>
 
-              <div v-if="msg.messageContent" class="msg-actions agent-actions">
-                <el-button text size="small" @click="handleCopy(msg)">复制</el-button>
+              <!-- 总结报告单独渲染，不折叠 -->
+              <div v-for="(step, sIdx) in msg.steps" :key="'final-' + sIdx">
+                <div v-if="step.type === 'final_result'" class="final-report-wrapper">
+                  <div class="final-report-card">
+                    <div class="report-header">
+                      <div class="report-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                          <line x1="16" y1="13" x2="8" y2="13" />
+                          <line x1="16" y1="17" x2="8" y2="17" />
+                          <polyline points="10 9 9 9 8 9" />
+                        </svg>
+                      </div>
+                      <span class="report-title">{{ getStepConfig(step.type).title }}</span>
+                    </div>
+                    <div class="report-content-container">
+                      <template v-for="parsed in [parseComplexContent(step.content)]" :key="'final-parsed-' + sIdx">
+                        <div class="markdown-body" v-html="parseMarkdown(parsed.type === 'json' ? parsed.data['回答'] : parsed.data)"></div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="msg.messageContent || hasAgentSteps(msg)" class="msg-actions agent-actions">
+                <el-button text size="small" @click="handleCopy(msg)">复制全文</el-button>
               </div>
               <div class="message-time agent-time">{{ formatTime(msg.messageTime) }}</div>
             </div>
@@ -711,22 +746,25 @@ $border-light: rgba(5, 150, 105, 0.1);
 .agent-chain-wrapper {
   align-self: flex-start;
   width: 90%;
-  max-width: 600px;
+  max-width: 650px;
+  margin-left: 8px;
 
   @media (max-width: 768px) {
     width: 100%;
     max-width: none;
+    margin-left: 0;
   }
 }
 
 .chain-timeline {
   position: relative;
   padding-left: 1.5rem;
-  border-left: 2px dashed rgba($primary-green, 0.2);
+  border-left: 2px dashed rgba($primary-green, 0.15);
   margin-left: 0.5rem;
+  margin-bottom: 12px;
 
   @media (max-width: 768px) {
-    padding-left: 1rem;
+    padding-left: 1.2rem;
     margin-left: 0.25rem;
   }
 }
@@ -737,15 +775,16 @@ $border-light: rgba(5, 150, 105, 0.1);
 
   .step-node {
     position: relative;
-    margin-bottom: 1rem;
+    margin-bottom: 12px;
+    animation: fadeInSlideRight 0.4s ease-out both;
 
     .status-line {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       font-size: 0.85rem;
       color: #6b7280;
-      margin-bottom: 8px;
+      padding: 4px 0;
 
       .node-dot {
         position: absolute;
@@ -757,31 +796,39 @@ $border-light: rgba(5, 150, 105, 0.1);
         border-radius: 50%;
         transform: translateX(-40%);
         z-index: 2;
+        box-shadow: 0 0 0 3px rgba($primary-green, 0.1);
       }
     }
 
     .data-collapse-item {
-      background: white;
+      background: #ffffff;
       border-radius: 12px;
-      border: 1px solid $border-light;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
       overflow: hidden;
-      transition: transform 0.2s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
       &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border-color: rgba($primary-green, 0.2);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        transform: translateY(-1px);
       }
 
       :deep(.el-collapse-item__header) {
         border-bottom: none;
         height: auto;
         line-height: normal;
-        padding: 10px 12px;
-        background: rgba($primary-green, 0.03);
+        padding: 12px 16px;
+        background: linear-gradient(to right, rgba($primary-green, 0.02), transparent);
+        transition: background 0.3s;
+
+        &:hover {
+          background: rgba($primary-green, 0.04);
+        }
 
         &.is-active {
-          border-bottom: 1px solid $border-light;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+          background: rgba($primary-green, 0.05);
         }
       }
 
@@ -793,63 +840,176 @@ $border-light: rgba(5, 150, 105, 0.1);
       :deep(.el-collapse-item__content) {
         padding: 0;
       }
+
+      :deep(.el-collapse-item__arrow) {
+        color: $primary-green;
+        transition: transform 0.3s;
+      }
     }
   }
 
   .collapse-header {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
 
     .card-title {
       font-size: 0.9rem;
       font-weight: 600;
-      color: #374151;
+      letter-spacing: 0.02em;
     }
   }
 }
 
-.type-final_result .data-collapse-item {
-  border: 1.5px solid rgba($primary-green, 0.4);
+// === 总结报告样式 ===
+.final-report-wrapper {
+  margin-top: 16px;
+  animation: fadeInUp 0.5s ease-out both;
+}
 
-  :deep(.el-collapse-item__header) {
-    background: rgba($primary-green, 0.08);
+.final-report-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba($primary-green, 0.15);
+  box-shadow: 0 4px 20px rgba($primary-green, 0.06);
+  overflow: hidden;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(to bottom, $primary-green, #10b981);
+  }
+
+  .report-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: linear-gradient(to right, rgba($primary-green, 0.06), transparent);
+    border-bottom: 1px solid rgba($primary-green, 0.08);
+
+    .report-icon {
+      width: 32px;
+      height: 32px;
+      background: rgba($primary-green, 0.1);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: $primary-green;
+
+      svg {
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    .report-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #111827;
+      letter-spacing: 0.03em;
+    }
+  }
+
+  .report-content-container {
+    padding: 8px 12px;
   }
 }
 
-// === Markdown 样式 ===
+// === Markdown 样式修正 ===
 .step-content-container {
   padding-bottom: 8px;
 }
 
 .markdown-body {
-  padding: 12px;
-  font-size: 0.93rem;
-  line-height: 1.6;
-  color: #1f2937;
+  padding: 16px 20px;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: #374151;
   overflow-wrap: break-word;
   word-break: break-word;
+
+  :deep(p) {
+    margin: 0.8em 0;
+  }
+
+  :deep(ul),
+  :deep(ol) {
+    padding-left: 1.5em; // 增加左边距，防止小圆点被切
+    margin: 1em 0;
+    list-style-position: outside; // 确保圆点在内容区域内
+  }
+
+  :deep(li) {
+    margin-bottom: 0.5em;
+    padding-left: 0.2em;
+    
+    // 确保圆点显示完整
+    &::marker {
+      color: $primary-green;
+    }
+  }
+
+  :deep(h1), :deep(h2), :deep(h3) {
+    color: #111827;
+    margin-top: 1.5em;
+    margin-bottom: 0.8em;
+    font-weight: 700;
+  }
+
+  :deep(strong) {
+    color: #111827;
+    font-weight: 600;
+  }
 
   :deep(pre) {
     overflow-x: auto;
     max-width: 100%;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
   }
 
   :deep(table) {
     display: block;
     overflow-x: auto;
     max-width: 100%;
-  }
-
-  :deep(img) {
-    max-width: 100%;
-    height: auto;
+    border-collapse: collapse;
+    margin: 1.5em 0;
+    
+    th, td {
+      border: 1px solid #e2e8f0;
+      padding: 10px 14px;
+    }
+    
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+    }
   }
 
   @media (max-width: 768px) {
-    padding: 10px;
-    font-size: 0.875rem;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+  }
+}
+
+@keyframes fadeInSlideRight {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
