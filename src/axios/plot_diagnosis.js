@@ -27,3 +27,9 @@ export const bindDiagnosisToPlot = (data) =>
     mockDiagnosisRecords.push(record)
     return record
   })
+
+export const deletePlotDiagnosis = (id) =>
+  safeRequest({ url: `/plot_diagnosis/${id}`, method: 'delete' }, () => {
+    mockDiagnosisRecords = mockDiagnosisRecords.filter((r) => r.id !== id)
+    return true
+  })

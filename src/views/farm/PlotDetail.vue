@@ -93,6 +93,15 @@
               </div>
               <p class="item-preview">{{ record.content || '查看详情...' }}</p>
             </div>
+            <div class="item-actions" @click.stop>
+              <el-button 
+                type="danger" 
+                text 
+                size="small" 
+                :icon="Delete"
+                @click="handleDeleteDiagnosis(record.id)"
+              />
+            </div>
             <el-icon class="arrow-icon"><ArrowRight /></el-icon>
           </div>
         </div>
@@ -177,6 +186,20 @@ const goRecordDetail = (record) => {
     router.push({ name: 'diagnosisDetail', params: { diagnosisId: record.targetId } })
   } else if (record.type === 'CHAT') {
     router.push({ name: 'chatDetail', params: { sessionId: record.targetId } })
+  }
+}
+
+const handleDeleteDiagnosis = async (id) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要取消此诊断记录与地块的关联吗？此操作不会删除原始诊断记录。',
+      '确认删除',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+    )
+    await diagnosisStore.deleteRecord(id)
+    ElMessage.success('已解除绑定')
+  } catch {
+    // cancelled
   }
 }
 
@@ -474,6 +497,15 @@ const confirmStage = async () => {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .item-actions {
+    display: none;
+    margin-right: 8px;
+  }
+
+  &:hover .item-actions {
+    display: block;
   }
 
   .arrow-icon {

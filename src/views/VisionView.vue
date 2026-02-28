@@ -145,17 +145,31 @@
           </div>
 
           <!-- Action buttons -->
-          <el-button
-            type="primary"
-            size="large"
-            class="agent-analyze-btn"
-            v-if="parsedResult.type === '不健康作物'"
-            @click="showAgentPopup = true"
-          >
-            <el-icon><Promotion /></el-icon>
-            发送至Agent深入分析
-          </el-button>
-          <el-button size="large" class="reset-btn" @click="resetAll">重新检测</el-button>
+          <div class="result-actions">
+            <el-button
+              type="primary"
+              size="large"
+              class="agent-analyze-btn"
+              v-if="parsedResult.type === '不健康作物'"
+              @click="showAgentPopup = true"
+            >
+              <el-icon><Promotion /></el-icon>
+              发送至Agent深入分析
+            </el-button>
+
+            <el-button
+              type="success"
+              size="large"
+              class="bind-plot-btn"
+              v-if="parsedResult"
+              @click="showBindDialog = true"
+            >
+              <el-icon><Link /></el-icon>
+              绑定到地块
+            </el-button>
+
+            <el-button size="large" class="reset-btn" @click="resetAll">重新检测</el-button>
+          </div>
         </div>
       </section>
     </main>
@@ -269,6 +283,39 @@
       :diseaseName="diseaseName" :severity="''"
       :confidence="0" :imageUrl="visionStore.currentTask?.imageUrl || ''"
       :thumbnailUrl="uploadedImage" :defaultPrompt="visionAgentPrompt" @confirm="handleAgentTransferConfirm" />
+
+    <!-- 绑定地块弹窗 -->
+    <el-dialog
+      v-model="showBindDialog"
+      title="绑定诊断到地块"
+      width="400px"
+      append-to-body
+    >
+      <div class="bind-dialog-content">
+        <p class="dialog-tip">请选择要绑定此诊断记录的地块：</p>
+        <el-select v-model="selectedPlotId" placeholder="选择地块" class="full-width">
+          <el-option-group v-for="farm in farmStore.farms" :key="farm.id" :label="farm.name">
+            <el-option
+              v-for="plot in farm.plots"
+              :key="plot.id"
+              :label="plot.name"
+              :value="plot.id"
+            >
+              <div class="plot-option">
+                <span>{{ plot.name }}</span>
+                <el-tag size="small" type="info" plain class="plot-tag">{{ plot.cropType }}</el-tag>
+              </div>
+            </el-option>
+          </el-option-group>
+        </el-select>
+      </div>
+      <template #footer>
+        <el-button @click="showBindDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleBind" :loading="diagnosisPlotStore.loading" :disabled="!selectedPlotId">
+          确认绑定
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -279,10 +326,12 @@ import { useRouter } from 'vue-router'
 import { useVisionStore } from '@/stores/vision'
 import { useDiagnosisStore } from '@/stores/diagnosis'
 import { useSidebarStore } from '@/stores/sidebar'
+import { useFarmStore } from '@/stores/farm'
+import { usePlotDiagnosisStore } from '@/stores/plot_diagnosis'
 import { ElMessage } from 'element-plus'
 import {
   Upload, UploadFilled, Close, Loading, Document,
-  InfoFilled, CircleCheck, Warning, Promotion, Camera, Clock
+  InfoFilled, CircleCheck, Warning, Promotion, Camera, Clock, Link
 } from '@element-plus/icons-vue'
 import AgentTransferPopup from '@/components/AgentTransferPopup.vue'
 import DiagnosisCard from '@/components/diagnosis/DiagnosisCard.vue'
@@ -292,6 +341,8 @@ const router = useRouter()
 const visionStore = useVisionStore()
 const sidebarStore = useSidebarStore()
 const diagnosisStore = useDiagnosisStore()
+const farmStore = useFarmStore()
+const diagnosisPlotStore = usePlotDiagnosisStore()
 
 // Reactive data
 const fileInput = ref(null)
@@ -310,6 +361,8 @@ const detectingStartTime = ref(null)
 const detectingElapsedTime = ref(0)
 const detectingTimer = ref(null)
 const showAgentPopup = ref(false)
+const showBindDialog = ref(false)
+const selectedPlotId = ref('')
 
 // Parse result JSON: { type, detail }
 const parsedResult = computed(() => {
@@ -411,6 +464,33 @@ const handleAgentTransferConfirm = async ({ prompt, imageUrl }) => {
     await sidebarStore.transferToAgent(prompt, imageUrl)
   } catch (err) {
     ElMessage.error('传递到Agent失败，请重试')
+  }
+}
+
+// Handle Bind confirm
+const handleBind = async () => {
+  if (!selectedPlotId.value) return
+  
+  // Find the last created diagnosis record ID in history
+  // Note: when detectDisease completes, it calls saveDiagnosisRecord which adds to diagnosisStore.records
+  const lastRecord = diagnosisStore.records[0]
+  if (!lastRecord) {
+    ElMessage.warning('未找到诊断记录')
+    return
+  }
+
+  try {
+    await diagnosisPlotStore.bindRecord({
+      plotId: selectedPlotId.value,
+      type: 'IMAGE',
+      targetId: lastRecord.id,
+      title: `${selectedCrop.value}病害识别`,
+      content: `识别结果：${parsedResult.value?.type || '未知'} - ${diseaseName.value || ''}`
+    })
+    ElMessage.success('已绑定到地块')
+    showBindDialog.value = false
+  } catch (err) {
+    ElMessage.error('绑定失败')
   }
 }
 
@@ -688,11 +768,13 @@ const goDetail = (record) => {
 // Restore state on mount
 onMounted(() => {
   restoreFromStore()
+  farmStore.fetchFarms() // 获取农场列表用于绑定
 })
 
 // Cleanup on unmount
 onBeforeUnmount(() => {
   stopTimer()
+  visionStore.clearCurrentTask() // 离开页面时清除当前诊断任务
 })
 </script>
 
@@ -1123,6 +1205,14 @@ onBeforeUnmount(() => {
     }
   }
 
+  // Action container
+  .result-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
   // Agent analyze button
   .agent-analyze-btn {
     width: 100%;
@@ -1131,11 +1221,25 @@ onBeforeUnmount(() => {
     background: linear-gradient(135deg, $primary, $primary-hover);
     border-color: $primary;
     border-radius: $radius-md;
-    margin-bottom: 0.75rem;
+    margin: 0;
 
     &:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(56, 142, 60, 0.3);
+    }
+  }
+
+  // Bind plot button
+  .bind-plot-btn {
+    width: 100%;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    margin: 0;
+    border-radius: $radius-md;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba($success, 0.3);
     }
   }
 
@@ -1147,6 +1251,7 @@ onBeforeUnmount(() => {
     background-color: $bg-main;
     color: $text-primary;
     border: 1px solid $border;
+    margin: 0;
 
     &:hover {
       background-color: $primary-light;
@@ -1377,6 +1482,32 @@ onBeforeUnmount(() => {
 
 .empty-state {
   padding: 40px 0;
+}
+
+.bind-dialog-content {
+  padding: 10px 0;
+  .dialog-tip {
+    font-size: 14px;
+    color: $text-secondary;
+    margin-bottom: 16px;
+  }
+  .full-width {
+    width: 100%;
+  }
+}
+
+.plot-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  
+  .plot-tag {
+    font-size: 10px;
+    height: 20px;
+    padding: 0 6px;
+    opacity: 0.8;
+  }
 }
 
 // Dialog responsive

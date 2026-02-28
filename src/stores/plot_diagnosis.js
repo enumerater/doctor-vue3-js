@@ -25,10 +25,21 @@ export const usePlotDiagnosisStore = defineStore('plotDiagnosis', () => {
     }
   }
 
+  async function deleteRecord(id) {
+    loading.value = true
+    try {
+      await api.deletePlotDiagnosis(id)
+      records.value = records.value.filter((r) => r.id !== id)
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     records,
     loading,
     fetchRecords,
     bindRecord,
+    deleteRecord,
   }
 })

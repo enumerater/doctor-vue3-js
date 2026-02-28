@@ -145,7 +145,12 @@
               :key="plot.id"
               :label="plot.name"
               :value="plot.id"
-            />
+            >
+              <div class="plot-option">
+                <span>{{ plot.name }}</span>
+                <el-tag size="small" type="info" plain class="plot-tag">{{ plot.cropType }}</el-tag>
+              </div>
+            </el-option>
           </el-option-group>
         </el-select>
       </div>
@@ -513,6 +518,20 @@ const confirmDelete = async () => {
   }
   .full-width {
     width: 100%;
+  }
+}
+
+.plot-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  
+  .plot-tag {
+    font-size: 10px;
+    height: 20px;
+    padding: 0 6px;
+    opacity: 0.8;
   }
 }
 
