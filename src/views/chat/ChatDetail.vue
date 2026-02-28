@@ -58,6 +58,12 @@ const hasAgentSteps = (msg) => {
   return msg.steps && msg.steps.length > 0
 }
 
+// 检查Agent是否已完成所有输出（存在非正在处理的总结报告）
+const isAgentFinished = (msg) => {
+  if (!hasAgentSteps(msg)) return true
+  return msg.steps.some(s => s.type === 'final_result' && s.status !== 'processing')
+}
+
 // --- 管理每个消息中折叠面板的展开状态 ---
 const activeCollapseMap = reactive({})
 
@@ -353,7 +359,7 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
                 </div>
               </div>
 
-              <div v-if="msg.messageContent || hasAgentSteps(msg)" class="msg-actions agent-actions">
+              <div v-if="isAgentFinished(msg)" class="msg-actions agent-actions">
                 <el-button text size="small" @click="handleCopy(msg)">复制全文</el-button>
               </div>
               <div class="message-time agent-time">{{ formatTime(msg.messageTime) }}</div>
