@@ -9,6 +9,31 @@
           @change="handleAgentToggle"
           class="agent-switch"
         />
+
+        <el-popover
+          placement="bottom-start"
+          :width="160"
+          trigger="click"
+          popper-class="model-popover"
+        >
+          <template #reference>
+            <div class="model-selector">
+              <span class="model-name">{{ chatStore.selectedModel }}</span>
+              <el-icon class="arrow-icon"><ArrowDown /></el-icon>
+            </div>
+          </template>
+          <div class="model-list">
+            <div
+              v-for="model in models"
+              :key="model"
+              class="model-option"
+              :class="{ active: chatStore.selectedModel === model }"
+              @click="chatStore.setSelectedModel(model)"
+            >
+              {{ model }}
+            </div>
+          </div>
+        </el-popover>
       </div>
       <div class="header-right">
         <el-button
@@ -73,7 +98,7 @@ import { useSidebarStore } from '@/stores/sidebar'
 import { useChatStore } from '@/stores/chat'
 import { useSkillsStore } from '@/stores/skills'
 import { upload as ossUpload } from '@/axios/oss'
-import { Upload, Promotion } from '@element-plus/icons-vue'
+import { Upload, Promotion, ArrowDown } from '@element-plus/icons-vue'
 
 const emit = defineEmits(['send'])
 
@@ -82,6 +107,8 @@ const router = useRouter()
 const sidebarStore = useSidebarStore()
 const chatStore = useChatStore()
 const skillsStore = useSkillsStore()
+
+const models = ['qwen-flash', 'qwen3.5-flash', 'qwen3.5-plus', 'DeepSeek-V3.2', 'glm-5']
 
 const textareaRef = ref(null)
 const imageInput = ref(null)
@@ -224,6 +251,37 @@ defineExpose({ setImages, uploadedImages })
   }
 }
 
+.model-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba($primary, 0.05);
+  border: 1px solid rgba($primary, 0.1);
+  transition: $transition-fast;
+  user-select: none;
+  margin-left: 12px;
+
+  .model-name {
+    font-size: 12px;
+    color: $primary;
+    font-weight: 600;
+  }
+
+  .arrow-icon {
+    font-size: 12px;
+    color: $primary;
+    transition: transform 0.2s;
+  }
+
+  &:hover {
+    background: rgba($primary, 0.1);
+    border-color: rgba($primary, 0.2);
+  }
+}
+
 .card-body {
   .chat-textarea {
     width: 100%;
@@ -295,7 +353,44 @@ defineExpose({ setImages, uploadedImages })
   }
 
   .send-btn {
-    flex-shrink: 0;
+  flex-shrink: 0;
   }
-}
-</style>
+  }
+  </style>
+
+  <style lang="scss">
+  .model-popover {
+  padding: 4px 0 !important;
+  border-radius: $radius-sm !important;
+  box-shadow: $shadow-lg !important;
+  border: 1px solid rgba($primary, 0.1) !important;
+
+  .model-list {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 0;
+
+  .model-option {
+    padding: 10px 16px;
+    font-size: 13px;
+    color: $text-primary;
+    cursor: pointer;
+    transition: $transition-fast;
+    border-radius: 8px;
+    margin: 2px 8px;
+
+    &:hover {
+      background: rgba($primary, 0.05);
+      color: $primary;
+    }
+
+    &.active {
+      color: #fff;
+      font-weight: 500;
+      background: $primary;
+      box-shadow: 0 4px 12px rgba($primary, 0.2);
+    }
+  }
+  }
+  }
+  </style>

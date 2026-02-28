@@ -10,8 +10,12 @@ export const useChatStore = defineStore('chat', {
     inputValue: '', // 输入框内容
     autoSendPending: false, // 从弹窗传递到Agent时自动发送标志
     pendingTransferImageUrl: '', // 待传递的图片URL
+    selectedModel: 'qwen-flash', // 默认模型
   }),
   actions: {
+    setSelectedModel(model) {
+      this.selectedModel = model
+    },
     setCurrentSessionId(sessionId) {
       this.currentSessionId = sessionId
     },
@@ -127,6 +131,7 @@ export const useChatStore = defineStore('chat', {
         url.searchParams.append('image', image)
         url.searchParams.append('userId', userId)
         url.searchParams.append('sessionId', sessionId)
+        url.searchParams.append('model', this.selectedModel)
 
         // const baseUrl = `${window.location.origin}/api/java`
         // const fullApiPath = `${baseUrl}${apiPath.startsWith('/') ? '' : '/'}${apiPath}`
