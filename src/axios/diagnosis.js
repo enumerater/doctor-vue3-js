@@ -129,28 +129,21 @@ function generateId() {
 // ====== API 接口 ======
 
 export const getDiagnoses = async (params = {}) => {
-  let list = await safeRequest(
-    { url: '/diagnosis/list', method: 'get', params },
-    () => {
-      let filtered = [...mockDiagnoses]
-
-      if (params.cropType) {
-        filtered = filtered.filter((d) => d.cropType === params.cropType)
-      }
-      if (params.dateFrom) {
-        filtered = filtered.filter((d) => d.createdAt >= params.dateFrom)
-      }
-      if (params.dateTo) {
-        const to = params.dateTo + (params.dateTo.length === 10 ? 'T23:59:59.999Z' : '')
-        filtered = filtered.filter((d) => d.createdAt <= to)
-      }
-
-      // 按时间倒序
-      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      return filtered
-    },
-  )
-  return Array.isArray(list) ? list : []
+  const query = {
+    page: params.page || 1,
+    pageSize: params.pageSize || 10,
+    cropType: params.cropType || undefined,
+    resultType: params.resultType || undefined
+  }
+  
+  return request({ 
+    url: '/diagnosis/list', 
+    method: 'get', 
+    params: query 
+  }).then(res => {
+    if (res && res.code === 200) return res.data
+    return { list: [], total: 0 }
+  })
 }
 
 export const getDiagnosisDetail = async (id) => {

@@ -260,13 +260,26 @@
       </div>
 
       <!-- Record list -->
-      <div class="diagnosis-list" v-if="diagnosisStore.filteredRecords.length > 0">
+      <div class="diagnosis-list" v-if="diagnosisStore.records.length > 0">
         <DiagnosisCard
-          v-for="record in diagnosisStore.filteredRecords"
+          v-for="record in diagnosisStore.records"
           :key="record.id"
           :record="record"
           @click="goDetail(record)"
         />
+        
+        <!-- Pagination -->
+        <div class="pagination-container">
+          <el-pagination
+            v-model:current-page="diagnosisStore.currentPage"
+            :page-size="diagnosisStore.pageSize"
+            :total="diagnosisStore.totalRecords"
+            layout="prev, pager, next"
+            small
+            background
+            @current-change="diagnosisStore.changePage"
+          />
+        </div>
       </div>
 
       <!-- Loading -->
@@ -326,7 +339,7 @@
 <script setup>
 import { upload } from '@/axios/oss'
 import { ref, computed, onBeforeUnmount, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useVisionStore } from '@/stores/vision'
 import { useDiagnosisStore } from '@/stores/diagnosis'
 import { useSidebarStore } from '@/stores/sidebar'
@@ -343,6 +356,7 @@ import DiagnosisCard from '@/components/diagnosis/DiagnosisCard.vue'
 
 // Router instance
 const router = useRouter()
+const route = useRoute()
 const visionStore = useVisionStore()
 const sidebarStore = useSidebarStore()
 const diagnosisStore = useDiagnosisStore()
@@ -766,6 +780,11 @@ onMounted(() => {
   restoreFromStore()
   farmStore.fetchFarms() // 获取农场列表用于绑定
   knowledgeStore.fetchAllCrops() // 获取所有作物名
+
+  // 如果从其他页面带了 tab=history 参数，切换到记录页
+  if (route.query.tab === 'history') {
+    switchToHistory()
+  }
 })
 
 // Cleanup on unmount
@@ -1514,6 +1533,13 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  padding: 10px 0;
 }
 
 .loading-center {

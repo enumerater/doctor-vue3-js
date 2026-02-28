@@ -301,9 +301,12 @@ const confirmDelete = async () => {
     })
     await store.deleteRecord(record.value.id)
     ElMessage.success('已删除')
-    router.replace({ name: 'diagnosis' })
-  } catch {
-    // cancelled
+    // 返回到智能诊断的检测记录标签页
+    router.replace({ name: 'vision', query: { tab: 'history' } })
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Delete failed:', error)
+    }
   }
 }
 </script>
