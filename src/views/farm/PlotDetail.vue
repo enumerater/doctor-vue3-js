@@ -68,10 +68,35 @@
         <div v-else class="no-stage">暂无生长阶段记录</div>
       </div>
 
-      <!-- 关联诊断记录（预留） -->
+      <!-- 诊断记录 -->
       <div class="diagnosis-section">
-        <h3 class="section-title">诊断记录</h3>
-        <el-empty description="暂无诊断记录" />
+        <div class="section-header">
+          <h3 class="section-title">诊断记录</h3>
+        </div>
+        
+        <div v-if="diagnosisStore.loading" v-loading="true" class="diagnosis-loading"></div>
+        <div v-else-if="diagnosisStore.records.length > 0" class="diagnosis-list">
+          <div 
+            v-for="record in sortedRecords" 
+            :key="record.id" 
+            class="diagnosis-item"
+            @click="goRecordDetail(record)"
+          >
+            <div class="item-icon" :class="record.type.toLowerCase()">
+              <el-icon v-if="record.type === 'IMAGE'"><Picture /></el-icon>
+              <el-icon v-else><ChatDotRound /></el-icon>
+            </div>
+            <div class="item-content">
+              <div class="item-header">
+                <span class="item-title">{{ record.title || (record.type === 'IMAGE' ? '病害识别' : '对话诊断') }}</span>
+                <span class="item-date">{{ formatDate(record.createdAt) }}</span>
+              </div>
+              <p class="item-preview">{{ record.content || '查看详情...' }}</p>
+            </div>
+            <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+          </div>
+        </div>
+        <el-empty v-else description="暂无诊断记录" :image-size="60" />
       </div>
     </div>
 
@@ -103,14 +128,16 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Edit, Delete } from '@element-plus/icons-vue'
+import { Edit, Delete, Picture, ChatDotRound, ArrowRight } from '@element-plus/icons-vue'
 import ContentHeader from '@/components/layout/ContentHeader.vue'
 import GrowthStageSelect from '@/components/farm/GrowthStageSelect.vue'
 import { useFarmStore } from '@/stores/farm'
+import { usePlotDiagnosisStore } from '@/stores/plot_diagnosis'
 
 const route = useRoute()
 const router = useRouter()
 const store = useFarmStore()
+const diagnosisStore = usePlotDiagnosisStore()
 
 const farmId = route.params.farmId
 const plotId = route.params.plotId
@@ -119,6 +146,7 @@ const selectedStage = ref('')
 
 onMounted(() => {
   store.fetchPlotDetail(farmId, plotId)
+  diagnosisStore.fetchRecords(plotId)
 })
 
 const cropIcon = computed(() => {
@@ -130,8 +158,26 @@ const cropIcon = computed(() => {
   return map[store.currentPlot?.cropType] || '🌱'
 })
 
+const sortedRecords = computed(() => {
+  return [...diagnosisStore.records].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+})
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return `${date.getMonth() + 1}-${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
 const goEdit = () => {
   router.push({ name: 'plotEdit', params: { farmId, plotId } })
+}
+
+const goRecordDetail = (record) => {
+  if (record.type === 'IMAGE') {
+    router.push({ name: 'diagnosisDetail', params: { diagnosisId: record.targetId } })
+  } else if (record.type === 'CHAT') {
+    router.push({ name: 'chatDetail', params: { sessionId: record.targetId } })
+  }
 }
 
 const handleDelete = async () => {
@@ -341,6 +387,99 @@ const confirmStage = async () => {
 // 诊断记录
 .diagnosis-section {
   margin-bottom: 20px;
+}
+
+.diagnosis-loading {
+  height: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.diagnosis-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.diagnosis-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: $bg-card;
+  border-radius: $radius-md;
+  border: 1px solid $border;
+  cursor: pointer;
+  transition: $transition-fast;
+
+  &:hover {
+    border-color: $primary;
+    box-shadow: $shadow-sm;
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  .item-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+
+    &.image {
+      background: rgba($primary, 0.1);
+      color: $primary;
+    }
+
+    &.chat {
+      background: rgba(#6366f1, 0.1);
+      color: #6366f1;
+    }
+  }
+
+  .item-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .item-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  .item-date {
+    font-size: 12px;
+    color: $text-tertiary;
+  }
+
+  .item-preview {
+    font-size: 12px;
+    color: $text-secondary;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .arrow-icon {
+    font-size: 14px;
+    color: $text-tertiary;
+  }
 }
 
 .loading-center {

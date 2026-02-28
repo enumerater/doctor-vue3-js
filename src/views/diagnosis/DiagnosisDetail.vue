@@ -112,6 +112,10 @@
           <el-icon><Download /></el-icon>
           导出诊断报告
         </el-button>
+        <el-button type="success" plain @click="showBindDialog = true">
+          <el-icon><Link /></el-icon>
+          绑定到地块
+        </el-button>
       </div>
 
       <!-- 删除按钮 -->
@@ -124,6 +128,34 @@
     <div v-else class="empty-state">
       <el-empty description="未找到该诊断记录" />
     </div>
+
+    <!-- 绑定地块弹窗 -->
+    <el-dialog
+      v-model="showBindDialog"
+      title="绑定诊断到地块"
+      width="400px"
+      append-to-body
+    >
+      <div class="bind-dialog-content">
+        <p class="dialog-tip">请选择要绑定此诊断记录的地块：</p>
+        <el-select v-model="selectedPlotId" placeholder="选择地块" class="full-width">
+          <el-option-group v-for="farm in farmStore.farms" :key="farm.id" :label="farm.name">
+            <el-option
+              v-for="plot in farm.plots"
+              :key="plot.id"
+              :label="plot.name"
+              :value="plot.id"
+            />
+          </el-option-group>
+        </el-select>
+      </div>
+      <template #footer>
+        <el-button @click="showBindDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleBind" :loading="diagnosisStore.loading" :disabled="!selectedPlotId">
+          确认绑定
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -132,19 +164,26 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
-  Picture, Warning, CircleCheck, InfoFilled, Download,
+  Picture, Warning, CircleCheck, InfoFilled, Download, Link
 } from '@element-plus/icons-vue'
 import ContentHeader from '@/components/layout/ContentHeader.vue'
 import DiagnosisFeedback from '@/components/feedback/DiagnosisFeedback.vue'
 import { useDiagnosisStore } from '@/stores/diagnosis'
+import { useFarmStore } from '@/stores/farm'
+import { usePlotDiagnosisStore } from '@/stores/plot_diagnosis'
 
 const route = useRoute()
 const router = useRouter()
 const store = useDiagnosisStore()
+const farmStore = useFarmStore()
+const diagnosisStore = usePlotDiagnosisStore()
 
 const editingNotes = ref(false)
 const notesText = ref('')
 const savingNotes = ref(false)
+
+const showBindDialog = ref(false)
+const selectedPlotId = ref('')
 
 const record = computed(() => store.currentRecord)
 
@@ -228,6 +267,23 @@ const saveNotes = async () => {
 
 const exportReport = () => {
   router.push({ name: 'reportPreview', params: { diagnosisId: record.value.id } })
+}
+
+const handleBind = async () => {
+  if (!selectedPlotId.value) return
+  try {
+    await diagnosisStore.bindRecord({
+      plotId: selectedPlotId.value,
+      type: 'IMAGE',
+      targetId: record.value.id,
+      title: `${record.value.cropType}病害识别`,
+      content: `识别结果：${parsedResult.value?.type || '未知'} - ${diseaseName.value || ''}`
+    })
+    ElMessage.success('已绑定到地块')
+    showBindDialog.value = false
+  } catch (err) {
+    ElMessage.error('绑定失败')
+  }
 }
 
 const confirmDelete = async () => {
@@ -444,6 +500,19 @@ const confirmDelete = async () => {
 .report-section {
   display: flex;
   justify-content: center;
+  gap: 12px;
+}
+
+.bind-dialog-content {
+  padding: 10px 0;
+  .dialog-tip {
+    font-size: 14px;
+    color: $text-secondary;
+    margin-bottom: 16px;
+  }
+  .full-width {
+    width: 100%;
+  }
 }
 
 .danger-zone {
