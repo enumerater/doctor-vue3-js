@@ -13,6 +13,10 @@ async function safeRequest(config) {
 export const getCategories = () =>
   safeRequest({ url: '/knowledge/diseases/categories', method: 'get' })
 
+// 获取所有去重作物名列表 (新增)
+export const getAllCrops = () =>
+  safeRequest({ url: '/knowledge/crops', method: 'get' })
+
 // 获取某分类下去重作物名
 export const getCropNames = (category) =>
   safeRequest({ url: '/knowledge/diseases/crop_names', method: 'get', params: { category } })

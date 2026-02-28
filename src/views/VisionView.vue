@@ -51,6 +51,35 @@
               @change="handleFileChange" />
           </div>
 
+          <!-- Crop Selection (Permanently Visible) -->
+          <div class="crop-selection-section">
+            <div class="selection-header">
+              <h3 class="selection-title">选择作物类型</h3>
+              <el-input
+                v-model="cropSearchKeyword"
+                placeholder="搜索作物..."
+                :prefix-icon="Search"
+                clearable
+                class="crop-search-input"
+              />
+            </div>
+            
+            <div class="crop-list-container" v-loading="knowledgeStore.loading">
+              <div v-if="filteredCrops.length > 0" class="crop-grid-new">
+                <div 
+                  v-for="crop in filteredCrops" 
+                  :key="crop"
+                  class="crop-item-new"
+                  :class="{ active: selectedCrop === crop }"
+                  @click="selectedCrop = crop"
+                >
+                  <span class="crop-name">{{ crop }}</span>
+                </div>
+              </div>
+              <el-empty v-else :image-size="60" description="未找到匹配作物" />
+            </div>
+          </div>
+
           <!-- Detecting status -->
           <div v-if="isDetecting" class="detecting-status">
             <div class="status-header">
@@ -75,8 +104,8 @@
             type="primary"
             size="large"
             class="detect-btn"
-            @click="showCropSelect = true"
-            :disabled="!uploadedImage || isDetecting"
+            @click="detectDisease"
+            :disabled="!uploadedImage || !selectedCrop || isDetecting"
             :loading="isDetecting"
           >
             <span v-if="!isDetecting">开始识别</span>
@@ -253,31 +282,6 @@
       </div>
     </div>
 
-    <!-- Crop selection dialog -->
-    <el-dialog
-      v-model="showCropSelect"
-      title="选择作物类型"
-      width="520px"
-      :close-on-click-modal="true"
-      align-center
-      destroy-on-close
-      class="crop-select-dialog"
-    >
-      <div class="crop-grid">
-        <div class="crop-item" v-for="(crop, index) in cropList" :key="index"
-          :class="{ active: selectedCrop === crop.name }" @click="selectedCrop = crop.name">
-          <span class="crop-icon">{{ crop.icon }}</span>
-          <span class="crop-name">{{ crop.name }}</span>
-        </div>
-      </div>
-      <template #footer>
-        <el-button @click="showCropSelect = false">取消</el-button>
-        <el-button type="primary" @click="confirmCropSelect" :disabled="!selectedCrop">
-          确认识别
-        </el-button>
-      </template>
-    </el-dialog>
-
     <!-- Agent analysis popup -->
     <AgentTransferPopup v-model:visible="showAgentPopup" source="vision" :cropType="selectedCrop"
       :diseaseName="diseaseName" :severity="''"
@@ -327,11 +331,12 @@ import { useVisionStore } from '@/stores/vision'
 import { useDiagnosisStore } from '@/stores/diagnosis'
 import { useSidebarStore } from '@/stores/sidebar'
 import { useFarmStore } from '@/stores/farm'
+import { useKnowledgeStore } from '@/stores/knowledge'
 import { usePlotDiagnosisStore } from '@/stores/plot_diagnosis'
 import { ElMessage } from 'element-plus'
 import {
   Upload, UploadFilled, Close, Loading, Document,
-  InfoFilled, CircleCheck, Warning, Promotion, Camera, Clock, Link
+  InfoFilled, CircleCheck, Warning, Promotion, Camera, Clock, Link, Search
 } from '@element-plus/icons-vue'
 import AgentTransferPopup from '@/components/AgentTransferPopup.vue'
 import DiagnosisCard from '@/components/diagnosis/DiagnosisCard.vue'
@@ -342,6 +347,7 @@ const visionStore = useVisionStore()
 const sidebarStore = useSidebarStore()
 const diagnosisStore = useDiagnosisStore()
 const farmStore = useFarmStore()
+const knowledgeStore = useKnowledgeStore()
 const diagnosisPlotStore = usePlotDiagnosisStore()
 
 // Reactive data
@@ -349,11 +355,11 @@ const fileInput = ref(null)
 const uploadedImage = ref('')
 const isDragging = ref(false)
 const isDetecting = ref(false)
-const showCropSelect = ref(false)
 const selectedCrop = ref('')
 const selectedFile = ref(null)
 const resultText = ref('') // raw JSON string from backend
 const activeTab = ref('detect')
+const cropSearchKeyword = ref('')
 
 // Async task related
 const detectingTaskId = ref(null)
@@ -363,6 +369,15 @@ const detectingTimer = ref(null)
 const showAgentPopup = ref(false)
 const showBindDialog = ref(false)
 const selectedPlotId = ref('')
+
+// Computed filtered crops
+const filteredCrops = computed(() => {
+  if (!knowledgeStore.allCrops) return []
+  if (!cropSearchKeyword.value.trim()) return knowledgeStore.allCrops
+  return knowledgeStore.allCrops.filter(crop =>
+    crop.toLowerCase().includes(cropSearchKeyword.value.toLowerCase())
+  )
+})
 
 // Parse result JSON: { type, detail }
 const parsedResult = computed(() => {
@@ -494,19 +509,6 @@ const handleBind = async () => {
   }
 }
 
-// Crop list
-const cropList = ref([
-  { icon: '🌾', name: '小麦' },
-  { icon: '🌽', name: '玉米' },
-  { icon: '🍚', name: '水稻' },
-  { icon: '🍐', name: '梨树' },
-  { icon: '🍎', name: '苹果' },
-  { icon: '🥜', name: '花生' },
-  { icon: '🍠', name: '红薯' },
-  { icon: '🫘', name: '大豆' },
-  { icon: '🍇', name: '葡萄' },
-])
-
 // Trigger file input
 const triggerFileInput = () => {
   fileInput.value.click()
@@ -573,12 +575,6 @@ const clearImage = () => {
   if (fileInput.value) {
     fileInput.value.value = ''
   }
-}
-
-// Confirm crop selection and start detection
-const confirmCropSelect = () => {
-  showCropSelect.value = false
-  detectDisease()
 }
 
 import { imageChat } from '@/axios/chat'
@@ -769,6 +765,7 @@ const goDetail = (record) => {
 onMounted(() => {
   restoreFromStore()
   farmStore.fetchFarms() // 获取农场列表用于绑定
+  knowledgeStore.fetchAllCrops() // 获取所有作物名
 })
 
 // Cleanup on unmount
@@ -1263,47 +1260,93 @@ onBeforeUnmount(() => {
   }
 }
 
-// Crop selection dialog grid
-.crop-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+// Crop selection section
+.crop-selection-section {
+  margin-bottom: 1.75rem;
+  background: #fcfcfc;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  padding: 1rem;
 
-  @include mobile {
-    grid-template-columns: repeat(3, 1fr);
+  .selection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    gap: 1rem;
+
+    @include mobile {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .selection-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .crop-search-input {
+      width: 200px;
+      @include mobile {
+        width: 100%;
+      }
+    }
+  }
+
+  .crop-list-container {
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 2px;
+    
+    // Custom scrollbar
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba($primary, 0.2);
+      border-radius: 3px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  }
+
+  .crop-grid-new {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
     gap: 8px;
   }
 
-  .crop-item {
-    padding: 1rem;
-    border-radius: $radius-md;
+  .crop-item-new {
+    padding: 8px;
+    border-radius: 6px;
     border: 1px solid $border;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
+    text-align: center;
     cursor: pointer;
-    transition: $transition;
+    transition: all 0.2s ease;
+    background: white;
 
     &:hover {
       border-color: $primary-light;
-      background-color: $primary-light;
-      transform: translateY(-2px);
+      background: rgba($primary, 0.05);
+      transform: translateY(-1px);
     }
 
     &.active {
       border-color: $primary;
-      background-color: $primary-light;
+      background: $primary-light;
       color: $primary;
-      font-weight: 500;
-    }
-
-    .crop-icon {
-      font-size: 1.5rem;
+      font-weight: 600;
+      box-shadow: 0 2px 4px rgba($primary, 0.1);
     }
 
     .crop-name {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
+      @include text-ellipsis;
     }
   }
 }
@@ -1507,14 +1550,6 @@ onBeforeUnmount(() => {
     height: 20px;
     padding: 0 6px;
     opacity: 0.8;
-  }
-}
-
-// Dialog responsive
-:deep(.crop-select-dialog) {
-  @include mobile {
-    --el-dialog-width: 90% !important;
-    width: 90% !important;
   }
 }
 </style>

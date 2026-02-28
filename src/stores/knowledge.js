@@ -23,6 +23,7 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
   // ====== 数据状态 ======
   const categories = ref([])
   const cropNames = ref([])
+  const allCrops = ref([]) // 所有作物名列表
   const diseases = ref([])
   const diseasesTotal = ref(0)
   const currentPage = ref(1)
@@ -62,6 +63,18 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
       categories.value = await api.getCategories()
     } catch {
       categories.value = []
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 获取所有去重作物名
+  async function fetchAllCrops() {
+    loading.value = true
+    try {
+      allCrops.value = await api.getAllCrops()
+    } catch {
+      allCrops.value = []
     } finally {
       loading.value = false
     }
@@ -173,6 +186,7 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     selectedCropName,
     categories,
     cropNames,
+    allCrops,
     diseases,
     diseasesTotal,
     currentPage,
@@ -188,6 +202,7 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     breadcrumbs,
     // actions
     fetchCategories,
+    fetchAllCrops,
     selectCategory,
     selectCropName,
     navigateToLevel,
