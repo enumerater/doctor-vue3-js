@@ -381,20 +381,6 @@ const formatDate = (dateStr) => {
   border-radius: 8px;
   margin: 0 0 10px;
   white-space: pre-line;
-  max-height: 120px;
-  overflow-y: auto;
-
-  /* 自定义滚动条样式 */
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 4px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
 }
 
 .ann-footer {

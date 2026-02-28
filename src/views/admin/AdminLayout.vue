@@ -70,8 +70,9 @@ const goBack = () => {
 <style lang="scss" scoped>
 .admin-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
   background: $bg-main;
+  overflow: hidden;
 }
 
 .admin-sidebar {
@@ -199,7 +200,8 @@ const goBack = () => {
   flex: 1;
   margin-left: 220px;
   padding: 24px;
-  min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
 
   @include mobile {
     margin-left: 0;

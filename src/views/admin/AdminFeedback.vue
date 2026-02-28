@@ -251,6 +251,7 @@ const formatDate = (dateStr) => {
   padding: 8px 12px;
   border-radius: 8px;
   margin: 6px 0;
+  white-space: pre-line;
 }
 
 .fb-time {
