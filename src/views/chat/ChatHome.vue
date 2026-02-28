@@ -148,7 +148,7 @@ const sendMessage = async (content, images = []) => {
   -webkit-overflow-scrolling: touch;
 
   @include mobile {
-    padding: 12px 8px;
+    padding: 12px 16px;
   }
 }
 
@@ -228,7 +228,7 @@ const sendMessage = async (content, images = []) => {
   max-width: 75%;
 
   @include mobile {
-    max-width: 92%;
+    max-width: 95%;
   }
 
   .bubble-content {
@@ -242,7 +242,7 @@ const sendMessage = async (content, images = []) => {
     box-shadow: $shadow-sm;
 
     @include mobile {
-      padding: 10px 12px;
+      padding: 10px 14px;
     }
 
     .user-message & {
@@ -271,8 +271,8 @@ const sendMessage = async (content, images = []) => {
   flex-shrink: 0;
 
   @include mobile {
-    padding: 8px 8px;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 16px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   }
 }
 

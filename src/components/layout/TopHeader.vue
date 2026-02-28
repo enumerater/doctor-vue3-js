@@ -4,9 +4,9 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useNotificationStore } from '@/stores/notification'
 import { ElDropdown, ElDropdownMenu, ElDropdownItem, ElAvatar, ElIcon, ElBadge } from 'element-plus'
-import { Menu, User, SwitchButton, Bell, Setting } from '@element-plus/icons-vue'
+import { Menu, User, SwitchButton, Bell, Setting, Tools } from '@element-plus/icons-vue'
 
-const props = defineProps({
+defineProps({
   collapsed: Boolean,
   isMobile: Boolean,
 })
@@ -27,6 +27,8 @@ onMounted(() => {
 const handleCommand = (command) => {
   if (command === 'settings') {
     router.push('/settings')
+  } else if (command === 'admin') {
+    router.push('/admin')
   } else if (command === 'logout') {
     userStore.logout()
     router.push('/login')
@@ -71,6 +73,9 @@ const goNotifications = () => {
         </div>
         <template #dropdown>
           <el-dropdown-menu>
+            <el-dropdown-item v-if="userStore.isAdmin" command="admin" :icon="Tools">
+              管理后台
+            </el-dropdown-item>
             <el-dropdown-item command="settings" :icon="Setting">
               个人设置
             </el-dropdown-item>

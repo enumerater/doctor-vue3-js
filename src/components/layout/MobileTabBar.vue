@@ -1,22 +1,33 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
 
-const tabs = [
-  { name: 'workbench', path: '/workbench', icon: '🏠', label: '首页' },
-  { name: 'chat', path: '/chat', icon: '💬', label: '对话' },
-  { name: 'vision', path: '/vision', icon: '📷', label: '诊断' },
-  { name: 'knowledge', path: '/knowledge', icon: '📚', label: '知识' },
-  { name: 'farm', path: '/farm', icon: '🌾', label: '农场' },
-]
+const tabs = computed(() => {
+  const items = [
+    { name: 'workbench', path: '/workbench', icon: '🏠', label: '首页' },
+    { name: 'chat', path: '/chat', icon: '💬', label: '对话' },
+    { name: 'vision', path: '/vision', icon: '📷', label: '诊断' },
+    { name: 'knowledge', path: '/knowledge', icon: '📚', label: '知识' },
+    { name: 'farm', path: '/farm', icon: '🌾', label: '农场' },
+  ]
+
+  if (userStore.isAdmin) {
+    items.push({ name: 'admin', path: '/admin', icon: '⚙️', label: '管理' })
+  }
+
+  return items
+})
 
 // 子路由 → 父菜单的映射（路由前缀不在 tabs 中的情况）
 const routeAliasMap = {
   '/diagnosis': 'vision',
   '/report': 'vision',
+  '/admin': 'admin',
 }
 
 const activeTab = computed(() => {
@@ -25,14 +36,14 @@ const activeTab = computed(() => {
   for (const [prefix, tabName] of Object.entries(routeAliasMap)) {
     if (path.startsWith(prefix)) return tabName
   }
-  const match = tabs.find(
+  const match = tabs.value.find(
     (t) => path === t.path || (t.path !== '/' && path.startsWith(t.path))
   )
   return match?.name || 'workbench'
 })
 
 const handleChange = (name) => {
-  const tab = tabs.find((t) => t.name === name)
+  const tab = tabs.value.find((t) => t.name === name)
   if (tab) {
     router.push(tab.path)
   }

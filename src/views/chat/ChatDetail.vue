@@ -1,8 +1,9 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, reactive } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useChatStore } from '@/stores/chat'
 import { useSidebarStore } from '@/stores/sidebar'
+import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import AgentTransferPopup from '@/components/AgentTransferPopup.vue'
 import ChatInputCard from '@/components/ChatInputCard.vue'
@@ -12,7 +13,6 @@ marked.setOptions({ breaks: true, gfm: true })
 const chatStore = useChatStore()
 const sidebarStore = useSidebarStore()
 const route = useRoute()
-const router = useRouter()
 const messageList = ref(null)
 const chatInputCardRef = ref(null)
 
@@ -297,7 +297,7 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
                       </template>
 
                       <div class="step-content-container">
-                        <template v-for="parsed in [parseComplexContent(step.content)]" :key="'parsed-' + sIdx">
+                        <template v-for="(parsed, pIdx) in [parseComplexContent(step.content)]" :key="'parsed-' + sIdx + '-' + pIdx">
                           <template v-if="parsed.type === 'json'">
                             <div class="markdown-body" v-if="parsed.data['回答']" v-html="parseMarkdown(parsed.data['回答'])">
                             </div>
@@ -351,7 +351,7 @@ watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
                       <span class="report-title">{{ getStepConfig(step.type).title }}</span>
                     </div>
                     <div class="report-content-container">
-                      <template v-for="parsed in [parseComplexContent(step.content)]" :key="'final-parsed-' + sIdx">
+                      <template v-for="(parsed, pIdx) in [parseComplexContent(step.content)]" :key="'final-parsed-' + sIdx + '-' + pIdx">
                         <div class="markdown-body" v-html="parseMarkdown(parsed.type === 'json' ? parsed.data['回答'] : parsed.data)"></div>
                       </template>
                     </div>
@@ -462,7 +462,7 @@ $border-light: rgba(5, 150, 105, 0.1);
   -webkit-overflow-scrolling: touch;
 
   @media (max-width: 768px) {
-    padding: 12px 8px;
+    padding: 12px 16px;
   }
 }
 
@@ -511,7 +511,7 @@ $border-light: rgba(5, 150, 105, 0.1);
   max-width: 80%;
 
   @media (max-width: 768px) {
-    max-width: 92%;
+    max-width: 95%;
   }
 
   .bubble-content {
@@ -525,7 +525,7 @@ $border-light: rgba(5, 150, 105, 0.1);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 
     @media (max-width: 768px) {
-      padding: 10px 12px;
+      padding: 10px 14px;
       font-size: 14px;
     }
 
@@ -1135,8 +1135,8 @@ $border-light: rgba(5, 150, 105, 0.1);
   flex-shrink: 0;
 
   @media (max-width: 768px) {
-    padding: 8px 8px;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 16px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   }
 }
 
