@@ -7,23 +7,14 @@
       <h3 class="section-title">AI 智能生成</h3>
       <div class="generate-card">
         <div class="input-area">
-          <el-input
-            v-model="prompt"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入您的公告诉求，例如：通知用户本周六系统维护、发布春季防虫指南..."
-            maxlength="500"
-            show-word-limit
-          />
+          <el-input v-model="prompt" type="textarea" :rows="3" placeholder="请输入您的公告诉求，例如：通知用户本周六系统维护、发布春季防虫指南..."
+            maxlength="500" show-word-limit />
         </div>
         <div class="generate-actions">
-          <el-button
-            type="primary"
-            :loading="generating"
-            :disabled="!prompt.trim()"
-            @click="handleGenerate"
-          >
-            <el-icon v-if="!generating"><MagicStick /></el-icon>
+          <el-button type="primary" :loading="generating" :disabled="!prompt.trim()" @click="handleGenerate">
+            <el-icon v-if="!generating">
+              <MagicStick />
+            </el-icon>
             {{ generating ? 'AI 生成中...' : 'AI 生成公告' }}
           </el-button>
         </div>
@@ -43,14 +34,8 @@
         </div>
         <div class="form-row">
           <label>内容</label>
-          <el-input
-            v-model="form.content"
-            type="textarea"
-            :rows="6"
-            placeholder="公告内容"
-            maxlength="2000"
-            show-word-limit
-          />
+          <el-input v-model="form.content" type="textarea" :rows="6" placeholder="公告内容" maxlength="2000"
+            show-word-limit />
         </div>
         <div class="form-row-inline">
           <div class="form-row">
@@ -81,12 +66,8 @@
         </div>
         <div class="editor-actions">
           <el-button @click="resetEditor">取消</el-button>
-          <el-button
-            type="primary"
-            :loading="publishing"
-            :disabled="!form.title.trim() || !form.content.trim()"
-            @click="handlePublish"
-          >
+          <el-button type="primary" :loading="publishing" :disabled="!form.title.trim() || !form.content.trim()"
+            @click="handlePublish">
             {{ publishing ? '发布中...' : '确认发布' }}
           </el-button>
         </div>
@@ -101,16 +82,20 @@
           <div class="ann-header">
             <span class="ann-title">{{ item.title }}</span>
             <div class="ann-badges">
-              <el-tag size="small" :type="typeTagMap[item.type]">{{ typeLabel[item.type] }}</el-tag>
-              <el-tag size="small" :type="priorityTagMap[item.priority]" effect="plain">
-                {{ priorityLabel[item.priority] }}
+              <!-- 修复点1：添加默认值 info，确保 type 始终合法 -->
+              <el-tag size="small" :type="typeTagMap[item.type] || 'info'">
+                {{ typeLabel[item.type] || '未知类型' }}
+              </el-tag>
+              <!-- 修复点2：添加默认值 info，确保 type 始终合法 -->
+              <el-tag size="small" :type="priorityTagMap[item.priority] || 'info'" effect="plain">
+                {{ priorityLabel[item.priority] || '未知优先级' }}
               </el-tag>
             </div>
           </div>
           <p class="ann-content">{{ item.content }}</p>
           <div class="ann-footer">
             <span class="ann-meta">
-              推送对象：{{ targetLabel[item.targetUsers] }} · {{ formatDate(item.publishedAt) }}
+              推送对象：{{ targetLabel[item.targetUsers] || '未知对象' }} · {{ formatDate(item.publishedAt) }}
             </span>
             <el-button size="small" type="danger" text @click="handleDelete(item)">删除</el-button>
           </div>
@@ -118,14 +103,8 @@
         <el-empty v-if="!loading && announcements.length === 0" description="暂无公告" />
       </div>
       <div v-if="total > pageSize" class="pagination-wrap">
-        <el-pagination
-          v-model:current-page="page"
-          :page-size="pageSize"
-          :total="total"
-          layout="prev, pager, next"
-          small
-          @current-change="loadAnnouncements"
-        />
+        <el-pagination v-model:current-page="page" :page-size="pageSize" :total="total" layout="prev, pager, next" small
+          @current-change="loadAnnouncements" />
       </div>
     </div>
   </div>
@@ -402,7 +381,20 @@ const formatDate = (dateStr) => {
   border-radius: 8px;
   margin: 0 0 10px;
   white-space: pre-line;
-  @include text-ellipsis(3);
+  max-height: 120px;
+  overflow-y: auto;
+
+  /* 自定义滚动条样式 */
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }
 
 .ann-footer {
