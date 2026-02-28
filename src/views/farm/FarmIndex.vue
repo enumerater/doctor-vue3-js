@@ -144,12 +144,16 @@ const goDetail = (farm) => {
   padding: 0 24px;
   border-radius: 14px;
   font-weight: 700;
+  background-color: $primary !important;
+  border-color: $primary !important;
   box-shadow: $shadow-sm;
   transition: $transition-smooth;
 
   span { margin-left: 8px; }
 
   &:hover {
+    background-color: $primary-hover !important;
+    border-color: $primary-hover !important;
     transform: translateY(-2px);
     box-shadow: $shadow-md;
   }

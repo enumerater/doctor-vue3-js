@@ -348,9 +348,16 @@ const handleDeleteFarm = async () => {
     padding: 0 20px;
     border-radius: 12px;
     font-weight: 600;
+    background-color: $primary !important;
+    border-color: $primary !important;
     box-shadow: $shadow-sm;
     
     span { margin-left: 6px; }
+
+    &:hover {
+      background-color: $primary-hover !important;
+      border-color: $primary-hover !important;
+    }
 
     @include mobile { width: 100%; }
   }

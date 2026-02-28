@@ -221,9 +221,13 @@ const onSubmit = async () => {
   font-size: 16px;
   font-weight: 700;
   border-radius: $radius-md;
+  background-color: $primary !important;
+  border-color: $primary !important;
   box-shadow: $shadow-sm;
 
   &:hover {
+    background-color: $primary-hover !important;
+    border-color: $primary-hover !important;
     transform: translateY(-2px);
     box-shadow: $shadow-md;
   }
