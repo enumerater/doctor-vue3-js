@@ -1352,34 +1352,41 @@ onBeforeUnmount(() => {
 
   .crop-grid-new {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 12px;
+    padding: 4px;
+    width: 100%;
   }
 
   .crop-item-new {
-    padding: 8px;
-    border-radius: 6px;
+    padding: 12px 8px;
+    border-radius: $radius-md;
     border: 1px solid $border;
     text-align: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
 
     &:hover {
-      border-color: $primary-light;
-      background: rgba($primary, 0.05);
+      border-color: $primary;
+      background: rgba($primary, 0.04);
+      transform: translateY(-2px);
     }
 
     &.active {
       border-color: $primary;
-      background: $primary-light;
-      color: $primary;
+      background: $primary;
+      color: white;
       font-weight: 600;
-      box-shadow: 0 2px 4px rgba($primary, 0.1);
+      box-shadow: 0 4px 10px rgba($primary, 0.2);
     }
 
     .crop-name {
-      font-size: 0.85rem;
+      font-size: 14px;
       @include text-ellipsis;
     }
   }

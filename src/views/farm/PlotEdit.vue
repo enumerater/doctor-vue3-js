@@ -237,7 +237,7 @@ const onSubmit = async () => {
 }
 
 .form-container {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 0 20px;
 
@@ -294,11 +294,12 @@ const onSubmit = async () => {
 
 .crop-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 16px;
+  width: 100%;
 
   @include mobile {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     gap: 12px;
   }
 }
@@ -308,23 +309,23 @@ const onSubmit = async () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 16px 8px;
+  gap: 6px;
+  padding: 14px 10px;
   border-radius: $radius-md;
   border: 1px solid $border;
   background: $bg-card;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  min-height: 84px;
+  min-height: 80px;
 
   .crop-icon { 
-    font-size: 28px;
+    font-size: 26px;
     transition: transform 0.3s ease;
   }
   
   .crop-name { 
-    font-size: 13px; 
+    font-size: 14px; 
     color: $text-secondary; 
     font-weight: 500;
   }
