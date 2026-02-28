@@ -6,7 +6,7 @@
       </div>
 
       <div class="history-item" :class="{
-        active: item.id === sidebarStore.activeItemId,
+        active: item.sessionId === route.params.sessionId,
         'is-agent': item.sessionType === 'agent'
       }" v-for="item in sidebarStore.filteredHistory" :key="item.id"
         @click="handleSelectItem(item.sessionId, item.sessionType)">
@@ -33,9 +33,11 @@
 <script setup>
 import { useSidebarStore } from '@/stores/sidebar'
 import { onMounted, inject } from 'vue'
+import { useRoute } from 'vue-router'
 import { Sunny, Delete } from '@element-plus/icons-vue'
 
 const sidebarStore = useSidebarStore()
+const route = useRoute()
 const showHistory = inject('showHistory', null)
 
 const handleSelectItem = (sessionId, sessionType) => {

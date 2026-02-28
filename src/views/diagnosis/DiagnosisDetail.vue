@@ -235,6 +235,7 @@ const resultTagType = computed(() => {
 onMounted(() => {
   const id = route.params.diagnosisId
   if (id) store.fetchDetail(id)
+  farmStore.fetchFarms() // 获取农场列表用于绑定
 })
 
 const formatDate = (dateStr) => {
