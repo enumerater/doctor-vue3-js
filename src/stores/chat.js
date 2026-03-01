@@ -139,6 +139,7 @@ export const useChatStore = defineStore('chat', {
         url.searchParams.append('image', image || '')
         url.searchParams.append('userId', userId || '')
         url.searchParams.append('sessionId', sessionId || '')
+        url.searchParams.append('model', this.selectedModel || 'qwen-flash')
 
         const response = await fetch(url, {
           method: 'GET',
