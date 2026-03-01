@@ -116,6 +116,12 @@ const router = createRouter({
           meta: { title: '农场详情' },
         },
         {
+          path: 'farm/:farmId/edit',
+          name: 'farmEdit',
+          component: () => import('@/views/farm/FarmEdit.vue'),
+          meta: { title: '修改农场' },
+        },
+        {
           path: 'farm/:farmId/plot/create',
           name: 'plotCreate',
           component: () => import('@/views/farm/PlotCreate.vue'),

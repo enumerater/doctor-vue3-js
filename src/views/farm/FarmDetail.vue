@@ -6,8 +6,11 @@
           <el-button text class="action-btn more">
             <el-icon><MoreFilled /></el-icon>
           </el-button>
-          <template #footer>
+          <template #dropdown>
             <el-dropdown-menu>
+              <el-dropdown-item @click="goEditFarm">
+                <el-icon><Edit /></el-icon> 修改农场
+              </el-dropdown-item>
               <el-dropdown-item @click="handleDeleteFarm" class="danger-item">
                 <el-icon><Delete /></el-icon> 删除农场
               </el-dropdown-item>
@@ -99,7 +102,7 @@
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Delete, Location, Plus, MoreFilled, Collection, TrendCharts } from '@element-plus/icons-vue'
+import { Delete, Location, Plus, MoreFilled, Collection, TrendCharts, Edit } from '@element-plus/icons-vue'
 import ContentHeader from '@/components/layout/ContentHeader.vue'
 import PlotCard from '@/components/farm/PlotCard.vue'
 import { useFarmStore } from '@/stores/farm'
@@ -129,6 +132,10 @@ const farmArea = computed(() => {
   const sum = plots.reduce((s, p) => s + (Number(p.area) || 0), 0)
   return parseFloat(sum.toFixed(1))
 })
+
+const goEditFarm = () => {
+  router.push({ name: 'farmEdit', params: { farmId } })
+}
 
 const goAddPlot = () => {
   router.push({ name: 'plotCreate', params: { farmId } })

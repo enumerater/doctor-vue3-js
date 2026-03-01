@@ -56,6 +56,23 @@ export const useFarmStore = defineStore('farm', () => {
     }
   }
 
+  async function updateFarm(farmId, data) {
+    loading.value = true
+    try {
+      const res = await api.updateFarm(farmId, data)
+      if (res) {
+        if (currentFarm.value && currentFarm.value.id === farmId) {
+          currentFarm.value = { ...currentFarm.value, ...res }
+        }
+        const idx = farms.value.findIndex(f => f.id === farmId)
+        if (idx >= 0) farms.value[idx] = { ...farms.value[idx], ...res }
+      }
+      return res
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function createPlot(farmId, data) {
     loading.value = true
     try {
@@ -129,6 +146,7 @@ export const useFarmStore = defineStore('farm', () => {
     fetchFarms,
     createFarm,
     fetchFarmDetail,
+    updateFarm,
     deleteFarm,
     createPlot,
     fetchPlotDetail,
