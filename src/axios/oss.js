@@ -1,5 +1,6 @@
 import request from '@/utils/requests'
 import CryptoJS from 'crypto-js'
+import { compressImage } from '@/utils/image'
 
 // 计算文件的 MD5 值
 const calculateFileMD5 = (file) => {
@@ -25,6 +26,11 @@ const calculateFileMD5 = (file) => {
 // 整合后的文件上传函数（替换原有同名函数，避免重复定义）
 export const upload = async (file) => {
   try {
+    // 0. 如果是图片且大于 2MB，进行压缩
+    if (file.type.startsWith('image/')) {
+      file = await compressImage(file, { maxSizeMB: 2 })
+    }
+
     // 1. 计算文件 MD5 值
     const picCode = await calculateFileMD5(file)
     console.log('文件 MD5 值:', picCode)

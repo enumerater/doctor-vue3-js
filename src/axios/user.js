@@ -1,4 +1,5 @@
 import request from '@/utils/requests'
+import { compressImage } from '@/utils/image'
 
 export const login = (data) => {
   return request({
@@ -49,7 +50,15 @@ export const changePassword = (data) => {
 }
 
 // 上传头像文件，返回 URL
-export const uploadAvatar = (file) => {
+export const uploadAvatar = async (file) => {
+  // 如果是图片且大于 2MB，进行压缩
+  if (file.type.startsWith('image/')) {
+    try {
+      file = await compressImage(file, { maxSizeMB: 2 })
+    } catch (error) {
+      console.error('头像压缩失败:', error)
+    }
+  }
   const formData = new FormData()
   formData.append('file', file)
   return request({

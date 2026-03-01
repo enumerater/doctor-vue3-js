@@ -98,6 +98,7 @@ import { useSidebarStore } from '@/stores/sidebar'
 import { useChatStore } from '@/stores/chat'
 import { useSkillsStore } from '@/stores/skills'
 import { upload as ossUpload } from '@/axios/oss'
+import { compressImage } from '@/utils/image'
 import { Upload, Promotion, ArrowDown } from '@element-plus/icons-vue'
 
 const emit = defineEmits(['send'])
@@ -177,14 +178,34 @@ const handleImageUpload = async (e) => {
       ElMessage.warning('仅支持 JPG/PNG')
       return
     }
-    if (file.size > 10 * 1024 * 1024) {
-      ElMessage.warning('图片不能超过10MB')
+    const maxSize = 20 * 1024 * 1024 // 20MB
+    if (file.size > maxSize) {
+      ElMessage.warning('图片不能超过 20MB')
       return
     }
-    const res = await ossUpload(file)
+
+    let fileToUpload = file
+    // 压缩大于 2MB 的图片
+    if (file.size > 2 * 1024 * 1024) {
+      const loading = ElMessage({
+        message: '图片压缩中...',
+        type: 'info',
+        duration: 0
+      })
+      try {
+        fileToUpload = await compressImage(file, { maxSizeMB: 2 })
+        loading.close()
+      } catch (error) {
+        console.error('图片压缩失败:', error)
+        loading.close()
+      }
+    }
+
+    const res = await ossUpload(fileToUpload)
     uploadedImages.value.push(res.data.url)
     if (imageInput.value) imageInput.value.value = ''
-  } catch {
+  } catch (error) {
+    console.error('上传出错:', error)
     ElMessage.error('图片上传失败')
   }
 }

@@ -2,6 +2,7 @@
  * Skill: 病害图片识别
  * 上传作物照片，AI识别病害类型并给出诊断建议
  */
+import { compressImage } from '@/utils/image'
 
 export default {
   id: 'disease-recognition',
@@ -33,9 +34,18 @@ export default {
 
   // Skill执行逻辑
   async execute(params, context) {
-    const { image, cropType } = params
+    let { image, cropType } = params
 
     try {
+      // 0. 压缩图片 if > 2MB
+      if (image && image.size > 2 * 1024 * 1024) {
+        try {
+          image = await compressImage(image, { maxSizeMB: 2 })
+        } catch (err) {
+          console.error('Skill image compression failed:', err)
+        }
+      }
+
       // 1. 上传图片到服务器
       const formData = new FormData()
       formData.append('image', image)
@@ -185,10 +195,10 @@ export default {
       return { valid: false, error: '只支持 JPG、PNG、WEBP 格式的图片' }
     }
 
-    // 验证文件大小（最大10MB）
-    const maxSize = 10 * 1024 * 1024
+    // 验证文件大小（最大20MB）
+    const maxSize = 20 * 1024 * 1024
     if (params.image.size > maxSize) {
-      return { valid: false, error: '图片大小不能超过10MB' }
+      return { valid: false, error: '图片大小不能超过20MB' }
     }
 
     return { valid: true }

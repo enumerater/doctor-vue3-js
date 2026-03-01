@@ -332,6 +332,7 @@
 
 <script setup>
 import { upload } from '@/axios/oss'
+import { compressImage } from '@/utils/image'
 import { ref, computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useVisionStore } from '@/stores/vision'
@@ -532,9 +533,9 @@ const handleFileChange = (e) => {
 }
 
 // File upload handling
-const handleFileUpload = (file) => {
+const handleFileUpload = async (file) => {
   const allowedTypes = ['image/jpeg', 'image/png']
-  const maxSize = 20 * 1024 * 1024
+  const maxSize = 20 * 1024 * 1024 // 20MB
 
   if (!allowedTypes.includes(file.type)) {
     ElMessage.warning('仅支持上传 JPG/PNG 格式的图片！')
@@ -542,18 +543,38 @@ const handleFileUpload = (file) => {
   }
 
   if (file.size > maxSize) {
-    ElMessage.warning('图片大小不能超过 10MB！')
+    ElMessage.warning('图片大小不能超过 20MB！')
     return
   }
 
-  selectedFile.value = file
+  let fileToProcess = file
+  
+  // 压缩大于 2MB 的图片
+  if (file.size > 2 * 1024 * 1024) {
+    const loading = ElMessage({
+      message: '图片正在压缩处理中...',
+      type: 'info',
+      duration: 0
+    })
+    
+    try {
+      fileToProcess = await compressImage(file, { maxSizeMB: 2 })
+      loading.close()
+    } catch (error) {
+      console.error('图片压缩失败:', error)
+      loading.close()
+      ElMessage.warning('图片压缩失败，将使用原图')
+    }
+  }
+
+  selectedFile.value = fileToProcess
 
   const reader = new FileReader()
   reader.onload = (e) => {
     uploadedImage.value = e.target.result
     resultText.value = ''
   }
-  reader.readAsDataURL(file)
+  reader.readAsDataURL(fileToProcess)
 }
 
 // Drag events
