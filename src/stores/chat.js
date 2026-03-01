@@ -126,20 +126,19 @@ export const useChatStore = defineStore('chat', {
         const apiPath = sidebarStore.isAgricultureAgent
           ? '/agent/agriculture-agent'
           : '/chat/memory'
-        const url = new URL(`http://localhost:8080${apiPath}`)
-        url.searchParams.append('prompt', content)
-        url.searchParams.append('image', image)
-        url.searchParams.append('userId', userId)
-        url.searchParams.append('sessionId', sessionId)
-        url.searchParams.append('model', this.selectedModel)
 
-        // const baseUrl = `${window.location.origin}/api/java`
-        // const fullApiPath = `${baseUrl}${apiPath.startsWith('/') ? '' : '/'}${apiPath}`
-        // const url = new URL(fullApiPath)
-        // url.searchParams.append('prompt', content || '') // 处理空值
-        // url.searchParams.append('image', image || '')
-        // url.searchParams.append('userId', userId || '')
-        // url.searchParams.append('sessionId', sessionId || '')
+        // 统一使用环境变量中的 API 基准路径
+        const baseApi = import.meta.env.VITE_APP_BASE_API
+        // 构造完整的 API 路径，确保如果是相对路径则拼接当前 origin
+        const fullApiPath = new URL(
+          `${baseApi.startsWith('http') ? '' : window.location.origin}${baseApi}${apiPath}`,
+        ).href
+
+        const url = new URL(fullApiPath)
+        url.searchParams.append('prompt', content || '') // 处理空值
+        url.searchParams.append('image', image || '')
+        url.searchParams.append('userId', userId || '')
+        url.searchParams.append('sessionId', sessionId || '')
 
         const response = await fetch(url, {
           method: 'GET',
@@ -178,7 +177,9 @@ export const useChatStore = defineStore('chat', {
                   })
 
                   // 检查是否已经存在相同内容的 status，避免重复
-                  const existingStatus = currentMsg.steps.find(s => s.type === 'status' && s.content === data.message)
+                  const existingStatus = currentMsg.steps.find(
+                    (s) => s.type === 'status' && s.content === data.message,
+                  )
                   if (existingStatus) {
                     existingStatus.status = data.status
                   } else {
@@ -210,7 +211,7 @@ export const useChatStore = defineStore('chat', {
                       type: data.type,
                       content: data.content,
                       timestamp: data.timestamp,
-                      status: 'processing' // 标记为正在处理
+                      status: 'processing', // 标记为正在处理
                     })
                   }
 

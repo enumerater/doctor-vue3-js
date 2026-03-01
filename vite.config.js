@@ -15,6 +15,13 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     cors: true,
+    proxy: {
+      '/api/java': {
+        target: 'http://localhost:8080', // 你的后端地址
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/java/, ''), // 如果后端接口不带 /api/java，请保留此重写
+      },
+    },
   },
 
   plugins: [

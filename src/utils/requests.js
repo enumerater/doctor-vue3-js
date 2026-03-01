@@ -2,8 +2,7 @@ import axios from 'axios'
 import { useUserStore } from '@/stores/user'
 
 const request = axios.create({
-  baseURL: 'http://localhost:8080',
-  // baseURL: '/api/java', // 会被Nginx转发到8080
+  baseURL: import.meta.env.VITE_APP_BASE_API, // 从环境变量读取
   timeout: 15000,
 })
 
