@@ -15,6 +15,7 @@ export const useAgentStore = defineStore('agent', {
     maxReconnectAttempts: 5,
     heartbeatTimer: null,
     sessionId: null,
+    currentTurnSteps: [], // 用于存储当前回合的思考步骤
   }),
   actions: {
     connect(sessionId = null) {
@@ -132,12 +133,14 @@ export const useAgentStore = defineStore('agent', {
         case 'thought':
           this.isThinking = true
           this.currentThought = content
-          this.updateOrPushMessage(formattedMsg)
+          this.currentTool = null // 既然有新思考，说明上一个工具调用可能已结束或处于新阶段
+          // 记录到当前消息的步骤中
+          this.addToCurrentSteps(formattedMsg)
           break
         case 'tool_call':
           this.isThinking = true
           this.currentTool = payload
-          this.updateOrPushMessage(formattedMsg)
+          this.addToCurrentSteps(formattedMsg)
           break
         case 'confirm':
           this.isThinking = false
@@ -153,7 +156,13 @@ export const useAgentStore = defineStore('agent', {
           this.isThinking = false
           this.currentThought = ''
           this.currentTool = null
+          // 将累积的步骤放入最终结果消息中
+          formattedMsg.steps = [...this.currentTurnSteps]
           this.messages.push(formattedMsg)
+          // 清空当前步骤
+          this.currentTurnSteps = []
+          // 收到最终结果，保存对话记录（同旧版逻辑）
+          this.saveFinishedMessage()
           break
         case 'error':
           this.isThinking = false
@@ -161,6 +170,49 @@ export const useAgentStore = defineStore('agent', {
           break
         default:
           this.messages.push(formattedMsg)
+      }
+    },
+
+    addToCurrentSteps(step) {
+      // 如果是 thought，且上一个也是 thought，则更新而不是新增，保持简洁
+      const lastStep = this.currentTurnSteps[this.currentTurnSteps.length - 1]
+      if (lastStep && lastStep.type === 'thought' && step.type === 'thought') {
+        lastStep.content = step.content
+        lastStep.timestamp = step.timestamp
+      } else {
+        this.currentTurnSteps.push(step)
+      }
+    },
+
+    async saveFinishedMessage() {
+      const userStore = useUserStore()
+      const userId = userStore.userInfo?.id
+      if (!userId || !this.sessionId) return
+
+      // 找到最后一条机器人消息和它之前的最后一条用户消息
+      const lastRobotMsg = this.messages.filter(m => m.type === 'final_result').slice(-1)[0]
+      const userMessages = this.messages.filter(m => m.type === 'user_input')
+      const lastUserMsg = userMessages.slice(-1)[0]
+      
+      if (!lastRobotMsg || !lastUserMsg) return
+
+      const fullSessionId = this.sessionId.startsWith(userId) 
+        ? this.sessionId 
+        : `${userId}${this.sessionId}`
+
+      try {
+        const { saveAgentMessage } = await import('@/axios/chat')
+        await saveAgentMessage({
+          sessionId: fullSessionId,
+          userMessage: lastUserMsg.content,
+          robotMessage: {
+            steps: lastRobotMsg.steps || [],
+            finalContent: lastRobotMsg.content,
+          },
+        })
+        console.log('Agent消息保存成功')
+      } catch (err) {
+        console.warn('Agent消息保存失败', err)
       }
     },
 

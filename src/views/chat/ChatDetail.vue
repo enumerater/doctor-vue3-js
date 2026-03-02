@@ -472,15 +472,8 @@ watch(() => sidebarStore.isAgricultureAgent, (val) => {
 
             <!-- 新版 Agent 扁平化消息展示 -->
             <div v-else-if="sidebarStore.isAgricultureAgent" class="agent-interaction-wrapper">
-              <!-- Thought/Tool Call 样式 -->
-              <div v-if="msg.type === 'thought' || msg.type === 'tool_call'" class="agent-step-thought">
-                <el-icon class="is-loading" v-if="msg.type === 'thought'"><Loading /></el-icon>
-                <span class="step-icon" v-else>{{ getStepConfig(msg.type).icon }}</span>
-                <span class="step-text">{{ msg.content }}</span>
-              </div>
-
               <!-- Final Result / Error 样式 -->
-              <div v-else-if="msg.type === 'final_result' || msg.type === 'error'" class="message-bubble">
+              <div v-if="msg.type === 'final_result' || msg.type === 'error'" class="message-bubble">
                 <div class="bubble-content markdown-body" :class="{'error-content': msg.type === 'error'}" v-html="parseMarkdown(msg.messageContent)"></div>
                 <div class="message-time">{{ formatTime(msg.messageTime) }}</div>
               </div>
@@ -577,6 +570,15 @@ watch(() => sidebarStore.isAgricultureAgent, (val) => {
               <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
             </div>
           </template>
+        </div>
+
+        <!-- 实时思考/工具调用状态（仅在 Agent 模式且正在思考时显示） -->
+        <div v-if="sidebarStore.isAgricultureAgent && agentStore.isThinking" class="message-item robot-message transient-status">
+          <div class="agent-step-thought">
+            <el-icon class="is-loading" v-if="!agentStore.currentTool"><Loading /></el-icon>
+            <span class="step-icon" v-else>🔧</span>
+            <span class="step-text">{{ agentStore.currentTool ? `正在调用工具: ${agentStore.currentTool.name || agentStore.currentTool}` : agentStore.currentThought }}</span>
+          </div>
         </div>
       </div>
     </div>
