@@ -16,6 +16,12 @@ export default defineConfig({
     port: 5173,
     cors: true,
     proxy: {
+      '/api/java/ws/chat': {
+        target: 'ws://localhost:8080/ws/chat',
+        ws: true,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/java\/ws\/chat/, ''),
+      },
       '/api/java': {
         target: 'http://localhost:8080', // 你的后端地址
         changeOrigin: true,

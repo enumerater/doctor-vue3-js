@@ -282,8 +282,16 @@ onMounted(() => {
     observer.observe(messageList.value, { childList: true, subtree: true, characterData: true })
   }
 })
-onUnmounted(() => { observer?.disconnect() })
-watch(() => route.params.sessionId, () => loadHistory(), { immediate: true })
+onUnmounted(() => { 
+  observer?.disconnect()
+  chatStore.disconnectWebSocket() // 断开 WebSocket 连接
+})
+watch(() => route.params.sessionId, (newId, oldId) => {
+  if (oldId && newId !== oldId) {
+    chatStore.disconnectWebSocket() // 只有当会话ID真正改变时才断开
+  }
+  loadHistory()
+}, { immediate: true })
 </script>
 
 <template>
