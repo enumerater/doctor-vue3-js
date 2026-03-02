@@ -20,8 +20,41 @@ export const useAdminStore = defineStore('admin', () => {
   const knowledgeTotal = ref(0)
   const loading = ref(false)
 
+  // 日志相关状态
+  const logs = ref([])
+  const logsTotal = ref(0)
+  const logStatusStats = ref({})
+  const logTrendStats = ref([])
+
   async function fetchSystemStats() {
     systemStats.value = await api.getSystemStats()
+  }
+
+  async function fetchLogPage(params = {}) {
+    loading.value = true
+    try {
+      const res = await api.getLogPage(params)
+      if (res && res.code === 200) {
+        logs.value = res.data.records
+        logsTotal.value = res.data.total
+      }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchLogStatusStats() {
+    const res = await api.getLogStatusStats()
+    if (res && res.code === 200) {
+      logStatusStats.value = res.data
+    }
+  }
+
+  async function fetchLogTrendStats(params = {}) {
+    const res = await api.getLogTrendStats(params)
+    if (res && res.code === 200) {
+      logTrendStats.value = res.data
+    }
   }
 
   async function fetchUsers(params = {}) {
@@ -98,7 +131,14 @@ export const useAdminStore = defineStore('admin', () => {
     knowledgeList,
     knowledgeTotal,
     loading,
+    logs,
+    logsTotal,
+    logStatusStats,
+    logTrendStats,
     fetchSystemStats,
+    fetchLogPage,
+    fetchLogStatusStats,
+    fetchLogTrendStats,
     fetchUsers,
     toggleUserStatus,
     fetchKnowledge,

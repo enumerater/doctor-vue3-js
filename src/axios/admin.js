@@ -55,3 +55,25 @@ export const toggleUserStatus = (id) =>
     return user
   })
 
+// ====== 日志相关 API ======
+
+/**
+ * 分页查询日志
+ * @param {Object} params { page, size, userId, status, startTime, endTime }
+ */
+export const getLogPage = (params) =>
+  request({ url: '/log/page', method: 'get', params })
+
+/**
+ * 获取状态分布统计（饼图数据）
+ */
+export const getLogStatusStats = () =>
+  request({ url: '/log/stats/status', method: 'get' })
+
+/**
+ * 获取处理趋势统计（折线图/柱状图数据）
+ * @param {Object} params { days }
+ */
+export const getLogTrendStats = (params) =>
+  request({ url: '/log/stats/trend', method: 'get', params })
+

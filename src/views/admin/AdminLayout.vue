@@ -30,6 +30,10 @@
           <el-icon><Bell /></el-icon>
           <span>公告推送</span>
         </el-menu-item>
+        <el-menu-item index="/admin/logs">
+          <el-icon><Document /></el-icon>
+          <span>任务日志</span>
+        </el-menu-item>
       </el-menu>
       <div class="admin-back">
         <el-button type="primary" @click="goBack">
@@ -55,7 +59,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { DataBoard, User, Reading, ChatLineSquare, Bell, ArrowLeft, HomeFilled } from '@element-plus/icons-vue'
+import { DataBoard, User, Reading, ChatLineSquare, Bell, ArrowLeft, HomeFilled, Document } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
