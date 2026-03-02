@@ -22,6 +22,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/java\/ws\/chat/, ''),
       },
+      '/api/java/ws/agent': {
+        target: 'ws://localhost:8080/ws/agent',
+        ws: true,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/java\/ws\/agent/, ''),
+      },
       '/api/java': {
         target: 'http://localhost:8080', // 你的后端地址
         changeOrigin: true,

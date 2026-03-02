@@ -3,15 +3,18 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick, reactive } from
 import { useRoute } from 'vue-router'
 import { useChatStore } from '@/stores/chat'
 import { useSidebarStore } from '@/stores/sidebar'
-import { ElMessage } from 'element-plus'
+import { useAgentStore } from '@/stores/agent'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { marked } from 'marked'
 import AgentTransferPopup from '@/components/AgentTransferPopup.vue'
 import ChatInputCard from '@/components/ChatInputCard.vue'
+import { Loading } from '@element-plus/icons-vue'
 
 marked.setOptions({ breaks: true, gfm: true })
 
 const chatStore = useChatStore()
 const sidebarStore = useSidebarStore()
+const agentStore = useAgentStore()
 const route = useRoute()
 const messageList = ref(null)
 const chatInputCardRef = ref(null)
@@ -20,6 +23,8 @@ const chatInputCardRef = ref(null)
 const getStepConfig = (type) => {
   const configs = {
     think: { title: '思考汇总结果', icon: '', color: '#059669' },
+    thought: { title: '思考中...', icon: '🧠', color: '#6B7280' },
+    tool_call: { title: '调用工具', icon: '🔧', color: '#3B82F6' },
     final_result: { title: '诊断总结报告', icon: '', color: '#059669' },
     default: { title: '分析结果', icon: '', color: '#6B7280' },
   }
@@ -51,15 +56,30 @@ const handleAgentTransferConfirm = async ({ prompt }) => {
   }
 }
 
-const messages = computed(() => chatStore.chatMessages)
+const messages = computed(() => {
+  if (sidebarStore.isAgricultureAgent) {
+    return agentStore.messages.map(m => ({
+      ...m,
+      messageContent: m.content,
+      messageRole: m.role === 'user' ? '0' : '1',
+      id: m.timestamp,
+      messageTime: m.timestamp
+    }))
+  }
+  return chatStore.chatMessages
+})
 
 // Check if message has agent steps
 const hasAgentSteps = (msg) => {
+  if (sidebarStore.isAgricultureAgent) return false // Agent模式下消息类型更扁平
   return msg.steps && msg.steps.length > 0
 }
 
 // 检查Agent是否已完成所有输出（存在非正在处理的总结报告）
 const isAgentFinished = (msg) => {
+  if (sidebarStore.isAgricultureAgent) {
+    return msg.type === 'final_result'
+  }
   if (!hasAgentSteps(msg)) return true
   return msg.steps.some(s => s.type === 'final_result' && s.status !== 'processing')
 }
@@ -226,6 +246,11 @@ const handleDislike = (msg) => {
 
 // Send message
 const handleSend = (content, images) => {
+  if (sidebarStore.isAgricultureAgent) {
+    agentStore.userInput(content)
+    return
+  }
+
   const userId = localStorage.getItem('id')
   let stored = String(chatStore.currentSessionId || localStorage.getItem('sessionId') || '')
   let partial = stored.startsWith(userId) ? stored.substring(userId.length) : stored
@@ -244,6 +269,12 @@ const loadHistory = async () => {
   if (!sid) return
   isLoading = true
   try {
+    if (sidebarStore.isAgricultureAgent) {
+      // 如果是Agent模式，连接并可能加载历史（此处假设connect会处理或新开会话）
+      agentStore.connect(sid)
+      return
+    }
+
     if (chatStore.chatMessages.length > 0) {
       chatStore.setCurrentSessionId(sid)
       nextTick(scrollToBottom)
@@ -274,6 +305,21 @@ watch(
   () => nextTick(scrollToBottom),
 )
 
+// Agent interaction confirmation
+watch(() => agentStore.pendingConfirm, (val) => {
+  if (val) {
+    ElMessageBox.confirm(val.content, '操作确认', {
+      confirmButtonText: '确认执行',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }).then(() => {
+      agentStore.submitConfirm(true)
+    }).catch(() => {
+      agentStore.submitConfirm(false)
+    })
+  }
+})
+
 let observer
 onMounted(() => {
   loadHistory()
@@ -285,13 +331,26 @@ onMounted(() => {
 onUnmounted(() => { 
   observer?.disconnect()
   chatStore.disconnectWebSocket() // 断开 WebSocket 连接
+  agentStore.disconnect()
 })
 watch(() => route.params.sessionId, (newId, oldId) => {
   if (oldId && newId !== oldId) {
     chatStore.disconnectWebSocket() // 只有当会话ID真正改变时才断开
+    agentStore.disconnect()
   }
   loadHistory()
 }, { immediate: true })
+
+// Agent mode toggle watch
+watch(() => sidebarStore.isAgricultureAgent, (val) => {
+  if (val) {
+    chatStore.disconnectWebSocket()
+    loadHistory()
+  } else {
+    agentStore.disconnect()
+    loadHistory()
+  }
+})
 </script>
 
 <template>
@@ -317,6 +376,7 @@ watch(() => route.params.sessionId, (newId, oldId) => {
           </div>
 
           <template v-else>
+            <!-- 兼容旧版的 Agent 步骤展示 -->
             <div v-if="hasAgentSteps(msg)" class="agent-chain-wrapper">
               <el-collapse v-model="activeCollapseMap[msg.id || index]" class="chain-timeline custom-collapse">
                 <template v-for="(step, sIdx) in msg.steps" :key="sIdx">
@@ -410,6 +470,52 @@ watch(() => route.params.sessionId, (newId, oldId) => {
               <div class="message-time agent-time">{{ formatTime(msg.messageTime) }}</div>
             </div>
 
+            <!-- 新版 Agent 扁平化消息展示 -->
+            <div v-else-if="sidebarStore.isAgricultureAgent" class="agent-interaction-wrapper">
+              <!-- Thought/Tool Call 样式 -->
+              <div v-if="msg.type === 'thought' || msg.type === 'tool_call'" class="agent-step-thought">
+                <el-icon class="is-loading" v-if="msg.type === 'thought'"><Loading /></el-icon>
+                <span class="step-icon" v-else>{{ getStepConfig(msg.type).icon }}</span>
+                <span class="step-text">{{ msg.content }}</span>
+              </div>
+
+              <!-- Final Result / Error 样式 -->
+              <div v-else-if="msg.type === 'final_result' || msg.type === 'error'" class="message-bubble">
+                <div class="bubble-content markdown-body" :class="{'error-content': msg.type === 'error'}" v-html="parseMarkdown(msg.messageContent)"></div>
+                <div class="message-time">{{ formatTime(msg.messageTime) }}</div>
+              </div>
+
+              <!-- Ask 样式 (带输入框) -->
+              <div v-else-if="msg.type === 'ask'" class="agent-ask-wrapper">
+                <div class="ask-content">
+                  <div class="bubble-content markdown-body" v-html="parseMarkdown(msg.messageContent)"></div>
+                  <div class="ask-input-area" v-if="index === messages.length - 1 && agentStore.pendingAsk">
+                    <el-input
+                      v-model="agentStore.pendingAsk.userInput"
+                      placeholder="请输入补充信息..."
+                      size="small"
+                      @keyup.enter="agentStore.submitAsk(agentStore.pendingAsk.userInput)"
+                    >
+                      <template #append>
+                        <el-button @click="agentStore.submitAsk(agentStore.pendingAsk.userInput)">发送</el-button>
+                      </template>
+                    </el-input>
+                  </div>
+                </div>
+                <div class="message-time">{{ formatTime(msg.messageTime) }}</div>
+              </div>
+
+              <!-- Confirm 样式 -->
+              <div v-else-if="msg.type === 'confirm'" class="agent-confirm-bubble">
+                 <div class="bubble-content confirm-bubble">
+                    <div class="confirm-header">操作确认</div>
+                    <div class="confirm-body">{{ msg.content }}</div>
+                 </div>
+                 <div class="message-time">{{ formatTime(msg.messageTime) }}</div>
+              </div>
+            </div>
+
+            <!-- 普通机器人消息 -->
             <div v-else class="message-bubble">
               <div class="bubble-content markdown-body" v-html="parseMarkdown(msg.messageContent)"></div>
 
@@ -1005,6 +1111,111 @@ $border-light: rgba(5, 150, 105, 0.1);
     overflow: hidden;
     text-overflow: ellipsis;
   }
+}
+
+.agent-interaction-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.agent-step-thought {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+  font-size: 13px;
+  color: #6b7280;
+  width: fit-content;
+  max-width: 90%;
+  animation: fadeIn 0.3s ease;
+
+  .step-icon {
+    font-size: 14px;
+  }
+  
+  .step-text {
+    line-height: 1.4;
+  }
+}
+
+.agent-ask-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 80%;
+
+  .ask-content {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    border-bottom-left-radius: 4px;
+    padding: 12px 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+    .ask-input-area {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed #e5e7eb;
+    }
+  }
+
+  .message-time {
+    font-size: 12px;
+    color: #9ca3af;
+    padding: 0 4px;
+  }
+}
+
+.agent-confirm-bubble {
+  max-width: 80%;
+  
+  .confirm-bubble {
+    background: #fff;
+    border: 1px solid #fcd34d;
+    border-radius: 8px;
+    border-bottom-left-radius: 4px;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(252, 211, 77, 0.1);
+
+    .confirm-header {
+      background: #fffbeb;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #92400e;
+      border-bottom: 1px solid #fef3c7;
+    }
+
+    .confirm-body {
+      padding: 12px 16px;
+      font-size: 14px;
+      color: #1f2937;
+      line-height: 1.5;
+    }
+  }
+
+  .message-time {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 4px;
+    padding: 0 4px;
+  }
+}
+
+.error-content {
+  color: #dc2626 !important;
+  border-color: #fecaca !important;
+  background-color: #fef2f2 !important;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 // Utilities
