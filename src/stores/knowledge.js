@@ -37,6 +37,8 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
 
   // ====== 图谱状态 ======
   const graphData = ref({ nodes: [], links: [] })
+  const selectedGraphCrop = ref('') // 图谱当前选中作物
+  const graphSuggestions = ref([]) // 图谱内搜索建议
 
   // ====== 搜索状态 ======
   const searchResults = ref([])
@@ -60,12 +62,13 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
   // ====== actions ======
 
   // 获取知识图谱
-  async function fetchGraphData() {
+  async function fetchGraphData(cropName) {
     loading.value = true
     try {
-      const res = await api.getGraphData()
+      const res = await api.getGraphData({ cropName })
       if (res && res.nodes) {
         graphData.value = res
+        if (cropName) selectedGraphCrop.value = cropName
       } else {
         throw new Error('Empty data')
       }
@@ -94,6 +97,19 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
       }
     } finally {
       loading.value = false
+    }
+  }
+
+  // 获取图谱内搜索建议
+  async function fetchGraphSuggest(q, cropName) {
+    if (!q.trim()) {
+      graphSuggestions.value = []
+      return
+    }
+    try {
+      graphSuggestions.value = await api.getGraphSuggest(q, cropName)
+    } catch {
+      graphSuggestions.value = []
     }
   }
 
@@ -235,6 +251,8 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     expandedDiseaseId,
     loading,
     graphData,
+    selectedGraphCrop,
+    graphSuggestions,
     searchResults,
     searchKeyword,
     searchTotal,
@@ -244,6 +262,7 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     breadcrumbs,
     // actions
     fetchGraphData,
+    fetchGraphSuggest,
     fetchCategories,
     fetchAllCrops,
     selectCategory,

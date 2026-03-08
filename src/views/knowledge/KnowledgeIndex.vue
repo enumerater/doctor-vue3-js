@@ -17,6 +17,21 @@
       
       <!-- 视图切换 -->
       <div v-if="store.currentLevel === 1" class="view-toggle">
+        <el-select
+          v-if="viewMode === 'graph'"
+          v-model="store.selectedGraphCrop"
+          placeholder="选择作物图谱"
+          size="small"
+          style="width: 120px; margin-right: 12px"
+          @change="handleGraphCropChange"
+        >
+          <el-option
+            v-for="crop in store.allCrops"
+            :key="crop"
+            :label="crop"
+            :value="crop"
+          />
+        </el-select>
         <el-radio-group v-model="viewMode" size="small">
           <el-radio-button label="list">
             <el-icon><Menu /></el-icon>
@@ -121,17 +136,34 @@ const store = useKnowledgeStore()
 const router = useRouter()
 const viewMode = ref('list') // 'list' or 'graph'
 
-onMounted(() => {
+onMounted(async () => {
   if (store.currentLevel === 1) {
     store.fetchCategories()
-    store.fetchGraphData()
+    if (viewMode.value === 'graph') {
+      await initGraphView()
+    }
   }
 })
 
+// 初始化图谱视图
+const initGraphView = async () => {
+  if (!store.allCrops.length) {
+    await store.fetchAllCrops()
+  }
+  if (store.allCrops.length && !store.selectedGraphCrop) {
+    store.selectedGraphCrop = store.allCrops[0]
+  }
+  store.fetchGraphData(store.selectedGraphCrop)
+}
+
+const handleGraphCropChange = (val) => {
+  store.fetchGraphData(val)
+}
+
 // 当切换回第一层级且是图谱模式时，确保数据加载
 watch([() => store.currentLevel, viewMode], ([level, mode]) => {
-  if (level === 1 && mode === 'graph' && !store.graphData.nodes.length) {
-    store.fetchGraphData()
+  if (level === 1 && mode === 'graph') {
+    initGraphView()
   }
 })
 

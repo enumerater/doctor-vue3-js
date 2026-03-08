@@ -40,6 +40,10 @@ export const searchDiseases = (keyword, page = 1, pageSize = 20) =>
 export const getGraphData = (params = {}) =>
   safeRequest({ url: '/knowledge/graph', method: 'get', params })
 
+// 图谱内搜索建议 (新增)
+export const getGraphSuggest = (q, cropName) =>
+  safeRequest({ url: '/knowledge/graph/suggest', method: 'get', params: { q, cropName } })
+
 // 管理端用别名
 export const getDiseaseList = getDiseases
 
