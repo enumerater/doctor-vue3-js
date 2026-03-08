@@ -35,6 +35,9 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
   // ====== 加载状态 ======
   const loading = ref(false)
 
+  // ====== 图谱状态 ======
+  const graphData = ref({ nodes: [], links: [] })
+
   // ====== 搜索状态 ======
   const searchResults = ref([])
   const searchKeyword = ref('')
@@ -55,6 +58,44 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
   })
 
   // ====== actions ======
+
+  // 获取知识图谱
+  async function fetchGraphData() {
+    loading.value = true
+    try {
+      const res = await api.getGraphData()
+      if (res && res.nodes) {
+        graphData.value = res
+      } else {
+        throw new Error('Empty data')
+      }
+    } catch {
+      // 降级使用 Mock 数据展示效果
+      graphData.value = {
+        nodes: [
+          { id: 'c1', name: '柑橘', type: 'crop', value: 30, details: '柑橘是芸香科、柑橘属植物。性喜温暖湿润气候，耐寒性较差。' },
+          { id: 'c2', name: '水稻', type: 'crop', value: 28, details: '水稻是草本稻属的一种，也是稻属中作为粮食的最主要最悠久的一种。' },
+          { id: 'p1', name: '溃疡病', type: 'pest', value: 20, details: '柑橘溃疡病是国内外植物检疫对象。主要为害叶片、枝梢和果实。' },
+          { id: 'p2', name: '稻飞虱', type: 'pest', value: 18, details: '稻飞虱是水稻的主要害虫之一。' },
+          { id: 'm1', name: '波尔多液', type: 'pesticide', value: 15, details: '一种无机铜素杀菌剂，对多种真菌和细菌病害有防治作用。' },
+          { id: 'm2', name: '吡虫啉', type: 'pesticide', value: 14, details: '属内吸性杀虫剂，具有广谱、高效、低残留等特点。' },
+          { id: 's1', name: '惊蛰', type: 'solar_term', value: 22, details: '反映的是自然生物受节律变化影响而出现萌发生长的现象。' },
+          { id: 's2', name: '谷雨', type: 'solar_term', value: 22, details: '谷雨是二十四节气之第6个节气，也是春季最后一个节气。' }
+        ],
+        links: [
+          { source: 'c1', target: 'p1', relation: '常见病害' },
+          { source: 'p1', target: 'm1', relation: '防治药剂' },
+          { source: 'c1', target: 's1', relation: '物候期' },
+          { source: 'c2', target: 'p2', relation: '常见害虫' },
+          { source: 'p2', target: 'm2', relation: '防治药剂' },
+          { source: 'c2', target: 's2', relation: '物候期' },
+          { source: 'p1', target: 's1', relation: '高发期' }
+        ]
+      }
+    } finally {
+      loading.value = false
+    }
+  }
 
   // 获取所有分类
   async function fetchCategories() {
@@ -193,6 +234,7 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     pageSize,
     expandedDiseaseId,
     loading,
+    graphData,
     searchResults,
     searchKeyword,
     searchTotal,
@@ -201,6 +243,7 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     // computed
     breadcrumbs,
     // actions
+    fetchGraphData,
     fetchCategories,
     fetchAllCrops,
     selectCategory,

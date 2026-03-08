@@ -70,6 +70,16 @@ onMounted(async () => {
   if (!chatStore.autoSendPending) {
     await sidebarStore.prepareConversation()
   }
+  
+  // 处理来自知识图谱或其他页面的提问
+  const prompt = route.query.prompt
+  if (prompt) {
+    setTimeout(async () => {
+      await sendMessage(prompt)
+      // 清除 query 以防刷新重复发送
+      router.replace({ query: {} })
+    }, 500)
+  }
 })
 
 // Auto-send (transferred from other pages)

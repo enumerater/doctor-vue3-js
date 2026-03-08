@@ -14,11 +14,32 @@
         <span v-else class="crumb-current">{{ crumb.label }}</span>
       </template>
       <span class="crumb-spacer" />
-      <el-button text size="small" :icon="Search" @click="goSearch">搜索</el-button>
+      
+      <!-- 视图切换 -->
+      <div v-if="store.currentLevel === 1" class="view-toggle">
+        <el-radio-group v-model="viewMode" size="small">
+          <el-radio-button label="list">
+            <el-icon><Menu /></el-icon>
+            分类
+          </el-radio-button>
+          <el-radio-button label="graph">
+            <el-icon><Share /></el-icon>
+            图谱
+          </el-radio-button>
+        </el-radio-group>
+      </div>
+
+      <el-button text size="small" :icon="Search" @click="goSearch" style="margin-left: 12px">搜索</el-button>
+    </div>
+
+    <!-- 图谱视图 -->
+    <div v-if="viewMode === 'graph' && store.currentLevel === 1" class="graph-section">
+      <div v-if="store.loading" v-loading="true" class="loading-center" />
+      <KnowledgeGraph v-else :data="store.graphData" />
     </div>
 
     <!-- Level 1: category 卡片 -->
-    <div v-if="store.currentLevel === 1" class="card-section">
+    <div v-else-if="store.currentLevel === 1" class="card-section">
       <div v-if="store.loading" v-loading="true" class="loading-center" />
       <div v-else-if="store.categories.length > 0" class="card-grid">
         <div
@@ -87,20 +108,30 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search } from '@element-plus/icons-vue'
+import { Search, Menu, Share } from '@element-plus/icons-vue'
 import ContentHeader from '@/components/layout/ContentHeader.vue'
 import DiseaseCard from '@/components/knowledge/DiseaseCard.vue'
 import DiseaseDetail from '@/components/knowledge/DiseaseDetail.vue'
+import KnowledgeGraph from '@/components/knowledge/KnowledgeGraph.vue'
 import { useKnowledgeStore } from '@/stores/knowledge'
 
 const store = useKnowledgeStore()
 const router = useRouter()
+const viewMode = ref('list') // 'list' or 'graph'
 
 onMounted(() => {
   if (store.currentLevel === 1) {
     store.fetchCategories()
+    store.fetchGraphData()
+  }
+})
+
+// 当切换回第一层级且是图谱模式时，确保数据加载
+watch([() => store.currentLevel, viewMode], ([level, mode]) => {
+  if (level === 1 && mode === 'graph' && !store.graphData.nodes.length) {
+    store.fetchGraphData()
   }
 })
 
@@ -159,6 +190,25 @@ const cropClass = () => 'crop-default'
   flex: 1;
 }
 
+.view-toggle {
+  display: flex;
+  align-items: center;
+  :deep(.el-radio-button__inner) {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+  }
+}
+
+// 图谱区域
+.graph-section {
+  padding: 0 24px 24px;
+  @include mobile {
+    padding: 0 16px 16px;
+  }
+}
+
 // 卡片区域
 .card-section {
   padding: 0 24px;
@@ -170,7 +220,7 @@ const cropClass = () => 'crop-default'
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 
   @media (min-width: 768px) {

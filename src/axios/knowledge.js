@@ -36,6 +36,10 @@ export const getDiseases = (params = {}) => {
 export const searchDiseases = (keyword, page = 1, pageSize = 20) =>
   safeRequest({ url: '/knowledge/search', method: 'get', params: { keyword, page, pageSize } })
 
+// 获取知识图谱数据
+export const getGraphData = (params = {}) =>
+  safeRequest({ url: '/knowledge/graph', method: 'get', params })
+
 // 管理端用别名
 export const getDiseaseList = getDiseases
 
