@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { getMessage, saveAgentMessage } from '@/axios/chat'
 import { createSession } from '@/axios/session'
 import { useSidebarStore } from './sidebar'
+import { ElMessageBox } from 'element-plus'
+
 export const useChatStore = defineStore('chat', {
   state: () => ({
     currentSessionId: '', // 当前选中的会话ID
@@ -11,6 +13,8 @@ export const useChatStore = defineStore('chat', {
     autoSendPending: false, // 从弹窗传递到Agent时自动发送标志
     pendingTransferImageUrl: '', // 待传递的图片URL
     selectedModel: 'qwen-flash', // 默认模型
+    socket: null, // WebSocket 实例
+    isConnected: false, // 是否已连接
   }),
   actions: {
     setSelectedModel(model) {
@@ -37,6 +41,175 @@ export const useChatStore = defineStore('chat', {
       this.pendingTransferImageUrl = ''
     },
 
+    // --- WebSocket 管理 ---
+    connectWebSocket(userId, sessionId, TOKEN) {
+      if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
+        return
+      }
+
+      const baseApi = import.meta.env.VITE_APP_BASE_API
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      
+      // 处理 baseApi 是完整 URL 还是相对路径的情况
+      let wsBase;
+      if (baseApi.startsWith('http')) {
+        wsBase = baseApi.replace(/^http/, 'ws');
+      } else {
+        wsBase = `${wsProtocol}//${window.location.host}${baseApi}`;
+      }
+
+      // 后端路径为 /ws/chat，此处拼接后经过代理会转发到后端 /ws/chat
+      const wsUrl = `${wsBase}/ws/chat?token=${TOKEN}&userId=${userId}&sessionId=${sessionId}`
+      
+      this.socket = new WebSocket(wsUrl)
+
+      this.socket.onopen = () => {
+        console.log('WebSocket Connected')
+        this.isConnected = true
+      }
+
+      this.socket.onmessage = (event) => {
+        this.handleSocketMessage(event.data, userId, sessionId)
+      }
+
+      this.socket.onclose = () => {
+        console.log('WebSocket Disconnected')
+        this.isConnected = false
+        this.socket = null
+      }
+
+      this.socket.onerror = (error) => {
+        console.error('WebSocket Error:', error)
+      }
+    },
+
+    disconnectWebSocket() {
+      if (this.socket) {
+        this.socket.close()
+        this.socket = null
+        this.isConnected = false
+      }
+    },
+
+    handleSocketMessage(rawData, userId, sessionId) {
+      const sidebarStore = useSidebarStore()
+      const currentMsg = this.chatMessages[this.currentRobotMsgIndex]
+      if (!currentMsg) return
+
+      try {
+        const data = JSON.parse(rawData)
+
+        // 1. 处理交互请求 (type: interaction)
+        if (data.type === 'interaction') {
+          const actionId = data.actionId; // 获取后端传来的 actionId
+          
+          ElMessageBox.confirm(data.content || data.prompt || '检测到需要您的确认，是否继续？', '系统提示', {
+            confirmButtonText: '同意',
+            cancelButtonText: '取消',
+            type: 'warning',
+          })
+            .then(() => {
+              this.sendSocketMessage({
+                type: 'interaction_response',
+                actionId: actionId, // 必须带上刚才存的那个 ID
+                data: {
+                  confirmed: true // 后端是通过 data.confirmed 来判断的
+                },
+              })
+            })
+            .catch(() => {
+              this.sendSocketMessage({
+                type: 'interaction_response',
+                actionId: actionId,
+                data: {
+                  confirmed: false
+                },
+              })
+            })
+          return
+        }
+
+        // 2. 处理流式消息
+        if (data.status) {
+          // 将之前所有的 processing 状态改为 completed
+          currentMsg.steps.forEach((step) => {
+            if (step.type === 'status' && step.status === 'processing') {
+              step.status = 'completed'
+            }
+          })
+
+          const existingStatus = currentMsg.steps.find(
+            (s) => s.type === 'status' && s.content === data.message,
+          )
+          if (existingStatus) {
+            existingStatus.status = data.status
+          } else {
+            currentMsg.steps.push({
+              type: 'status',
+              content: data.message,
+              status: data.status,
+              timestamp: data.timestamp,
+            })
+          }
+        } else if (data.type) {
+          currentMsg.steps.forEach((step) => {
+            if (step.status === 'processing') step.status = 'completed'
+          })
+
+          const lastStep = currentMsg.steps[currentMsg.steps.length - 1]
+          if (lastStep && lastStep.type === data.type && data.type !== 'status') {
+            if (data.content !== undefined) {
+              lastStep.content = data.content
+            }
+          } else {
+            currentMsg.steps.push({
+              type: data.type,
+              content: data.content,
+              timestamp: data.timestamp,
+              status: 'processing',
+            })
+          }
+
+          if (data.type === 'final_result') {
+            currentMsg.messageContent = data.content
+            // 收到最终结果，保存消息
+            this.saveFinishedMessage(userId, sessionId)
+          }
+        }
+      } catch (e) {
+        // 非 JSON 数据追加到主内容
+        currentMsg.messageContent += rawData
+      }
+    },
+
+    sendSocketMessage(data) {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        this.socket.send(JSON.stringify(data))
+      } else {
+        console.error('WebSocket is not open')
+      }
+    },
+
+    async saveFinishedMessage(userId, sessionId) {
+      const robotMsg = this.chatMessages[this.currentRobotMsgIndex]
+      const userMsg = this.chatMessages[this.currentRobotMsgIndex - 1]
+      const fullSessionId = `${userId}${sessionId}`
+
+      try {
+        await saveAgentMessage({
+          sessionId: fullSessionId,
+          userMessage: userMsg.messageContent,
+          robotMessage: {
+            steps: robotMsg.steps,
+            finalContent: robotMsg.messageContent,
+          },
+        })
+        console.log('Agent消息保存成功')
+      } catch (err) {
+        console.warn('Agent消息保存失败', err)
+      }
+    },
+
     async fetchMessages(sessionId) {
       if (!sessionId) return
       this.clearMessages()
@@ -47,9 +220,7 @@ export const useChatStore = defineStore('chat', {
             let messageContent = msg.messageContent || msg.content || ''
             let steps = []
 
-            // 如果是Agent消息（messageRole为'1'且包含steps数据）
             if (msg.messageRole === '1' && msg.agentData) {
-              // 后端返回的Agent消息格式：{ agentData: { steps: [...], finalContent: '...' } }
               try {
                 if (typeof msg.agentData === 'string') {
                   const parsed = JSON.parse(msg.agentData)
@@ -68,7 +239,7 @@ export const useChatStore = defineStore('chat', {
               ...msg,
               messageContent: messageContent,
               messageRole: msg.messageRole || (msg.type === 'user' ? '0' : '1'),
-              steps: steps, // 还原历史步骤
+              steps: steps,
               isImageMessage: false,
             }
           })
@@ -84,58 +255,72 @@ export const useChatStore = defineStore('chat', {
       this.clearInputValue()
       const sidebarStore = useSidebarStore()
       const fullSessionId = `${userId}${sessionId}`
-      // 第一条消息时创建会话记录，区分普通对话和Agent对话
+      
       if (this.chatMessages.length === 0 && sessionId) {
         try {
           await createSession({
             userId,
             sessionTitle: trimmedContent.substring(0, 20),
             sessionId: fullSessionId,
-            sessionType: sidebarStore.isAgricultureAgent ? 'agent' : 'chat', // 新增：会话类型
+            sessionType: sidebarStore.isAgricultureAgent ? 'agent' : 'chat',
           })
-
-          // 创建会话成功后，立即刷新侧边栏历史记录
           await sidebarStore.refreshHistory()
         } catch (err) {
           console.warn('创建会话失败', err)
         }
       }
 
-      // 用户消息
       this.chatMessages.push({
         type: 'user',
         messageContent: trimmedContent,
         messageRole: '0',
       })
 
-      // ✅ 初始化机器人消息：必须包含 steps 数组
       this.chatMessages.push({
         type: 'robot',
         messageContent: '',
         messageRole: '1',
-        steps: [], // 关键：组件 v-for 循环的对象
+        steps: [],
       })
       this.currentRobotMsgIndex = this.chatMessages.length - 1
       return Promise.resolve()
     },
 
     async startStreaming(content, image, userId, sessionId, TOKEN) {
+      const sidebarStore = useSidebarStore()
+      
+      // 如果是农业智能体，使用 WebSocket
+      if (sidebarStore.isAgricultureAgent) {
+        this.connectWebSocket(userId, sessionId, TOKEN)
+        
+        // 等待连接建立后发送消息（简单处理，实际可增加重试逻辑）
+        const sendWhenReady = () => {
+          if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            this.sendSocketMessage({
+              type: 'chat', // 必须加这个，后端靠这个判断业务类型
+              content: content, // 后端 AgentWorkflowService 接收的是 content 字段
+              prompt: content, // 保留原字段以防万一
+              image: image,
+              model: this.selectedModel
+            })
+          } else {
+            setTimeout(sendWhenReady, 100)
+          }
+        }
+        sendWhenReady()
+        return
+      }
+
+      // 普通聊天仍然使用 fetch SSE
       try {
-        const sidebarStore = (await import('@/stores/sidebar')).useSidebarStore()
-
-        const apiPath = sidebarStore.isAgricultureAgent
-          ? '/agent/agriculture-agent'
-          : '/chat/memory'
-
-        // 统一使用环境变量中的 API 基准路径
+        const apiPath = '/chat/memory'
         const baseApi = import.meta.env.VITE_APP_BASE_API
-        // 构造完整的 API 路径，确保如果是相对路径则拼接当前 origin
         const fullApiPath = new URL(
           `${baseApi.startsWith('http') ? '' : window.location.origin}${baseApi}${apiPath}`,
         ).href
 
         const url = new URL(fullApiPath)
-        url.searchParams.append('prompt', content || '') // 处理空值
+        url.searchParams.append('prompt', content || '')
         url.searchParams.append('image', image || '')
         url.searchParams.append('userId', userId || '')
         url.searchParams.append('sessionId', sessionId || '')
@@ -162,94 +347,8 @@ export const useChatStore = defineStore('chat', {
             if (!line.startsWith('data:')) continue
             const chunk = line.replace('data:', '').trim()
             if (!chunk || chunk === '[DONE]') continue
-
             const currentMsg = this.chatMessages[this.currentRobotMsgIndex]
-
-            if (sidebarStore.isAgricultureAgent) {
-              try {
-                const data = JSON.parse(chunk)
-
-                if (data.status) {
-                  // ✅ 核心修复：将之前所有的 processing 状态改为 completed
-                  currentMsg.steps.forEach((step) => {
-                    if (step.type === 'status' && step.status === 'processing') {
-                      step.status = 'completed'
-                    }
-                  })
-
-                  // 检查是否已经存在相同内容的 status，避免重复
-                  const existingStatus = currentMsg.steps.find(
-                    (s) => s.type === 'status' && s.content === data.message,
-                  )
-                  if (existingStatus) {
-                    existingStatus.status = data.status
-                  } else {
-                    // 推入新状态
-                    currentMsg.steps.push({
-                      type: 'status',
-                      content: data.message,
-                      status: data.status, // 后端传来的可能是 'processing' 或 'completed'
-                      timestamp: data.timestamp,
-                    })
-                  }
-                } else if (data.type) {
-                  // ✅ 核心修复：当开始传数据卡片时，之前的状态肯定也完成了
-                  currentMsg.steps.forEach((step) => {
-                    if (step.status === 'processing') step.status = 'completed'
-                  })
-
-                  // 检查是否是当前正在更新的步骤类型
-                  const lastStep = currentMsg.steps[currentMsg.steps.length - 1]
-                  if (lastStep && lastStep.type === data.type && data.type !== 'status') {
-                    // 如果是相同类型的步骤，则更新其内容（支持流式累加或覆盖）
-                    // 注意：这里需要根据后端协议决定是 += 还是直接 =
-                    // 通常 streaming 会发送增量或者全量。从之前的代码看，这里似乎是覆盖或者新的内容
-                    if (data.content !== undefined) {
-                      lastStep.content = data.content
-                    }
-                  } else {
-                    currentMsg.steps.push({
-                      type: data.type,
-                      content: data.content,
-                      timestamp: data.timestamp,
-                      status: 'processing', // 标记为正在处理
-                    })
-                  }
-
-                  if (data.type === 'final_result') {
-                    currentMsg.messageContent = data.content
-                  }
-                }
-              } catch (e) {
-                // 如果 chunk 不是有效的 JSON，则追加到主内容（普通流式或 Agent 的异常情况）
-                currentMsg.messageContent += chunk
-              }
-            }
-            // --- 普通模型处理逻辑 ---
-            else {
-              currentMsg.messageContent += chunk
-            }
-          }
-        }
-
-        // 流式响应结束后，如果是Agent模式，保存完整消息到后端
-        if (sidebarStore.isAgricultureAgent && this.currentRobotMsgIndex >= 0) {
-          const robotMsg = this.chatMessages[this.currentRobotMsgIndex]
-          const userMsg = this.chatMessages[this.currentRobotMsgIndex - 1]
-          const fullSessionId = `${userId}${sessionId}`
-
-          try {
-            await saveAgentMessage({
-              sessionId: fullSessionId,
-              userMessage: userMsg.messageContent,
-              robotMessage: {
-                steps: robotMsg.steps,
-                finalContent: robotMsg.messageContent,
-              },
-            })
-            console.log('Agent消息保存成功')
-          } catch (err) {
-            console.warn('Agent消息保存失败', err)
+            currentMsg.messageContent += chunk
           }
         }
       } catch (error) {
@@ -266,3 +365,4 @@ export const useChatStore = defineStore('chat', {
     },
   },
 })
+
