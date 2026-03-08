@@ -50,6 +50,7 @@ import { ref, onMounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useSidebarStore } from '@/stores/sidebar'
 import { useChatStore } from '@/stores/chat'
+import { useAgentStore } from '@/stores/agent'
 import { marked } from 'marked'
 import ChatInputCard from '@/components/ChatInputCard.vue'
 import LogoSection from '@/components/LogoSection.vue'
@@ -62,6 +63,7 @@ const router = useRouter()
 const route = useRoute()
 const sidebarStore = useSidebarStore()
 const chatStore = useChatStore()
+const agentStore = useAgentStore()
 
 const chatContentRef = ref(null)
 const chatInputCardRef = ref(null)
@@ -124,6 +126,17 @@ const sendMessage = async (content, images = []) => {
     : storedSessionId
   const fullSessionId = `${userId}${partialSessionId}`
   chatStore.setCurrentSessionId(fullSessionId)
+
+  if (sidebarStore.isAgricultureAgent) {
+    agentStore.clearMessages()
+    router.push({ name: 'chatDetail', params: { sessionId: fullSessionId } })
+    // 在详情页会自动 connect 并处理输入，但这里我们先触发一次 connect
+    agentStore.connect(fullSessionId)
+    setTimeout(() => {
+        agentStore.userInput(trimmedContent)
+    }, 500)
+    return
+  }
 
   await chatStore.prepareMessage(trimmedContent, userId, partialSessionId)
 
