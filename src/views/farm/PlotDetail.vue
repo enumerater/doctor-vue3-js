@@ -61,6 +61,18 @@
         @click="goAccumulatedTemp"
       />
 
+      <!-- 2.5 Records Entry Card -->
+      <div class="records-entry-card" @click="router.push({ name: 'plotRecords', params: { farmId, plotId } })">
+        <div class="entry-left">
+          <div class="icon-wrap"><el-icon><Notebook /></el-icon></div>
+          <div class="text-wrap">
+            <span class="entry-title">农事记录</span>
+            <span class="entry-desc">记录施药、施肥及田间观察随笔</span>
+          </div>
+        </div>
+        <el-icon class="arrow"><ArrowRight /></el-icon>
+      </div>
+
       <!-- 3. Growth Journey -->
       <div class="section-card journey-section">
         <div class="section-header">
@@ -188,7 +200,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   Edit, Delete, Picture, ChatDotRound, ArrowRight, 
-  TrendCharts, Collection, Compass, List, Calendar
+  TrendCharts, Collection, Compass, List, Calendar, Notebook
 } from '@element-plus/icons-vue'
 import ContentHeader from '@/components/layout/ContentHeader.vue'
 import GrowthStageSelect from '@/components/farm/GrowthStageSelect.vue'
@@ -332,6 +344,56 @@ const confirmStage = async () => {
 
   &:hover { color: $primary; border-color: $primary; }
   &.danger:hover { color: $danger; border-color: $danger; }
+}
+
+.records-entry-card {
+  background: $bg-card;
+  border-radius: $radius-lg;
+  border: 1px solid $border;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  cursor: pointer;
+  transition: $transition-fast;
+  box-shadow: $shadow-sm;
+
+  &:hover {
+    border-color: $primary;
+    box-shadow: $shadow-md;
+    transform: translateY(-2px);
+    .icon-wrap { background: $primary; color: white; }
+    .arrow { transform: translateX(4px); color: $primary; }
+  }
+
+  .entry-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .icon-wrap {
+    width: 48px;
+    height: 48px;
+    background: rgba($primary, 0.1);
+    color: $primary;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    transition: $transition-fast;
+  }
+
+  .text-wrap {
+    display: flex;
+    flex-direction: column;
+    .entry-title { font-size: 17px; font-weight: 800; color: $text-primary; }
+    .entry-desc { font-size: 12px; color: $text-tertiary; margin-top: 2px; }
+  }
+
+  .arrow { color: $border; transition: $transition-smooth; }
 }
 
 // Hero Card

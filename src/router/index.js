@@ -145,6 +145,36 @@ const router = createRouter({
           component: () => import('@/views/farm/AccumulatedTempView.vue'),
           meta: { title: '积温预测' },
         },
+        {
+          path: 'farm/:farmId/plot/:plotId/records',
+          name: 'plotRecords',
+          component: () => import('@/views/farm/PlotRecordsView.vue'),
+          meta: { title: '农事记录' },
+        },
+        {
+          path: 'farm/:farmId/plot/:plotId/pesticide/create',
+          name: 'pesticideCreate',
+          component: () => import('@/views/farm/PesticideCreate.vue'),
+          meta: { title: '记录施药' },
+        },
+        {
+          path: 'farm/:farmId/plot/:plotId/pesticide/:id/edit',
+          name: 'pesticideEdit',
+          component: () => import('@/views/farm/PesticideCreate.vue'),
+          meta: { title: '修改施药记录' },
+        },
+        {
+          path: 'farm/:farmId/plot/:plotId/field-note/create',
+          name: 'fieldNoteCreate',
+          component: () => import('@/views/farm/FieldNoteCreate.vue'),
+          meta: { title: '记随笔' },
+        },
+        {
+          path: 'farm/:farmId/plot/:plotId/field-note/:id/edit',
+          name: 'fieldNoteEdit',
+          component: () => import('@/views/farm/FieldNoteCreate.vue'),
+          meta: { title: '修改随笔' },
+        },
 
         // ====== 通知中心 ======
         {
