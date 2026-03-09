@@ -52,7 +52,16 @@
         </div>
       </div>
 
-      <!-- 2. Growth Journey -->
+      <!-- 2. Accumulated Temperature Card -->
+      <AccumulatedTempCard
+        style="margin-bottom: 24px"
+        :currentTemp="predictionStore.accumulatedTemp?.currentTemp"
+        :targetTemp="predictionStore.accumulatedTemp?.targetTemp"
+        :predictionDate="predictionStore.prediction?.predictedNextStageDate"
+        @click="goAccumulatedTemp"
+      />
+
+      <!-- 3. Growth Journey -->
       <div class="section-card journey-section">
         <div class="section-header">
           <div class="section-title-group">
@@ -183,13 +192,16 @@ import {
 } from '@element-plus/icons-vue'
 import ContentHeader from '@/components/layout/ContentHeader.vue'
 import GrowthStageSelect from '@/components/farm/GrowthStageSelect.vue'
+import AccumulatedTempCard from '@/components/farm/AccumulatedTempCard.vue'
 import { useFarmStore } from '@/stores/farm'
 import { usePlotDiagnosisStore } from '@/stores/plot_diagnosis'
+import { usePredictionStore } from '@/stores/prediction'
 
 const route = useRoute()
 const router = useRouter()
 const store = useFarmStore()
 const diagnosisStore = usePlotDiagnosisStore()
+const predictionStore = usePredictionStore()
 
 const farmId = route.params.farmId
 const plotId = route.params.plotId
@@ -199,7 +211,13 @@ const selectedStage = ref('')
 onMounted(() => {
   store.fetchPlotDetail(farmId, plotId)
   diagnosisStore.fetchRecords(plotId)
+  predictionStore.fetchAccumulatedTemp(plotId)
+  predictionStore.fetchAccumulatedTempPrediction(plotId)
 })
+
+const goAccumulatedTemp = () => {
+  router.push({ name: 'accumulatedTemp', params: { farmId, plotId } })
+}
 
 const cropIcon = computed(() => {
   const map = {

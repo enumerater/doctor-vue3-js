@@ -139,6 +139,12 @@ const router = createRouter({
           component: () => import('@/views/farm/PlotEdit.vue'),
           meta: { title: '编辑地块' },
         },
+        {
+          path: 'farm/:farmId/plot/:plotId/accumulated-temp',
+          name: 'accumulatedTemp',
+          component: () => import('@/views/farm/AccumulatedTempView.vue'),
+          meta: { title: '积温预测' },
+        },
 
         // ====== 通知中心 ======
         {
