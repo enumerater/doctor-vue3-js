@@ -208,16 +208,29 @@ export const useAgentStore = defineStore('agent', {
           break
 
         // --- 结果类 ---
-        case MSG_TYPE.ANSWER:
+        case MSG_TYPE.ANSWER: {
+          let finalContent = content || ''
+          let steps = [...this.currentTurnSteps]
+          
+          // 如果 payload 包含 agent_data 结构，进行深度解析
+          if (payload?.agent_data) {
+            const agentData = payload.agent_data
+            finalContent = agentData.finalContent || finalContent
+            if (agentData.steps) {
+              steps = this.normalizeHistorySteps(agentData.steps)
+            }
+          }
+
           this.messages.push({
             type: 'answer',
-            content: content || '',
+            content: finalContent,
             role: 'robot',
             timestamp: ts,
-            steps: [...this.currentTurnSteps],
+            steps: steps,
           })
           this.resetTurnState()
           break
+        }
 
         case MSG_TYPE.ERROR:
           this.messages.push({
@@ -248,18 +261,21 @@ export const useAgentStore = defineStore('agent', {
     async userInput(content, images = [], sessionId = null) {
       if (sessionId) this.sessionId = sessionId
       const sid = this.sessionId
+      const sidebarStore = useSidebarStore()
       
-      // 检查是否需要创建会话记录（如果是当前对话的第一条用户消息）
-      if (this.messages.length === 0 && sid) {
+      // 判断该会话是否已存在于历史记录中，防止重复触发 createSession
+      const isExistingSession = sidebarStore.historyList.some(h => h.sessionId === sid)
+      
+      // 如果没有消息且历史列表里也没有（即真正的新对话），才创建新会话
+      if (this.messages.length === 0 && !isExistingSession && sid) {
         const userId = localStorage.getItem('id')
         try {
           await createSession({
             userId,
             sessionTitle: (content || '').substring(0, 20) || '农业Agent对话',
             sessionId: sid,
-            agent: true, // Agent模式下必传True
+            agent: true,
           })
-          const sidebarStore = useSidebarStore()
           sidebarStore.refreshHistory()
         } catch (err) {
           console.warn('Agent模式下创建会话失败:', err)
@@ -346,11 +362,12 @@ export const useAgentStore = defineStore('agent', {
           let steps = []
           let finalContent = msg.messageContent || msg.content || ''
 
-          if (msg.agentData) {
+          const agentDataRaw = msg.agent_data || msg.agentData
+          if (agentDataRaw) {
             try {
-              const agentData = typeof msg.agentData === 'string'
-                ? JSON.parse(msg.agentData)
-                : msg.agentData
+              const agentData = typeof agentDataRaw === 'string'
+                ? JSON.parse(agentDataRaw)
+                : agentDataRaw
               finalContent = agentData.finalContent || finalContent
               steps = this.normalizeHistorySteps(agentData.steps || [])
             } catch (e) {

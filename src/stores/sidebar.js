@@ -1,6 +1,7 @@
 // stores/sidebar.js
 import { defineStore } from 'pinia'
 import { useChatStore } from '@/stores/chat'
+import { useAgentStore } from '@/stores/agent'
 import { useSkillsStore } from '@/stores/skills'
 import router from '@/router/index.js'
 import { getAllSession, deleteSession } from '@/axios/session'
@@ -66,31 +67,19 @@ export const useSidebarStore = defineStore('sidebar', {
       const chatStore = useChatStore()
       const userId = localStorage.getItem('id')
 
-      // 1. 从完整 sessionId 中提取部分 sessionId
       const partialSessionId = sessionId.startsWith(userId)
         ? sessionId.substring(userId.length)
         : sessionId
 
-      // 2. 更新会话ID
+      // 1. 同步 ID
       chatStore.setCurrentSessionId(sessionId)
-      
-      // 3. 更新 localStorage 中的 sessionId
       localStorage.setItem('sessionId', partialSessionId)
 
-      // 4. Set agent mode based on 'isAgent' boolean
+      // 2. 同步模式
       this.isAgricultureAgent = !!isAgent
-      
-      if (this.isAgricultureAgent) {
-        const skillsStore = useSkillsStore()
-        const hasImageSkill = skillsStore.isSkillEnabled('disease-recognition')
-        this.agentImageUploadEnabled = hasImageSkill
-      } else {
-        this.agentImageUploadEnabled = false
-      }
+      this.agentImageUploadEnabled = isAgent ? !!(useSkillsStore().isSkillEnabled('disease-recognition')) : false
 
-      // 5. 加载消息（在进入详情页前确保状态已同步）
-      await chatStore.fetchMessages(sessionId)
-
+      // 3. 立即跳转，让详情页的监视器去处理请求
       router.push({
         name: 'chatDetail',
         params: { sessionId: sessionId },

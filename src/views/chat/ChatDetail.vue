@@ -298,20 +298,21 @@ onUnmounted(() => {
   observer?.disconnect()
   agentStore.disconnect()
 })
-watch(() => route.params.sessionId, (newId, oldId) => {
+
+// 统一监视：只有路由 ID 变化时（或首次挂载）才触发加载逻辑
+watch(() => route.params.sessionId, async (newId, oldId) => {
   if (oldId && newId !== oldId) {
     agentStore.disconnect()
   }
-  loadHistory()
+  await loadHistory()
 }, { immediate: true })
 
+// 如果是 Agent 模式切换，在这里单独处理连接逻辑，但不触发冗余 loadHistory
 watch(() => sidebarStore.isAgricultureAgent, (val) => {
-  if (val) {
-    loadHistory()
-  } else {
+  if (!val) {
     agentStore.disconnect()
-    loadHistory()
   }
+  // 注意：这里不再显式调用 loadHistory()，因为 selectHistoryItem 已经触发了路由变化
 })
 </script>
 
