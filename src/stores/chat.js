@@ -128,8 +128,14 @@ export const useChatStore = defineStore('chat', {
             if (!line.startsWith('data:')) continue
             const chunk = line.replace('data:', '').trim()
             if (!chunk || chunk === '[DONE]') continue
-            const currentMsg = this.chatMessages[this.currentRobotMsgIndex]
-            if (currentMsg) currentMsg.messageContent += chunk
+            
+            if (this.currentRobotMsgIndex >= 0) {
+                // 确保响应式：更新对象引用或使用响应式方法
+                const msg = this.chatMessages[this.currentRobotMsgIndex]
+                msg.messageContent += chunk
+                // 强制触发更新（虽然 Vue 3 对数组内的对象属性变更通常能检测到，但在某些极其复杂的层级下替换对象更保险）
+                this.chatMessages[this.currentRobotMsgIndex] = { ...msg }
+            }
           }
         }
       } catch (error) {

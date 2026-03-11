@@ -71,15 +71,11 @@ export const useSidebarStore = defineStore('sidebar', {
         ? sessionId.substring(userId.length)
         : sessionId
 
-      // 1. 同步 ID
-      chatStore.setCurrentSessionId(sessionId)
-      localStorage.setItem('sessionId', partialSessionId)
-
-      // 2. 同步模式
+      // 1. 只更新模式状态
       this.isAgricultureAgent = !!isAgent
       this.agentImageUploadEnabled = isAgent ? !!(useSkillsStore().isSkillEnabled('disease-recognition')) : false
 
-      // 3. 立即跳转，让详情页的监视器去处理请求
+      // 2. 立即跳转，由详情页 loadHistory 内部对比 ID 后再决定是否 fetch
       router.push({
         name: 'chatDetail',
         params: { sessionId: sessionId },

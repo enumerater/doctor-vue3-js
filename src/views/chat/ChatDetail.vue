@@ -190,9 +190,9 @@ const handleDislike = (msg) => {
 // ========================
 // 发送消息
 // ========================
-const handleSend = (content, images) => {
+const handleSend = async (content, images) => {
   if (sidebarStore.isAgricultureAgent) {
-    agentStore.userInput(content, images, route.params.sessionId)
+    await agentStore.userInput(content, images, route.params.sessionId)
     // 清空输入框和图片
     chatStore.clearInputValue()
     if (chatInputCardRef.value) {
@@ -220,26 +220,18 @@ const loadHistory = async () => {
   if (!sid) return
   isLoading = true
   try {
-    // 自动根据历史记录判断模式
+    // 1. 根据侧边栏历史同步模式属性 (如果是点击历史记录)
     if (sidebarStore.historyList.length === 0) {
       await sidebarStore.fetchHistoryList()
     }
     const sessionInfo = sidebarStore.historyList.find(h => h.sessionId === sid)
     if (sessionInfo) {
-      // 严格同步 Agent 状态
       sidebarStore.isAgricultureAgent = !!sessionInfo.agent
-      if (sidebarStore.isAgricultureAgent) {
-         // 同步图片上传按钮状态
-         const skillsStore = useSkillsStore()
-         sidebarStore.agentImageUploadEnabled = skillsStore.isSkillEnabled('disease-recognition')
-      } else {
-         sidebarStore.agentImageUploadEnabled = false
-      }
-    } else {
-      // 如果没找到 sessionInfo（可能是新创建还没刷新的会话），保持当前 store 中的状态
-      // 或者如果是通过 URL 直接访问未知会话，默认设为 false 或根据当前 isAgricultureAgent 状态决定
+      const skillsStore = useSkillsStore()
+      sidebarStore.agentImageUploadEnabled = sidebarStore.isAgricultureAgent ? skillsStore.isSkillEnabled('disease-recognition') : false
     }
 
+    // 2. 根据模式决定加载方式
     if (sidebarStore.isAgricultureAgent) {
       await agentStore.fetchHistory(sid)
       agentStore.connect(sid)
@@ -247,7 +239,15 @@ const loadHistory = async () => {
       return
     }
     
-    // 普通聊天
+    // 3. 普通聊天加载逻辑 (含流式渲染保护)
+    const currentSidInStore = chatStore.currentSessionId
+    // 如果 Store 中的 ID 和当前路由 ID 一致且已有消息（说明是从首页带着数据跳过来的），则不要清空
+    if (currentSidInStore === sid && chatStore.chatMessages.length > 0) {
+      nextTick(scrollToBottom)
+      return
+    }
+
+    // 切换会话：更新 Store ID 并加载历史
     chatStore.setCurrentSessionId(sid)
     await chatStore.fetchMessages(sid)
     nextTick(scrollToBottom)

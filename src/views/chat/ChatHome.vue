@@ -135,15 +135,18 @@ const sendMessage = async (content, images = []) => {
     ? storedSessionId.substring(userId.length)
     : storedSessionId
   const fullSessionId = `${userId}${partialSessionId}`
+
+  // 在 prepareMessage 之前设置 currentSessionId，以便详情页 loadHistory 能识别
   chatStore.setCurrentSessionId(fullSessionId)
 
   if (sidebarStore.isAgricultureAgent) {
     agentStore.clearMessages()
     router.push({ name: 'chatDetail', params: { sessionId: fullSessionId } })
-    // 在详情页会自动 connect 并处理输入，但这里我们先触发一次 connect
     agentStore.connect(fullSessionId)
-    setTimeout(() => {
-        agentStore.userInput(trimmedContent, images, fullSessionId)
+    setTimeout(async () => {
+        await agentStore.userInput(trimmedContent, images, fullSessionId)
+        chatStore.clearInputValue()
+        if (chatInputCardRef.value) chatInputCardRef.value.setImages([])
     }, 500)
     return
   }
@@ -153,7 +156,10 @@ const sendMessage = async (content, images = []) => {
   router.push({ name: 'chatDetail', params: { sessionId: fullSessionId } })
 
   const TOKEN = localStorage.getItem('token')
-  chatStore.startStreaming(trimmedContent, images, userId, partialSessionId, TOKEN).catch((err) => {
+  chatStore.startStreaming(trimmedContent, images, userId, partialSessionId, TOKEN).then(() => {
+    chatStore.clearInputValue()
+    if (chatInputCardRef.value) chatInputCardRef.value.setImages([])
+  }).catch((err) => {
     console.error('流式请求失败：', err)
   })
 }
