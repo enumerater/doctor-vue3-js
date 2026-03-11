@@ -7,13 +7,13 @@
 
       <div class="history-item" :class="{
         active: item.sessionId === route.params.sessionId,
-        'is-agent': item.sessionType === 'agent'
+        'is-agent': item.agent
       }" v-for="item in sidebarStore.filteredHistory" :key="item.id"
-        @click="handleSelectItem(item.sessionId, item.sessionType)">
+        @click="handleSelectItem(item.sessionId, item.agent)">
         <el-badge is-dot v-if="item.unread" class="unread-dot" />
 
         <!-- Agent标识图标 -->
-        <el-icon v-if="item.sessionType === 'agent'" class="agent-badge">
+        <el-icon v-if="item.agent" class="agent-badge">
           <Sunny />
         </el-icon>
 
@@ -40,8 +40,8 @@ const sidebarStore = useSidebarStore()
 const route = useRoute()
 const showHistory = inject('showHistory', null)
 
-const handleSelectItem = (sessionId, sessionType) => {
-  sidebarStore.selectHistoryItem(sessionId, sessionType)
+const handleSelectItem = (sessionId, isAgent) => {
+  sidebarStore.selectHistoryItem(sessionId, isAgent)
   if (showHistory) showHistory.value = false
 }
 

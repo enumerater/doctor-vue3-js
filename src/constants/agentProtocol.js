@@ -29,18 +29,18 @@ export const MSG_TYPE = {
 // 工具配置映射
 // ========================
 export const TOOL_CONFIG = {
-  knowledge_base:    { name: '知识库检索', icon: '📚', color: '#3B82F6' },
-  knowledge_graph:   { name: '知识图谱',   icon: '🕸️', color: '#8B5CF6' },
-  memory_retrieval:  { name: '记忆检索',   icon: '🧠', color: '#EC4899' },
-  web_search:        { name: '联网搜索',   icon: '🌐', color: '#06B6D4' },
-  weather:           { name: '天气查询',   icon: '🌤️', color: '#F59E0B' },
-  image_recognition: { name: '图像识别',   icon: '🖼️', color: '#10B981' },
-  field_management:  { name: '田间管理',   icon: '🌾', color: '#84CC16' },
-  medication:        { name: '施药方案',   icon: '💊', color: '#EF4444' },
-  accumulated_temp:  { name: '积温预测',   icon: '🌡️', color: '#F97316' },
+  knowledge_base:    { name: '知识库检索', icon: '', color: '#3B82F6' },
+  knowledge_graph:   { name: '知识图谱',   icon: '', color: '#8B5CF6' },
+  memory_retrieval:  { name: '记忆检索',   icon: '', color: '#EC4899' },
+  web_search:        { name: '联网搜索',   icon: '', color: '#06B6D4' },
+  weather:           { name: '天气查询',   icon: '', color: '#F59E0B' },
+  image_recognition: { name: '图像识别',   icon: '', color: '#10B981' },
+  field_management:  { name: '田间管理',   icon: '', color: '#84CC16' },
+  medication:        { name: '施药方案',   icon: '', color: '#EF4444' },
+  accumulated_temp:  { name: '积温预测',   icon: '', color: '#F97316' },
 }
 
-const DEFAULT_TOOL = { name: '工具调用', icon: '🔧', color: '#6B7280' }
+const DEFAULT_TOOL = { name: '工具调用', icon: '', color: '#6B7280' }
 
 /**
  * 获取工具配置，未识别的工具回退为默认配置
@@ -51,8 +51,8 @@ export const getToolConfig = (toolName) => TOOL_CONFIG[toolName] || DEFAULT_TOOL
 // 步骤类型配置（非工具类）
 // ========================
 export const STEP_CONFIG = {
-  thought_result: { name: '思考结论', icon: '💡', color: '#8B5CF6' },
-  tool:           { name: '工具调用', icon: '🔧', color: '#3B82F6' },
+  thought_result: { name: '思考结论', icon: '', color: '#8B5CF6' },
+  tool:           { name: '工具调用', icon: '', color: '#3B82F6' },
 }
 
 /**

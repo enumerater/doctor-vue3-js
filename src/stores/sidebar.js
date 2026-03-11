@@ -62,33 +62,35 @@ export const useSidebarStore = defineStore('sidebar', {
         throw err
       }
     },
-    async selectHistoryItem(sessionId, sessionType = 'chat') {
+    async selectHistoryItem(sessionId, isAgent = false) {
       const chatStore = useChatStore()
       const userId = localStorage.getItem('id')
 
-      // 1. 从完整 sessionId 中提取部分 sessionId（去掉 userId 前缀）
-      // 完整 sessionId 格式：userId + sessionId
+      // 1. 从完整 sessionId 中提取部分 sessionId
       const partialSessionId = sessionId.startsWith(userId)
         ? sessionId.substring(userId.length)
         : sessionId
 
-      // 2. 更新会话ID并加载消息
+      // 2. 更新会话ID
       chatStore.setCurrentSessionId(sessionId)
-      await chatStore.fetchMessages(sessionId)
-
+      
       // 3. 更新 localStorage 中的 sessionId
       localStorage.setItem('sessionId', partialSessionId)
 
-      // 4. Set agent mode based on session type, navigate to unified chatDetail
-      if (sessionType === 'agent') {
-        this.isAgricultureAgent = true
+      // 4. Set agent mode based on 'isAgent' boolean
+      this.isAgricultureAgent = !!isAgent
+      
+      if (this.isAgricultureAgent) {
         const skillsStore = useSkillsStore()
         const hasImageSkill = skillsStore.isSkillEnabled('disease-recognition')
         this.agentImageUploadEnabled = hasImageSkill
       } else {
-        this.isAgricultureAgent = false
         this.agentImageUploadEnabled = false
       }
+
+      // 5. 加载消息（在进入详情页前确保状态已同步）
+      await chatStore.fetchMessages(sessionId)
+
       router.push({
         name: 'chatDetail',
         params: { sessionId: sessionId },

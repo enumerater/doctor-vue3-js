@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { useChatStore } from '@/stores/chat'
 import { useSidebarStore } from '@/stores/sidebar'
 import { useAgentStore } from '@/stores/agent'
+import { useSkillsStore } from '@/stores/skills'
 import { getStepDisplayConfig } from '@/constants/agentProtocol'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { marked } from 'marked'
@@ -191,7 +192,7 @@ const handleDislike = (msg) => {
 // ========================
 const handleSend = (content, images) => {
   if (sidebarStore.isAgricultureAgent) {
-    agentStore.userInput(content, images)
+    agentStore.userInput(content, images, route.params.sessionId)
     return
   }
   const userId = localStorage.getItem('id')
@@ -214,6 +215,20 @@ const loadHistory = async () => {
   if (!sid) return
   isLoading = true
   try {
+    // 自动根据历史记录判断模式
+    if (sidebarStore.historyList.length === 0) {
+      await sidebarStore.fetchHistoryList()
+    }
+    const sessionInfo = sidebarStore.historyList.find(h => h.sessionId === sid)
+    if (sessionInfo) {
+      sidebarStore.isAgricultureAgent = !!sessionInfo.agent
+      if (sidebarStore.isAgricultureAgent) {
+         // 同步图片上传按钮状态
+         const skillsStore = useSkillsStore()
+         sidebarStore.agentImageUploadEnabled = skillsStore.isSkillEnabled('disease-recognition')
+      }
+    }
+
     if (sidebarStore.isAgricultureAgent) {
       await agentStore.fetchHistory(sid)
       agentStore.connect(sid)
@@ -297,7 +312,9 @@ watch(() => sidebarStore.isAgricultureAgent, (val) => {
     <div class="chat-messages" ref="messageList">
       <div class="message-list-inner">
         <div class="empty-state" v-if="messages.length === 0 && !agentStore.isThinking">
-          <div class="empty-icon">💬</div>
+          <div class="empty-icon">
+            <el-icon><ChatDotRound /></el-icon>
+          </div>
           <div class="empty-text">暂无聊天记录，开始提问吧</div>
         </div>
 
@@ -327,7 +344,6 @@ watch(() => sidebarStore.isAgricultureAgent, (val) => {
 
                   <div class="step-header" @click="toggleStep(msg.id, sIdx)">
                     <span class="step-dot" :style="{ background: getStepDisplayConfig(step).color }"></span>
-                    <span class="step-icon-text">{{ getStepDisplayConfig(step).icon }}</span>
                     <span class="step-name">{{ getStepDisplayConfig(step).name }}</span>
                     <span v-if="step.type === 'tool'" class="step-status-badge"
                       :class="step.status === 'completed' ? 'status-done' : 'status-loading'">
@@ -353,15 +369,6 @@ watch(() => sidebarStore.isAgricultureAgent, (val) => {
 
               <!-- 最终回答卡片 -->
               <div class="answer-card">
-                <div class="answer-card-header">
-                  <svg class="answer-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                    <line x1="16" y1="13" x2="8" y2="13" />
-                    <line x1="16" y1="17" x2="8" y2="17" />
-                  </svg>
-                  <span class="answer-card-title">诊断报告</span>
-                </div>
                 <div class="answer-card-body">
                   <template v-for="(parsed, pIdx) in [parseComplexContent(msg.messageContent)]" :key="pIdx">
                     <template v-if="parsed.type === 'json'">
@@ -379,7 +386,7 @@ watch(() => sidebarStore.isAgricultureAgent, (val) => {
                             <a :href="refItem.url" target="_blank" class="ref-card" @click.stop>
                               <svg class="ref-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                <path x1="14" y1="11" d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                               </svg>
                               <span class="ref-text">{{ refItem.title }}</span>
                             </a>
@@ -499,7 +506,6 @@ watch(() => sidebarStore.isAgricultureAgent, (val) => {
                 <div class="step-header" @click="toggleStep('live', sIdx)">
                   <span class="step-dot" :style="{ background: getStepDisplayConfig(step).color }"
                     :class="{ 'is-pulse': step.status === 'calling' }"></span>
-                  <span class="step-icon-text">{{ getStepDisplayConfig(step).icon }}</span>
                   <span class="step-name">{{ getStepDisplayConfig(step).name }}</span>
                   <span v-if="step.type === 'tool'" class="step-status-badge"
                     :class="step.status === 'completed' ? 'status-done' : 'status-loading'">
@@ -530,7 +536,6 @@ watch(() => sidebarStore.isAgricultureAgent, (val) => {
           class="message-item robot-message transient-status">
           <div class="agent-thinking-indicator">
             <template v-if="agentStore.activeTool">
-              <span class="thinking-icon">{{ getStepDisplayConfig({ type: 'tool', tool: agentStore.activeTool }).icon }}</span>
               <span class="thinking-text">正在{{ getStepDisplayConfig({ type: 'tool', tool: agentStore.activeTool }).name }}...</span>
             </template>
             <template v-else>
@@ -686,30 +691,30 @@ $border-light: rgba(5, 150, 105, 0.1);
 // ==========================================
 .steps-timeline {
   position: relative;
-  padding-left: 24px;
-  margin-bottom: 16px;
+  padding-left: 20px;
+  margin-bottom: 12px;
 
   // 左侧竖线
   &::before {
     content: '';
     position: absolute;
-    left: 7px;
-    top: 8px;
-    bottom: 8px;
-    width: 2px;
-    background: linear-gradient(to bottom, rgba($primary-green, 0.3), rgba($primary-green, 0.08));
+    left: 4px;
+    top: 10px;
+    bottom: 10px;
+    width: 1px;
+    background: #e5e7eb;
     border-radius: 1px;
   }
 
   &.is-live::before {
-    background: linear-gradient(to bottom, rgba($primary-green, 0.4), rgba($primary-green, 0.15));
+    background: linear-gradient(to bottom, $primary-green, transparent);
   }
 }
 
 .step-item {
   position: relative;
-  margin-bottom: 8px;
-  animation: fadeInSlide 0.35s ease both;
+  margin-bottom: 4px;
+  animation: fadeIn 0.3s ease both;
 
   &:last-child { margin-bottom: 0; }
 }
@@ -717,44 +722,40 @@ $border-light: rgba(5, 150, 105, 0.1);
 .step-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 10px;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
   user-select: none;
 
   &:hover {
-    background: rgba($primary-green, 0.04);
+    background: #f3f4f6;
   }
 }
 
 .step-dot {
   position: absolute;
-  left: -24px;
-  top: 14px;
-  width: 10px;
-  height: 10px;
+  left: -20px;
+  top: 13px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+  background: #d1d5db;
   flex-shrink: 0;
   z-index: 1;
+  transition: all 0.3s ease;
 
   &.is-pulse {
-    animation: dotPulse 1.5s ease-in-out infinite;
+    background: $primary-green;
+    box-shadow: 0 0 0 3px rgba($primary-green, 0.15);
   }
-}
-
-.step-icon-text {
-  font-size: 15px;
-  line-height: 1;
 }
 
 .step-name {
   font-size: 13px;
-  font-weight: 600;
-  color: #374151;
+  font-weight: 500;
+  color: #4b5563;
   flex: 1;
 }
 
@@ -762,15 +763,13 @@ $border-light: rgba(5, 150, 105, 0.1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  font-size: 11px;
+  font-size: 10px;
 
   &.status-done {
-    background: rgba($primary-green, 0.12);
     color: $primary-green;
-    font-weight: 700;
   }
 
   &.status-loading {
@@ -779,34 +778,31 @@ $border-light: rgba(5, 150, 105, 0.1);
 }
 
 .step-chevron {
-  font-size: 11px;
+  font-size: 10px;
   color: #9ca3af;
-  transition: transform 0.2s;
 }
 
 .step-body {
-  margin: 0 12px 4px 12px;
-  padding: 10px 14px;
+  margin: 2px 0 8px 10px;
+  padding: 12px;
   background: #f9fafb;
   border-radius: 8px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #f3f4f6;
   overflow: hidden;
 }
 
 .step-markdown {
   font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.6;
   color: #4b5563;
 
   :deep(p) { margin: 0.4em 0; }
   :deep(ul), :deep(ol) { padding-left: 1.2em; }
-  :deep(strong) { color: #374151; font-weight: 600; }
 }
 
 .step-call-hint {
-  font-size: 13px;
+  font-size: 12px;
   color: #9ca3af;
-  font-style: italic;
 }
 
 // 步骤展开动画
@@ -829,63 +825,41 @@ $border-light: rgba(5, 150, 105, 0.1);
 // ==========================================
 .answer-card {
   background: #ffffff;
-  border-radius: 14px;
-  border: 1px solid rgba($primary-green, 0.15);
-  box-shadow: 0 4px 20px rgba($primary-green, 0.06);
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   position: relative;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: linear-gradient(to bottom, $primary-green, #10b981);
-    border-radius: 4px 0 0 4px;
-  }
-}
-
-.answer-card-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 20px;
-  background: linear-gradient(to right, rgba($primary-green, 0.06), transparent);
-  border-bottom: 1px solid rgba($primary-green, 0.08);
-}
-
-.answer-card-icon {
-  width: 20px;
-  height: 20px;
-  color: $primary-green;
-  flex-shrink: 0;
-}
-
-.answer-card-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #111827;
-  letter-spacing: 0.02em;
 }
 
 .answer-card-body {
-  padding: 12px 20px 16px;
+  padding: 16px 20px;
 
   .markdown-body {
     font-size: 14px;
-    line-height: 1.8;
+    line-height: 1.7;
     color: #374151;
 
+    // 减弱标题显示，回应“别用题头”
+    :deep(h1), :deep(h2), :deep(h3) {
+      font-size: 15px;
+      margin: 1em 0 0.5em;
+      color: #111827;
+      border-bottom: none;
+      padding-bottom: 0;
+      font-weight: 600;
+      
+      &:first-child { margin-top: 0; }
+    }
+
     :deep(p) { margin: 0.6em 0; }
-    :deep(strong) { color: #111827; font-weight: 600; }
+    :deep(strong) { color: #111827; }
     :deep(ul), :deep(ol) { padding-left: 1.4em; }
     :deep(code) {
-      background: rgba($primary-green, 0.06);
-      padding: 2px 6px;
+      background: #f3f4f6;
+      color: #111827;
+      padding: 2px 4px;
       border-radius: 4px;
-      font-size: 13px;
     }
     :deep(blockquote) {
       border-left: 3px solid $primary-green;
@@ -900,17 +874,15 @@ $border-light: rgba(5, 150, 105, 0.1);
 // 参考资料
 // ==========================================
 .reference-section {
-  margin-top: 12px;
-  padding: 10px 12px;
-  background: #f9fafb;
-  border-radius: 8px;
-  border: 1px dashed rgba($primary-green, 0.3);
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
 
   .ref-title {
     font-size: 12px;
-    color: #6b7280;
-    margin-bottom: 8px;
-    font-weight: 600;
+    color: #9ca3af;
+    margin-bottom: 10px;
+    font-weight: 500;
   }
 
   .ref-cards-wrapper {
@@ -923,24 +895,22 @@ $border-light: rgba(5, 150, 105, 0.1);
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 12px;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 20px;
+    padding: 5px 12px;
+    background: #f9fafb;
+    border: 1px solid #f3f4f6;
+    border-radius: 6px;
     font-size: 12px;
-    color: #374151;
+    color: #4b5563;
     text-decoration: none;
-    transition: all 0.2s ease;
-    max-width: 220px;
-    cursor: pointer;
+    transition: all 0.2s;
+    max-width: 200px;
 
     &:hover {
-      border-color: $primary-green;
-      background: rgba($primary-green, 0.05);
-      color: $primary-green;
+      border-color: #d1d5db;
+      background: #f3f4f6;
     }
 
-    .ref-icon { width: 14px; height: 14px; flex-shrink: 0; }
+    .ref-icon { width: 12px; height: 12px; color: #9ca3af; }
     .ref-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   }
 }
@@ -967,11 +937,7 @@ $border-light: rgba(5, 150, 105, 0.1);
 .agent-progress-wrapper {
   width: 90%;
   max-width: 700px;
-
-  @media (max-width: 768px) {
-    width: 100%;
-    max-width: none;
-  }
+  margin-bottom: 8px;
 }
 
 // ==========================================
@@ -980,29 +946,23 @@ $border-light: rgba(5, 150, 105, 0.1);
 .agent-thinking-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: linear-gradient(135deg, rgba($primary-green, 0.05), rgba($primary-green, 0.02));
-  border: 1px solid rgba($primary-green, 0.1);
-  border-radius: 12px;
-  max-width: 90%;
+  gap: 10px;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   animation: fadeIn 0.3s ease;
 }
 
 .thinking-spinner {
   color: $primary-green;
-  font-size: 16px;
-}
-
-.thinking-icon {
-  font-size: 16px;
-  line-height: 1;
+  font-size: 14px;
 }
 
 .thinking-text {
   font-size: 13px;
   color: #6b7280;
-  line-height: 1.4;
 }
 
 // ==========================================
@@ -1044,25 +1004,25 @@ $border-light: rgba(5, 150, 105, 0.1);
 
   .confirm-bubble {
     background: #fff;
-    border: 1px solid #fcd34d;
+    border: 1px solid #e5e7eb;
     border-radius: 10px;
     border-bottom-left-radius: 4px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(252, 211, 77, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
     .confirm-header {
-      background: #fffbeb;
+      background: #f9fafb;
       padding: 8px 16px;
       font-size: 14px;
       font-weight: 600;
-      color: #92400e;
-      border-bottom: 1px solid #fef3c7;
+      color: #374151;
+      border-bottom: 1px solid #f3f4f6;
     }
 
     .confirm-body {
       padding: 12px 16px;
       font-size: 14px;
-      color: #1f2937;
+      color: #4b5563;
       line-height: 1.5;
     }
   }

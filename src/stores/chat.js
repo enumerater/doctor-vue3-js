@@ -69,7 +69,7 @@ export const useChatStore = defineStore('chat', {
             userId,
             sessionTitle: trimmedContent.substring(0, 20),
             sessionId: fullSessionId,
-            sessionType: sidebarStore.isAgricultureAgent ? 'agent' : 'chat',
+            agent: sidebarStore.isAgricultureAgent, // 使用布尔值字段
           })
           await sidebarStore.refreshHistory()
         } catch (err) {

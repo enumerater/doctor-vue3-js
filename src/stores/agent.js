@@ -30,7 +30,14 @@ export const useAgentStore = defineStore('agent', {
       this.sessionId = sessionId
       const userStore = useUserStore()
       const token = localStorage.getItem('token')
-      const userId = userStore.userInfo?.id
+      // 优先从 store 获取，回退到 localStorage
+      const userId = userStore.userInfo?.id || localStorage.getItem('id')
+      
+      if (!userId) {
+        console.error('Agent connect failed: userId is missing')
+        return
+      }
+
       const baseApi = import.meta.env.VITE_APP_BASE_API
 
       let wsBase
@@ -236,7 +243,8 @@ export const useAgentStore = defineStore('agent', {
     // ========================
     // 发送消息
     // ========================
-    userInput(content, images = []) {
+    userInput(content, images = [], sessionId = null) {
+      if (sessionId) this.sessionId = sessionId
       this.resetTurnState()
       const msg = {
         type: MSG_TYPE.USER_INPUT,
@@ -279,8 +287,11 @@ export const useAgentStore = defineStore('agent', {
     },
 
     sendRaw(data) {
+      const payload = { ...data }
+      if (this.sessionId) payload.sessionId = this.sessionId
+      
       if (this.ws?.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify(data))
+        this.ws.send(JSON.stringify(payload))
       } else {
         console.error('Agent WebSocket is not connected')
         this.connect(this.sessionId)
