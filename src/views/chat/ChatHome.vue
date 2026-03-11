@@ -143,7 +143,7 @@ const sendMessage = async (content, images = []) => {
     // 在详情页会自动 connect 并处理输入，但这里我们先触发一次 connect
     agentStore.connect(fullSessionId)
     setTimeout(() => {
-        agentStore.userInput(trimmedContent)
+        agentStore.userInput(trimmedContent, images)
     }, 500)
     return
   }

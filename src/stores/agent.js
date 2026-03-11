@@ -1,49 +1,47 @@
 import { defineStore } from 'pinia'
 import { useUserStore } from '@/stores/user'
+import { getMessage } from '@/axios/chat'
+import { MSG_TYPE, isUserType } from '@/constants/agentProtocol'
 
 export const useAgentStore = defineStore('agent', {
   state: () => ({
     ws: null,
-    status: 'disconnected', // 'connected', 'connecting', 'disconnected', 'error'
-    messages: [], // 格式: { type, content, payload, timestamp }
-    isThinking: false,
-    currentThought: '',
-    currentTool: null,
-    pendingConfirm: null, // { content, payload }
-    pendingAsk: null, // { content }
+    status: 'disconnected', // 'connected' | 'connecting' | 'disconnected' | 'error'
+    messages: [],            // 完整消息列表 { type, content, role, timestamp, steps?, images? }
+    currentTurnSteps: [],    // 当前回合累积的步骤
+    isThinking: false,       // 是否正在思考
+    currentThought: '',      // 当前思考文本（实时展示用）
+    activeTool: null,        // 当前正在调用的工具名称
+    pendingConfirm: null,    // { content, payload }
+    pendingAsk: null,        // { content, userInput: '' }
+    sessionId: null,
     reconnectCount: 0,
     maxReconnectAttempts: 5,
     heartbeatTimer: null,
-    sessionId: null,
-    currentTurnSteps: [], // 用于存储当前回合的思考步骤
   }),
+
   actions: {
+    // ========================
+    // 连接管理
+    // ========================
     connect(sessionId = null) {
-      if (
-        this.ws &&
-        (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)
-      )
-        return
+      if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) return
 
       this.sessionId = sessionId
       const userStore = useUserStore()
       const token = localStorage.getItem('token')
       const userId = userStore.userInfo?.id
-
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const host = window.location.host
       const baseApi = import.meta.env.VITE_APP_BASE_API
 
       let wsBase
       if (baseApi.startsWith('http')) {
         wsBase = baseApi.replace(/^http/, 'ws')
       } else {
-        wsBase = `${protocol}//${host}${baseApi}`
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+        wsBase = `${protocol}//${window.location.host}${baseApi}`
       }
 
-      // 根据需求文档连接地址: ws://[服务器地址]/ws/agent
       const wsUrl = `${wsBase}/ws/agent?token=${token}&userId=${userId}${sessionId ? `&sessionId=${sessionId}` : ''}`
-
       this.status = 'connecting'
       this.ws = new WebSocket(wsUrl)
 
@@ -51,16 +49,15 @@ export const useAgentStore = defineStore('agent', {
         this.status = 'connected'
         this.reconnectCount = 0
         this.startHeartbeat()
-        console.log('Agent WebSocket connected')
       }
 
       this.ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
-          if (data.type === 'heartbeat_pong') return
-          this.handleIncomingMessage(data)
+          if (data.type === MSG_TYPE.HEARTBEAT_PONG) return
+          this.handleMessage(data)
         } catch (e) {
-          console.error('Failed to parse Agent message:', e)
+          console.error('Agent message parse error:', e)
         }
       }
 
@@ -70,9 +67,8 @@ export const useAgentStore = defineStore('agent', {
         this.attemptReconnect()
       }
 
-      this.ws.onerror = (err) => {
+      this.ws.onerror = () => {
         this.status = 'error'
-        console.error('Agent WebSocket error:', err)
       }
     },
 
@@ -83,28 +79,24 @@ export const useAgentStore = defineStore('agent', {
       }
       this.status = 'disconnected'
       this.stopHeartbeat()
-      this.isThinking = false
-      this.currentThought = ''
-      this.currentTool = null
+      this.resetTurnState()
     },
 
     attemptReconnect() {
       if (this.reconnectCount < this.maxReconnectAttempts) {
         this.reconnectCount++
-        setTimeout(() => {
-          console.log(
-            `Attempting to reconnect agent (${this.reconnectCount}/${this.maxReconnectAttempts})...`,
-          )
-          this.connect(this.sessionId)
-        }, 3000 * this.reconnectCount)
+        setTimeout(() => this.connect(this.sessionId), 3000 * this.reconnectCount)
       }
     },
 
+    // ========================
+    // 心跳
+    // ========================
     startHeartbeat() {
       this.stopHeartbeat()
       this.heartbeatTimer = setInterval(() => {
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-          this.ws.send(JSON.stringify({ type: 'heartbeat' }))
+        if (this.ws?.readyState === WebSocket.OPEN) {
+          this.ws.send(JSON.stringify({ type: MSG_TYPE.HEARTBEAT }))
         }
       }, 30000)
     },
@@ -116,183 +108,277 @@ export const useAgentStore = defineStore('agent', {
       }
     },
 
-    handleIncomingMessage(msg) {
-      const { type, content, payload, timestamp } = msg
-      const timestampVal = timestamp || Date.now()
-
-      // 统一格式化消息
-      const formattedMsg = {
-        type,
-        content: content || '',
-        payload: payload || null,
-        timestamp: timestampVal,
-        role: this.getRoleByType(type),
-      }
+    // ========================
+    // 消息处理核心
+    // ========================
+    handleMessage(msg) {
+      const { type, content, payload, tool, timestamp } = msg
+      const ts = timestamp || Date.now()
 
       switch (type) {
-        case 'thought':
+        // --- 思考类 ---
+        case MSG_TYPE.THOUGHT:
           this.isThinking = true
-          this.currentThought = content
-          this.currentTool = null // 既然有新思考，说明上一个工具调用可能已结束或处于新阶段
-          // 记录到当前消息的步骤中
-          this.addToCurrentSteps(formattedMsg)
+          this.currentThought = content || ''
+          this.activeTool = null
           break
-        case 'tool_call':
+
+        case MSG_TYPE.THOUGHT_RESULT:
           this.isThinking = true
-          this.currentTool = payload
-          this.addToCurrentSteps(formattedMsg)
-          break
-        case 'confirm':
-          this.isThinking = false
-          this.pendingConfirm = { content, payload }
-          this.messages.push(formattedMsg)
-          break
-        case 'ask':
-          this.isThinking = false
-          this.pendingAsk = { content }
-          this.messages.push(formattedMsg)
-          break
-        case 'final_result':
-          this.isThinking = false
           this.currentThought = ''
-          this.currentTool = null
-          // 将累积的步骤放入最终结果消息中
-          formattedMsg.steps = [...this.currentTurnSteps]
-          this.messages.push(formattedMsg)
-          // 清空当前步骤
-          this.currentTurnSteps = []
-          // 收到最终结果，保存对话记录（同旧版逻辑）
-          this.saveFinishedMessage()
+          this.currentTurnSteps.push({
+            type: 'thought_result',
+            content: content || '',
+            timestamp: ts,
+          })
           break
-        case 'error':
+
+        // --- 工具类 ---
+        case MSG_TYPE.TOOL_CALL:
+          this.isThinking = true
+          this.currentThought = ''
+          this.activeTool = tool || null
+          this.currentTurnSteps.push({
+            type: 'tool',
+            tool: tool || 'unknown',
+            status: 'calling',
+            callContent: content || '',
+            resultContent: '',
+            payload: payload || null,
+            timestamp: ts,
+          })
+          break
+
+        case MSG_TYPE.TOOL_RESULT: {
+          this.activeTool = null
+          // 找到最后一个匹配的 calling 状态工具步骤
+          const toolStep = [...this.currentTurnSteps]
+            .reverse()
+            .find(s => s.type === 'tool' && s.tool === (tool || 'unknown') && s.status === 'calling')
+          if (toolStep) {
+            toolStep.status = 'completed'
+            toolStep.resultContent = content || ''
+            if (payload) toolStep.resultPayload = payload
+          } else {
+            // 没找到匹配的 tool_call，作为独立步骤
+            this.currentTurnSteps.push({
+              type: 'tool',
+              tool: tool || 'unknown',
+              status: 'completed',
+              callContent: '',
+              resultContent: content || '',
+              payload: payload || null,
+              timestamp: ts,
+            })
+          }
+          break
+        }
+
+        // --- 交互类 ---
+        case MSG_TYPE.CONFIRM:
           this.isThinking = false
-          this.messages.push(formattedMsg)
+          this.pendingConfirm = { content: content || '', payload }
+          this.messages.push({
+            type: 'confirm',
+            content: content || '',
+            payload,
+            role: 'robot',
+            timestamp: ts,
+          })
           break
+
+        case MSG_TYPE.ASK:
+          this.isThinking = false
+          this.pendingAsk = { content: content || '', userInput: '' }
+          this.messages.push({
+            type: 'ask',
+            content: content || '',
+            role: 'robot',
+            timestamp: ts,
+          })
+          break
+
+        // --- 结果类 ---
+        case MSG_TYPE.ANSWER:
+          this.messages.push({
+            type: 'answer',
+            content: content || '',
+            role: 'robot',
+            timestamp: ts,
+            steps: [...this.currentTurnSteps],
+          })
+          this.resetTurnState()
+          break
+
+        case MSG_TYPE.ERROR:
+          this.messages.push({
+            type: 'error',
+            content: content || '服务异常，请稍后重试',
+            role: 'robot',
+            timestamp: ts,
+            code: payload?.code,
+          })
+          this.resetTurnState()
+          break
+
         default:
-          this.messages.push(formattedMsg)
+          console.warn('Unknown agent message type:', type)
       }
     },
 
-    addToCurrentSteps(step) {
-      // 如果是 thought，且上一个也是 thought，则更新而不是新增，保持简洁
-      const lastStep = this.currentTurnSteps[this.currentTurnSteps.length - 1]
-      if (lastStep && lastStep.type === 'thought' && step.type === 'thought') {
-        lastStep.content = step.content
-        lastStep.timestamp = step.timestamp
-      } else {
-        this.currentTurnSteps.push(step)
-      }
+    resetTurnState() {
+      this.isThinking = false
+      this.currentThought = ''
+      this.activeTool = null
+      this.currentTurnSteps = []
     },
 
-    async saveFinishedMessage() {
-      const userStore = useUserStore()
-      const userId = userStore.userInfo?.id
-      if (!userId || !this.sessionId) return
-
-      // 找到最后一条机器人消息和它之前的最后一条用户消息
-      const lastRobotMsg = this.messages.filter(m => m.type === 'final_result').slice(-1)[0]
-      const userMessages = this.messages.filter(m => m.type === 'user_input')
-      const lastUserMsg = userMessages.slice(-1)[0]
-      
-      if (!lastRobotMsg || !lastUserMsg) return
-
-      const fullSessionId = this.sessionId.startsWith(userId) 
-        ? this.sessionId 
-        : `${userId}${this.sessionId}`
-
-      try {
-        const { saveAgentMessage } = await import('@/axios/chat')
-        await saveAgentMessage({
-          sessionId: fullSessionId,
-          userMessage: lastUserMsg.content,
-          robotMessage: {
-            steps: lastRobotMsg.steps || [],
-            finalContent: lastRobotMsg.content,
-          },
-        })
-        console.log('Agent消息保存成功')
-      } catch (err) {
-        console.warn('Agent消息保存失败', err)
-      }
-    },
-
-    getRoleByType(type) {
-      if (['user_input', 'user_confirm', 'user_ask'].includes(type)) return 'user'
-      return 'robot'
-    },
-
-    updateOrPushMessage(msg) {
-      // 对于 thought 和 tool_call，我们可以选择更新最后一条同类型的消息，或者总是 push
-      // 按照需求，展示 AI 的思考过程或正在调用的工具名称
-      const lastMsg = this.messages[this.messages.length - 1]
-      if (lastMsg && lastMsg.type === msg.type && msg.type === 'thought') {
-        lastMsg.content = msg.content
-        lastMsg.timestamp = msg.timestamp
-      } else {
-        this.messages.push(msg)
-      }
-    },
-
-    userInput(content) {
+    // ========================
+    // 发送消息
+    // ========================
+    userInput(content, images = []) {
+      this.resetTurnState()
       const msg = {
-        type: 'user_input',
+        type: MSG_TYPE.USER_INPUT,
         content,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       }
+      if (images?.length) msg.images = images
       this.messages.push({ ...msg, role: 'user' })
       this.sendRaw(msg)
     },
 
     submitConfirm(confirmed) {
-      const msg = {
-        type: 'user_confirm',
-        payload: confirmed,
-        timestamp: Date.now(),
-      }
-      // 添加一条用户展示消息
       this.messages.push({
         type: 'user_input',
         content: confirmed ? '确认执行' : '取消执行',
         role: 'user',
         timestamp: Date.now(),
       })
-      this.sendRaw(msg)
+      this.sendRaw({
+        type: MSG_TYPE.USER_CONFIRM,
+        payload: { confirmed },
+        timestamp: Date.now(),
+      })
       this.pendingConfirm = null
     },
 
-    submitAsk(content) {
-      const msg = {
-        type: 'user_ask',
-        content,
-        timestamp: Date.now(),
-      }
+    submitAnswer(content) {
       this.messages.push({
         type: 'user_input',
         content,
         role: 'user',
         timestamp: Date.now(),
       })
-      this.sendRaw(msg)
+      this.sendRaw({
+        type: MSG_TYPE.USER_ANSWER,
+        content,
+        timestamp: Date.now(),
+      })
       this.pendingAsk = null
     },
 
     sendRaw(data) {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      if (this.ws?.readyState === WebSocket.OPEN) {
         this.ws.send(JSON.stringify(data))
       } else {
         console.error('Agent WebSocket is not connected')
-        // 如果断开了尝试连接并发送 (此处简单处理)
         this.connect(this.sessionId)
       }
     },
 
+    // ========================
+    // 历史消息加载
+    // ========================
+    async fetchHistory(sessionId) {
+      if (!sessionId) return
+      try {
+        const res = await getMessage(sessionId)
+        if (!Array.isArray(res.data)) return
+
+        this.messages = []
+        for (const msg of res.data) {
+          const role = msg.messageRole === '0' ? 'user' : 'robot'
+
+          if (role === 'user') {
+            this.messages.push({
+              type: 'user_input',
+              content: msg.messageContent || msg.content || '',
+              role: 'user',
+              timestamp: msg.messageTime ? new Date(msg.messageTime).getTime() : Date.now(),
+            })
+            continue
+          }
+
+          // 机器人消息：解析 agentData
+          let steps = []
+          let finalContent = msg.messageContent || msg.content || ''
+
+          if (msg.agentData) {
+            try {
+              const agentData = typeof msg.agentData === 'string'
+                ? JSON.parse(msg.agentData)
+                : msg.agentData
+              finalContent = agentData.finalContent || finalContent
+              steps = this.normalizeHistorySteps(agentData.steps || [])
+            } catch (e) {
+              console.warn('Agent history parse error:', e)
+            }
+          }
+
+          this.messages.push({
+            type: 'answer',
+            content: finalContent,
+            role: 'robot',
+            timestamp: msg.messageTime ? new Date(msg.messageTime).getTime() : Date.now(),
+            steps,
+          })
+        }
+      } catch (err) {
+        console.error('Fetch agent history failed:', err)
+      }
+    },
+
+    /**
+     * 将旧版步骤格式规范化为新协议格式
+     */
+    normalizeHistorySteps(oldSteps) {
+      const steps = []
+      for (const s of oldSteps) {
+        if (s.type === 'status' || s.type === 'final_result') continue
+        if (s.type === 'thought' || s.type === 'think' || s.type === 'thought_result') {
+          steps.push({
+            type: 'thought_result',
+            content: s.content || '',
+            timestamp: s.timestamp || Date.now(),
+          })
+        } else if (s.type === 'tool_call' || s.type === 'tool') {
+          steps.push({
+            type: 'tool',
+            tool: s.tool || s.payload?.tool || 'unknown',
+            status: 'completed',
+            callContent: s.type === 'tool_call' ? (s.content || '') : (s.callContent || ''),
+            resultContent: s.resultContent || s.content || '',
+            payload: s.payload || null,
+            timestamp: s.timestamp || Date.now(),
+          })
+        }
+      }
+      return steps
+    },
+
+    // ========================
+    // 清理
+    // ========================
     clearMessages() {
       this.messages = []
-      this.isThinking = false
-      this.currentThought = ''
-      this.currentTool = null
+      this.resetTurnState()
       this.pendingConfirm = null
       this.pendingAsk = null
+    },
+
+    getRoleByType(type) {
+      return isUserType(type) ? 'user' : 'robot'
     },
   },
 })

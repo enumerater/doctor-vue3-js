@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { useChatStore } from '@/stores/chat'
 import { useSidebarStore } from '@/stores/sidebar'
 import { useAgentStore } from '@/stores/agent'
+import { getStepDisplayConfig } from '@/constants/agentProtocol'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { marked } from 'marked'
 import AgentTransferPopup from '@/components/AgentTransferPopup.vue'
@@ -19,19 +20,9 @@ const route = useRoute()
 const messageList = ref(null)
 const chatInputCardRef = ref(null)
 
-// Agent step config
-const getStepConfig = (type) => {
-  const configs = {
-    think: { title: '思考汇总结果', icon: '', color: '#059669' },
-    thought: { title: '思考中...', icon: '🧠', color: '#6B7280' },
-    tool_call: { title: '调用工具', icon: '🔧', color: '#3B82F6' },
-    final_result: { title: '诊断总结报告', icon: '', color: '#059669' },
-    default: { title: '分析结果', icon: '', color: '#6B7280' },
-  }
-  return configs[type] || configs.default
-}
-
-// Agent analysis popup
+// ========================
+// Agent transfer popup
+// ========================
 const showAgentPopup = ref(false)
 const selectedMessageForAgent = ref(null)
 
@@ -56,6 +47,9 @@ const handleAgentTransferConfirm = async ({ prompt }) => {
   }
 }
 
+// ========================
+// 消息列表
+// ========================
 const messages = computed(() => {
   if (sidebarStore.isAgricultureAgent) {
     return agentStore.messages.map(m => ({
@@ -63,117 +57,62 @@ const messages = computed(() => {
       messageContent: m.content,
       messageRole: m.role === 'user' ? '0' : '1',
       id: m.timestamp,
-      messageTime: m.timestamp
+      messageTime: m.timestamp,
     }))
   }
   return chatStore.chatMessages
 })
 
-// Check if message has agent steps
-const hasAgentSteps = (msg) => {
-  if (sidebarStore.isAgricultureAgent) return false // Agent模式下消息类型更扁平
-  return msg.steps && msg.steps.length > 0
+// ========================
+// 步骤展开/收起
+// ========================
+const expandedSteps = reactive({})
+
+const toggleStep = (msgId, stepIdx) => {
+  const key = `${msgId}-${stepIdx}`
+  expandedSteps[key] = !expandedSteps[key]
 }
 
-// 检查Agent是否已完成所有输出（存在非正在处理的总结报告）
-const isAgentFinished = (msg) => {
-  if (sidebarStore.isAgricultureAgent) {
-    return msg.type === 'final_result'
-  }
-  if (!hasAgentSteps(msg)) return true
-  return msg.steps.some(s => s.type === 'final_result' && s.status !== 'processing')
+const isStepExpanded = (msgId, stepIdx) => {
+  return !!expandedSteps[`${msgId}-${stepIdx}`]
 }
 
-// --- 管理每个消息中折叠面板的展开状态 ---
-const activeCollapseMap = reactive({})
-
-// 优化 watcher，避免深层监听导致的性能问题
-watch(
-  () => messages.value.length,
-  (newLen, oldLen) => {
-    if (newLen > (oldLen || 0)) {
-      const msg = messages.value[newLen - 1]
-      const key = msg.id || (newLen - 1)
-      if (hasAgentSteps(msg) && !activeCollapseMap[key]) {
-        activeCollapseMap[key] = [msg.steps.length - 1]
-      }
-    }
-  },
-  { immediate: true }
-)
-
-// 专门针对步骤更新的监听
-watch(
-  () => messages.value.map(m => m.steps?.length || 0),
-  (newLengths, oldLengths) => {
-    newLengths.forEach((len, idx) => {
-      if (len > (oldLengths?.[idx] || 0)) {
-        const msg = messages.value[idx]
-        const key = msg.id || idx
-        if (hasAgentSteps(msg)) {
-          const lastIdx = len - 1
-          if (!activeCollapseMap[key]) activeCollapseMap[key] = []
-          if (!activeCollapseMap[key].includes(lastIdx)) {
-            // 如果是正在处理的步骤，保持展开
-            if (msg.steps[lastIdx].status === 'processing') {
-              activeCollapseMap[key] = [lastIdx]
-            }
-          }
-        }
-      }
-    })
-  }
-)
-
+// ========================
+// Markdown 与内容解析
+// ========================
 const parseMarkdown = (content) => {
   if (!content) return ''
   try {
-    const strContent = String(content)
-    // 确保同步调用
-    const html = marked.parse(strContent)
+    const html = marked.parse(String(content))
     return typeof html === 'string' ? html : String(html)
   } catch (err) {
-    console.error('Markdown parsing failed:', err)
     return content
   }
 }
 
-// --- 智能解析复杂内容（处理包含“参考资料”的JSON结构） ---
 const parseComplexContent = (rawContent) => {
   if (!rawContent) return { type: 'markdown', data: '' }
-
   let contentToParse = String(rawContent).trim()
-  
-  // 尝试去除可能的 markdown 代码块标记
   if (contentToParse.startsWith('```')) {
     contentToParse = contentToParse.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
   }
-
   try {
-    // 只有当看起来像完整 JSON 时才尝试解析
     if (contentToParse.startsWith('{') && contentToParse.endsWith('}')) {
       const parsed = JSON.parse(contentToParse)
       if (parsed && typeof parsed === 'object' && (parsed['参考资料'] || parsed['回答'])) {
         return { type: 'json', data: parsed }
       }
     }
-  } catch (e) {
-    // 解析失败，可能是流式传输中的不完整 JSON
-  }
-
-  // 针对流式传输中的不完整 JSON 进行启发式提取
+  } catch (e) { /* ignore */ }
   if (contentToParse.includes('"回答"')) {
     const match = contentToParse.match(/"回答"\s*:\s*"(.*)/)
     if (match) {
-      let partial = match[1]
-      // 移除尾部可能的引号和逗号（如果存在）
-      partial = partial.replace(/\\"/g, '"').replace(/\\n/g, '\n')
+      let partial = match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
       if (partial.endsWith('"')) partial = partial.slice(0, -1)
       if (partial.endsWith('",')) partial = partial.slice(0, -3)
       return { type: 'json', data: { '回答': partial } }
     }
   }
-
   return { type: 'markdown', data: rawContent }
 }
 
@@ -185,12 +124,15 @@ const formatTime = (timeStr) => {
 }
 
 const getImagesFromMessage = (msg) => {
-  if (!msg.imageUrls) return []
-  if (Array.isArray(msg.imageUrls)) return msg.imageUrls
-  try { return JSON.parse(msg.imageUrls) } catch { return [] }
+  const urls = msg.imageUrls || msg.images
+  if (!urls) return []
+  if (Array.isArray(urls)) return urls
+  try { return JSON.parse(urls) } catch { return [] }
 }
 
-// Message actions
+// ========================
+// 消息操作
+// ========================
 const likedMsgIds = ref(new Set())
 const dislikedMsgIds = ref(new Set())
 const readingMsgId = ref(null)
@@ -244,13 +186,14 @@ const handleDislike = (msg) => {
   dislikedMsgIds.value.has(msg.id) ? dislikedMsgIds.value.delete(msg.id) : (dislikedMsgIds.value.add(msg.id), likedMsgIds.value.delete(msg.id))
 }
 
-// Send message
+// ========================
+// 发送消息
+// ========================
 const handleSend = (content, images) => {
   if (sidebarStore.isAgricultureAgent) {
-    agentStore.userInput(content)
+    agentStore.userInput(content, images)
     return
   }
-
   const userId = localStorage.getItem('id')
   let stored = String(chatStore.currentSessionId || localStorage.getItem('sessionId') || '')
   let partial = stored.startsWith(userId) ? stored.substring(userId.length) : stored
@@ -261,7 +204,9 @@ const handleSend = (content, images) => {
   })
 }
 
-// Load history messages
+// ========================
+// 历史加载
+// ========================
 let isLoading = false
 const loadHistory = async () => {
   if (isLoading) return
@@ -270,11 +215,11 @@ const loadHistory = async () => {
   isLoading = true
   try {
     if (sidebarStore.isAgricultureAgent) {
-      // 如果是Agent模式，连接并可能加载历史（此处假设connect会处理或新开会话）
+      await agentStore.fetchHistory(sid)
       agentStore.connect(sid)
+      nextTick(scrollToBottom)
       return
     }
-
     if (chatStore.chatMessages.length > 0) {
       chatStore.setCurrentSessionId(sid)
       nextTick(scrollToBottom)
@@ -286,6 +231,9 @@ const loadHistory = async () => {
   } finally { isLoading = false }
 }
 
+// ========================
+// 滚动与生命周期
+// ========================
 const scrollToBottom = () => {
   if (messageList.value) {
     setTimeout(() => {
@@ -297,15 +245,10 @@ const scrollToBottom = () => {
 
 watch(() => messages.value.length, () => nextTick(scrollToBottom))
 watch(() => { const l = messages.value[messages.value.length - 1]; return l?.messageContent || '' }, () => nextTick(scrollToBottom))
-watch(
-  () => {
-    const lastMsg = messages.value[messages.value.length - 1]
-    return lastMsg?.steps ? JSON.stringify(lastMsg.steps) : ''
-  },
-  () => nextTick(scrollToBottom),
-)
+watch(() => agentStore.currentTurnSteps.length, () => nextTick(scrollToBottom))
+watch(() => agentStore.currentThought, () => nextTick(scrollToBottom))
 
-// Agent interaction confirmation
+// Agent confirm dialog
 watch(() => agentStore.pendingConfirm, (val) => {
   if (val) {
     ElMessageBox.confirm(val.content, '操作确认', {
@@ -328,23 +271,19 @@ onMounted(() => {
     observer.observe(messageList.value, { childList: true, subtree: true, characterData: true })
   }
 })
-onUnmounted(() => { 
+onUnmounted(() => {
   observer?.disconnect()
-  chatStore.disconnectWebSocket() // 断开 WebSocket 连接
   agentStore.disconnect()
 })
 watch(() => route.params.sessionId, (newId, oldId) => {
   if (oldId && newId !== oldId) {
-    chatStore.disconnectWebSocket() // 只有当会话ID真正改变时才断开
     agentStore.disconnect()
   }
   loadHistory()
 }, { immediate: true })
 
-// Agent mode toggle watch
 watch(() => sidebarStore.isAgricultureAgent, (val) => {
   if (val) {
-    chatStore.disconnectWebSocket()
     loadHistory()
   } else {
     agentStore.disconnect()
@@ -357,7 +296,7 @@ watch(() => sidebarStore.isAgricultureAgent, (val) => {
   <div class="chat-detail-page">
     <div class="chat-messages" ref="messageList">
       <div class="message-list-inner">
-        <div class="empty-state" v-if="messages.length === 0">
+        <div class="empty-state" v-if="messages.length === 0 && !agentStore.isThinking">
           <div class="empty-icon">💬</div>
           <div class="empty-text">暂无聊天记录，开始提问吧</div>
         </div>
@@ -365,8 +304,9 @@ watch(() => sidebarStore.isAgricultureAgent, (val) => {
         <div v-for="(msg, index) in messages" :key="msg.id || index" class="message-item"
           :class="{ 'user-message': msg.messageRole === '0', 'robot-message': msg.messageRole === '1' }">
 
+          <!-- ========== 用户消息 ========== -->
           <div v-if="msg.messageRole === '0'" class="message-bubble">
-            <div v-if="msg.isImageMessage" class="image-preview-container">
+            <div v-if="getImagesFromMessage(msg).length" class="image-preview-container">
               <div v-for="(imageUrl, imgIdx) in getImagesFromMessage(msg)" :key="imgIdx" class="img-item">
                 <img :src="imageUrl" alt="上传图片" />
               </div>
@@ -375,209 +315,228 @@ watch(() => sidebarStore.isAgricultureAgent, (val) => {
             <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
           </div>
 
-          <template v-else>
-            <!-- 兼容旧版的 Agent 步骤展示 -->
-            <div v-if="hasAgentSteps(msg)" class="agent-chain-wrapper">
-              <el-collapse v-model="activeCollapseMap[msg.id || index]" class="chain-timeline custom-collapse">
-                <template v-for="(step, sIdx) in msg.steps" :key="sIdx">
-                  <div v-if="step.type !== 'final_result'"
-                    :class="['step-node', `type-${step.type}`, { 'is-processing': step.status === 'processing' }]">
+          <!-- ========== Agent 消息 ========== -->
+          <template v-else-if="sidebarStore.isAgricultureAgent">
 
-                    <div v-if="step.type === 'status'" class="status-line">
-                      <div class="node-dot"></div>
-                      <div class="status-text">{{ step.content }}</div>
-                      <div class="loading-spinner" v-if="step.status === 'processing'"></div>
-                    </div>
+            <!-- Answer (带步骤 + 最终回答) -->
+            <div v-if="msg.type === 'answer'" class="agent-answer-wrapper">
+              <!-- 步骤时间线 -->
+              <div v-if="msg.steps?.length" class="steps-timeline">
+                <div v-for="(step, sIdx) in msg.steps" :key="sIdx"
+                  class="step-item" :class="{ 'is-expanded': isStepExpanded(msg.id, sIdx) }">
 
-                    <el-collapse-item v-else :name="sIdx" class="data-collapse-item">
-                      <template #title>
-                        <div class="collapse-header">
-                          <span class="card-icon" v-if="getStepConfig(step.type).icon">{{ getStepConfig(step.type).icon
-                            }}</span>
-                          <span class="card-title" :style="{ color: getStepConfig(step.type).color }">{{
-                            getStepConfig(step.type).title }}</span>
-                          <div class="loading-spinner" v-if="step.status === 'processing'" style="margin-left: 8px;">
-                          </div>
-                        </div>
-                      </template>
-
-                      <div class="step-content-container">
-                        <template v-for="(parsed, pIdx) in [parseComplexContent(step.content)]" :key="'parsed-' + sIdx + '-' + pIdx">
-                          <template v-if="parsed.type === 'json'">
-                            <div class="markdown-body" v-if="parsed.data['回答']" v-html="parseMarkdown(parsed.data['回答'])">
-                            </div>
-                            <div class="reference-section" v-if="parsed.data['参考资料'] && parsed.data['参考资料'].length">
-                              <div class="ref-title">参考资料</div>
-                              <div class="ref-cards-wrapper">
-                                <el-tooltip v-for="(refItem, rIdx) in parsed.data['参考资料']" :key="rIdx" effect="light"
-                                  placement="top" :show-after="200">
-                                  <template #content>
-                                    <div class="ref-tooltip-content">
-                                      <div class="ref-tt-title">{{ refItem.title }}</div>
-                                      <div class="ref-tt-desc" :title="refItem.content">{{ refItem.content }}</div>
-                                    </div>
-                                  </template>
-                                  <a :href="refItem.url" target="_blank" class="ref-card" @click.stop>
-                                    <svg class="ref-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                                    </svg>
-                                    <span class="ref-text">{{ refItem.title }}</span>
-                                  </a>
-                                </el-tooltip>
-                              </div>
-                            </div>
-                          </template>
-                          <template v-else>
-                            <div class="markdown-body" v-html="parseMarkdown(parsed.data)"></div>
-                          </template>
-                        </template>
-                      </div>
-                    </el-collapse-item>
+                  <div class="step-header" @click="toggleStep(msg.id, sIdx)">
+                    <span class="step-dot" :style="{ background: getStepDisplayConfig(step).color }"></span>
+                    <span class="step-icon-text">{{ getStepDisplayConfig(step).icon }}</span>
+                    <span class="step-name">{{ getStepDisplayConfig(step).name }}</span>
+                    <span v-if="step.type === 'tool'" class="step-status-badge"
+                      :class="step.status === 'completed' ? 'status-done' : 'status-loading'">
+                      <el-icon v-if="step.status === 'calling'" class="is-loading"><Loading /></el-icon>
+                      <span v-else>✓</span>
+                    </span>
+                    <span class="step-chevron">{{ isStepExpanded(msg.id, sIdx) ? '▾' : '▸' }}</span>
                   </div>
-                </template>
-              </el-collapse>
 
-              <!-- 总结报告单独渲染，不折叠 -->
-              <div v-for="(step, sIdx) in msg.steps" :key="'final-' + sIdx">
-                <div v-if="step.type === 'final_result'" class="final-report-wrapper">
-                  <div class="final-report-card">
-                    <div class="report-header">
-                      <div class="report-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                          <polyline points="14 2 14 8 20 8" />
-                          <line x1="16" y1="13" x2="8" y2="13" />
-                          <line x1="16" y1="17" x2="8" y2="17" />
-                          <polyline points="10 9 9 9 8 9" />
-                        </svg>
-                      </div>
-                      <span class="report-title">{{ getStepConfig(step.type).title }}</span>
-                    </div>
-                    <div class="report-content-container">
-                      <template v-for="(parsed, pIdx) in [parseComplexContent(step.content)]" :key="'final-parsed-' + sIdx + '-' + pIdx">
-                        <div class="markdown-body" v-html="parseMarkdown(parsed.type === 'json' ? parsed.data['回答'] : parsed.data)"></div>
+                  <transition name="step-expand">
+                    <div v-if="isStepExpanded(msg.id, sIdx)" class="step-body">
+                      <div v-if="step.type === 'thought_result'" class="markdown-body step-markdown"
+                        v-html="parseMarkdown(step.content)"></div>
+                      <template v-else-if="step.type === 'tool'">
+                        <div v-if="step.resultContent" class="markdown-body step-markdown"
+                          v-html="parseMarkdown(step.resultContent)"></div>
+                        <div v-else-if="step.callContent" class="step-call-hint">{{ step.callContent }}</div>
                       </template>
                     </div>
-                  </div>
+                  </transition>
                 </div>
               </div>
 
-              <div v-if="isAgentFinished(msg)" class="msg-actions agent-actions">
+              <!-- 最终回答卡片 -->
+              <div class="answer-card">
+                <div class="answer-card-header">
+                  <svg class="answer-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                  </svg>
+                  <span class="answer-card-title">诊断报告</span>
+                </div>
+                <div class="answer-card-body">
+                  <template v-for="(parsed, pIdx) in [parseComplexContent(msg.messageContent)]" :key="pIdx">
+                    <template v-if="parsed.type === 'json'">
+                      <div class="markdown-body" v-if="parsed.data['回答']" v-html="parseMarkdown(parsed.data['回答'])"></div>
+                      <div v-if="parsed.data['参考资料']?.length" class="reference-section">
+                        <div class="ref-title">参考资料</div>
+                        <div class="ref-cards-wrapper">
+                          <el-tooltip v-for="(refItem, rIdx) in parsed.data['参考资料']" :key="rIdx" effect="light" placement="top" :show-after="200">
+                            <template #content>
+                              <div class="ref-tooltip-content">
+                                <div class="ref-tt-title">{{ refItem.title }}</div>
+                                <div class="ref-tt-desc">{{ refItem.content }}</div>
+                              </div>
+                            </template>
+                            <a :href="refItem.url" target="_blank" class="ref-card" @click.stop>
+                              <svg class="ref-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                              </svg>
+                              <span class="ref-text">{{ refItem.title }}</span>
+                            </a>
+                          </el-tooltip>
+                        </div>
+                      </div>
+                    </template>
+                    <template v-else>
+                      <div class="markdown-body" v-html="parseMarkdown(parsed.data)"></div>
+                    </template>
+                  </template>
+                </div>
+              </div>
+
+              <div class="msg-actions agent-actions">
                 <el-button text size="small" @click="handleCopy(msg)">复制全文</el-button>
               </div>
               <div class="message-time agent-time">{{ formatTime(msg.messageTime) }}</div>
             </div>
 
-            <!-- 新版 Agent 扁平化消息展示 -->
-            <div v-else-if="sidebarStore.isAgricultureAgent" class="agent-interaction-wrapper">
-              <!-- Final Result / Error 样式 -->
-              <div v-if="msg.type === 'final_result' || msg.type === 'error'" class="message-bubble">
-                <div class="bubble-content markdown-body" :class="{'error-content': msg.type === 'error'}" v-html="parseMarkdown(msg.messageContent)"></div>
-                <div class="message-time">{{ formatTime(msg.messageTime) }}</div>
-              </div>
-
-              <!-- Ask 样式 (带输入框) -->
-              <div v-else-if="msg.type === 'ask'" class="agent-ask-wrapper">
-                <div class="ask-content">
-                  <div class="bubble-content markdown-body" v-html="parseMarkdown(msg.messageContent)"></div>
-                  <div class="ask-input-area" v-if="index === messages.length - 1 && agentStore.pendingAsk">
-                    <el-input
-                      v-model="agentStore.pendingAsk.userInput"
-                      placeholder="请输入补充信息..."
-                      size="small"
-                      @keyup.enter="agentStore.submitAsk(agentStore.pendingAsk.userInput)"
-                    >
-                      <template #append>
-                        <el-button @click="agentStore.submitAsk(agentStore.pendingAsk.userInput)">发送</el-button>
-                      </template>
-                    </el-input>
-                  </div>
+            <!-- Ask (追问 + 输入框) -->
+            <div v-else-if="msg.type === 'ask'" class="agent-ask-wrapper">
+              <div class="ask-content">
+                <div class="bubble-content markdown-body" v-html="parseMarkdown(msg.messageContent)"></div>
+                <div class="ask-input-area" v-if="index === messages.length - 1 && agentStore.pendingAsk">
+                  <el-input
+                    v-model="agentStore.pendingAsk.userInput"
+                    placeholder="请输入补充信息..."
+                    size="small"
+                    @keyup.enter="agentStore.submitAnswer(agentStore.pendingAsk.userInput)"
+                  >
+                    <template #append>
+                      <el-button @click="agentStore.submitAnswer(agentStore.pendingAsk.userInput)">发送</el-button>
+                    </template>
+                  </el-input>
                 </div>
-                <div class="message-time">{{ formatTime(msg.messageTime) }}</div>
               </div>
-
-              <!-- Confirm 样式 -->
-              <div v-else-if="msg.type === 'confirm'" class="agent-confirm-bubble">
-                 <div class="bubble-content confirm-bubble">
-                    <div class="confirm-header">操作确认</div>
-                    <div class="confirm-body">{{ msg.content }}</div>
-                 </div>
-                 <div class="message-time">{{ formatTime(msg.messageTime) }}</div>
-              </div>
+              <div class="message-time">{{ formatTime(msg.messageTime) }}</div>
             </div>
 
-            <!-- 普通机器人消息 -->
-            <div v-else class="message-bubble">
-              <div class="bubble-content markdown-body" v-html="parseMarkdown(msg.messageContent)"></div>
-
-              <div v-if="msg.messageContent" class="msg-actions">
-                <div class="action-bar">
-                  <button class="action-btn" :class="{ active: likedMsgIds.has(msg.id) }" @click="handleLike(msg)"
-                    title="赞同">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                      stroke-linejoin="round">
-                      <path
-                        d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-                    </svg>
-                  </button>
-                  <button class="action-btn" :class="{ 'active-danger': dislikedMsgIds.has(msg.id) }"
-                    @click="handleDislike(msg)" title="不满意">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                      stroke-linejoin="round">
-                      <path
-                        d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17" />
-                    </svg>
-                  </button>
-                  <span class="action-divider"></span>
-                  <button class="action-btn" @click="handleCopy(msg)" title="复制">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                      stroke-linejoin="round">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                    </svg>
-                  </button>
-                  <button class="action-btn" @click="handleRegenerate(msg, index)" title="重新生成">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                      stroke-linejoin="round">
-                      <polyline points="23 4 23 10 17 10" />
-                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                    </svg>
-                  </button>
-                  <button class="action-btn" :class="{ active: readingMsgId === msg.id }" @click="handleReadAloud(msg)"
-                    title="朗读">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                      stroke-linejoin="round">
-                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
-                    </svg>
-                  </button>
-                  <span class="action-divider"></span>
-                  <button class="action-btn action-btn-text" @click="openAgentPopup(msg)" title="深入分析">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                      stroke-linejoin="round">
-                      <circle cx="11" cy="11" r="8" />
-                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                      <line x1="11" y1="8" x2="11" y2="14" />
-                      <line x1="8" y1="11" x2="14" y2="11" />
-                    </svg>
-                    <span>深入分析</span>
-                  </button>
-                </div>
+            <!-- Confirm (确认提示) -->
+            <div v-else-if="msg.type === 'confirm'" class="agent-confirm-bubble">
+              <div class="bubble-content confirm-bubble">
+                <div class="confirm-header">操作确认</div>
+                <div class="confirm-body">{{ msg.content }}</div>
               </div>
+              <div class="message-time">{{ formatTime(msg.messageTime) }}</div>
+            </div>
 
-              <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
+            <!-- Error -->
+            <div v-else-if="msg.type === 'error'" class="message-bubble">
+              <div class="bubble-content error-content">{{ msg.messageContent }}</div>
+              <div class="message-time">{{ formatTime(msg.messageTime) }}</div>
             </div>
           </template>
+
+          <!-- ========== 普通聊天消息 ========== -->
+          <div v-else class="message-bubble">
+            <div class="bubble-content markdown-body" v-html="parseMarkdown(msg.messageContent)"></div>
+
+            <div v-if="msg.messageContent" class="msg-actions">
+              <div class="action-bar">
+                <button class="action-btn" :class="{ active: likedMsgIds.has(msg.id) }" @click="handleLike(msg)" title="赞同">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+                  </svg>
+                </button>
+                <button class="action-btn" :class="{ 'active-danger': dislikedMsgIds.has(msg.id) }" @click="handleDislike(msg)" title="不满意">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17" />
+                  </svg>
+                </button>
+                <span class="action-divider"></span>
+                <button class="action-btn" @click="handleCopy(msg)" title="复制">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                </button>
+                <button class="action-btn" @click="handleRegenerate(msg, index)" title="重新生成">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10" />
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                  </svg>
+                </button>
+                <button class="action-btn" :class="{ active: readingMsgId === msg.id }" @click="handleReadAloud(msg)" title="朗读">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                  </svg>
+                </button>
+                <span class="action-divider"></span>
+                <button class="action-btn action-btn-text" @click="openAgentPopup(msg)" title="深入分析">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    <line x1="11" y1="8" x2="11" y2="14" />
+                    <line x1="8" y1="11" x2="14" y2="11" />
+                  </svg>
+                  <span>深入分析</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="message-time" v-if="msg.messageTime">{{ formatTime(msg.messageTime) }}</div>
+          </div>
         </div>
 
-        <!-- 实时思考/工具调用状态（仅在 Agent 模式且正在思考时显示） -->
-        <div v-if="sidebarStore.isAgricultureAgent && agentStore.isThinking" class="message-item robot-message transient-status">
-          <div class="agent-step-thought">
-            <el-icon class="is-loading" v-if="!agentStore.currentTool"><Loading /></el-icon>
-            <span class="step-icon" v-else>🔧</span>
-            <span class="step-text">{{ agentStore.currentTool ? `正在调用工具: ${agentStore.currentTool.name || agentStore.currentTool}` : agentStore.currentThought }}</span>
+        <!-- ========== 进行中的步骤（Agent 工作时实时展示） ========== -->
+        <div v-if="sidebarStore.isAgricultureAgent && agentStore.currentTurnSteps.length > 0"
+          class="message-item robot-message">
+          <div class="agent-progress-wrapper">
+            <div class="steps-timeline is-live">
+              <div v-for="(step, sIdx) in agentStore.currentTurnSteps" :key="sIdx"
+                class="step-item" :class="{ 'is-expanded': isStepExpanded('live', sIdx) }">
+
+                <div class="step-header" @click="toggleStep('live', sIdx)">
+                  <span class="step-dot" :style="{ background: getStepDisplayConfig(step).color }"
+                    :class="{ 'is-pulse': step.status === 'calling' }"></span>
+                  <span class="step-icon-text">{{ getStepDisplayConfig(step).icon }}</span>
+                  <span class="step-name">{{ getStepDisplayConfig(step).name }}</span>
+                  <span v-if="step.type === 'tool'" class="step-status-badge"
+                    :class="step.status === 'completed' ? 'status-done' : 'status-loading'">
+                    <el-icon v-if="step.status === 'calling'" class="is-loading"><Loading /></el-icon>
+                    <span v-else>✓</span>
+                  </span>
+                  <span class="step-chevron">{{ isStepExpanded('live', sIdx) ? '▾' : '▸' }}</span>
+                </div>
+
+                <transition name="step-expand">
+                  <div v-if="isStepExpanded('live', sIdx)" class="step-body">
+                    <div v-if="step.type === 'thought_result'" class="markdown-body step-markdown"
+                      v-html="parseMarkdown(step.content)"></div>
+                    <template v-else-if="step.type === 'tool'">
+                      <div v-if="step.resultContent" class="markdown-body step-markdown"
+                        v-html="parseMarkdown(step.resultContent)"></div>
+                      <div v-else-if="step.callContent" class="step-call-hint">{{ step.callContent }}</div>
+                    </template>
+                  </div>
+                </transition>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== 实时思考指示器 ========== -->
+        <div v-if="sidebarStore.isAgricultureAgent && agentStore.isThinking"
+          class="message-item robot-message transient-status">
+          <div class="agent-thinking-indicator">
+            <template v-if="agentStore.activeTool">
+              <span class="thinking-icon">{{ getStepDisplayConfig({ type: 'tool', tool: agentStore.activeTool }).icon }}</span>
+              <span class="thinking-text">正在{{ getStepDisplayConfig({ type: 'tool', tool: agentStore.activeTool }).name }}...</span>
+            </template>
+            <template v-else>
+              <el-icon class="is-loading thinking-spinner"><Loading /></el-icon>
+              <span class="thinking-text">{{ agentStore.currentThought || '正在思考...' }}</span>
+            </template>
           </div>
         </div>
       </div>
@@ -632,40 +591,28 @@ $border-light: rgba(5, 150, 105, 0.1);
   height: 100%;
   gap: 12px;
 
-  .empty-icon {
-    font-size: 48px;
-  }
-
-  .empty-text {
-    font-size: 14px;
-    color: #6b7280;
-  }
+  .empty-icon { font-size: 48px; }
+  .empty-text { font-size: 14px; color: #6b7280; }
 }
 
+// ==========================================
+// 消息通用
+// ==========================================
 .message-item {
   display: flex;
   margin-bottom: 20px;
   animation: fadeInUp 0.3s ease both;
 
-  &.user-message {
-    justify-content: flex-end;
-  }
+  &.user-message { justify-content: flex-end; }
+  &.robot-message { justify-content: flex-start; }
 
-  &.robot-message {
-    justify-content: flex-start;
-  }
-
-  @media (max-width: 768px) {
-    margin-bottom: 14px;
-  }
+  @media (max-width: 768px) { margin-bottom: 14px; }
 }
 
 .message-bubble {
   max-width: 80%;
 
-  @media (max-width: 768px) {
-    max-width: 95%;
-  }
+  @media (max-width: 768px) { max-width: 95%; }
 
   .bubble-content {
     padding: 12px 16px;
@@ -677,10 +624,7 @@ $border-light: rgba(5, 150, 105, 0.1);
     word-break: break-word;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 
-    @media (max-width: 768px) {
-      padding: 10px 14px;
-      font-size: 14px;
-    }
+    @media (max-width: 768px) { padding: 10px 14px; }
 
     .user-message & {
       background: linear-gradient(135deg, $primary-green, #10b981);
@@ -705,103 +649,6 @@ $border-light: rgba(5, 150, 105, 0.1);
   }
 }
 
-.msg-actions {
-  margin-top: 8px;
-
-  .action-bar {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    background: #f8faf9;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 20px;
-    padding: 3px 6px;
-    flex-wrap: wrap;
-
-    @media (max-width: 768px) {
-      gap: 1px;
-      padding: 2px 4px;
-    }
-  }
-
-  .action-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border: none;
-    background: transparent;
-    border-radius: 50%;
-    cursor: pointer;
-    color: #9ca3af;
-    transition: all 0.2s ease;
-    padding: 0;
-    outline: none;
-
-    @media (max-width: 768px) {
-      width: 28px;
-      height: 28px;
-    }
-
-    svg {
-      width: 15px;
-      height: 15px;
-      flex-shrink: 0;
-
-      @media (max-width: 768px) {
-        width: 14px;
-        height: 14px;
-      }
-    }
-
-    &:hover {
-      background: rgba(5, 150, 105, 0.08);
-      color: $primary-green;
-    }
-
-    &.active {
-      color: $primary-green;
-      background: rgba(5, 150, 105, 0.12);
-    }
-
-    &.active-danger {
-      color: #ef4444;
-      background: rgba(239, 68, 68, 0.1);
-    }
-
-    &.action-btn-text {
-      width: auto;
-      border-radius: 15px;
-      padding: 0 10px;
-      gap: 4px;
-      font-size: 12px;
-
-      @media (max-width: 768px) {
-        padding: 0 8px;
-        font-size: 11px;
-      }
-
-      span {
-        white-space: nowrap;
-      }
-    }
-  }
-
-  .action-divider {
-    width: 1px;
-    height: 16px;
-    background: rgba(0, 0, 0, 0.08);
-    margin: 0 3px;
-    flex-shrink: 0;
-
-    @media (max-width: 768px) {
-      margin: 0 1px;
-      height: 14px;
-    }
-  }
-}
-
 .image-preview-container {
   display: flex;
   flex-wrap: wrap;
@@ -822,137 +669,167 @@ $border-light: rgba(5, 150, 105, 0.1);
 }
 
 // ==========================================
-// Agent Chain Timeline & Element Plus Collapse
+// Agent 回答卡片
 // ==========================================
-.agent-chain-wrapper {
-  align-self: flex-start;
+.agent-answer-wrapper {
   width: 90%;
-  max-width: 650px;
-  margin-left: 8px;
+  max-width: 700px;
 
   @media (max-width: 768px) {
     width: 100%;
     max-width: none;
-    margin-left: 0;
   }
 }
 
-.chain-timeline {
+// ==========================================
+// 步骤时间线
+// ==========================================
+.steps-timeline {
   position: relative;
-  padding-left: 1.5rem;
-  border-left: 2px dashed rgba($primary-green, 0.15);
-  margin-left: 0.5rem;
-  margin-bottom: 12px;
+  padding-left: 24px;
+  margin-bottom: 16px;
 
-  @media (max-width: 768px) {
-    padding-left: 1.2rem;
-    margin-left: 0.25rem;
+  // 左侧竖线
+  &::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: linear-gradient(to bottom, rgba($primary-green, 0.3), rgba($primary-green, 0.08));
+    border-radius: 1px;
+  }
+
+  &.is-live::before {
+    background: linear-gradient(to bottom, rgba($primary-green, 0.4), rgba($primary-green, 0.15));
   }
 }
 
-.custom-collapse {
-  border: none;
-  --el-collapse-border-color: transparent;
+.step-item {
+  position: relative;
+  margin-bottom: 8px;
+  animation: fadeInSlide 0.35s ease both;
 
-  .step-node {
-    position: relative;
-    margin-bottom: 12px;
-    animation: fadeInSlideRight 0.4s ease-out both;
+  &:last-child { margin-bottom: 0; }
+}
 
-    .status-line {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 0.85rem;
-      color: #94a3b8;
-      padding: 6px 12px;
-      letter-spacing: 0.01em;
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+  user-select: none;
 
-      .node-dot {
-        position: absolute;
-        left: -1.5rem;
-        width: 10px;
-        height: 10px;
-        background: white;
-        border: 2px solid $primary-green;
-        border-radius: 50%;
-        transform: translateX(-40%);
-        z-index: 2;
-        box-shadow: 0 0 0 3px rgba($primary-green, 0.1);
-      }
-    }
-
-    .data-collapse-item {
-      background: #ffffff;
-      border-radius: 12px;
-      border: 1px solid rgba(0, 0, 0, 0.05);
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
-      overflow: hidden;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-      &:hover {
-        border-color: rgba($primary-green, 0.2);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-        transform: translateY(-1px);
-      }
-
-      :deep(.el-collapse-item__header) {
-        border-bottom: none;
-        height: auto;
-        line-height: normal;
-        padding: 12px 16px;
-        background: linear-gradient(to right, rgba($primary-green, 0.02), transparent);
-        transition: background 0.3s;
-
-        &:hover {
-          background: rgba($primary-green, 0.04);
-        }
-
-        &.is-active {
-          border-bottom: 1px solid rgba(0, 0, 0, 0.03);
-          background: rgba($primary-green, 0.05);
-        }
-      }
-
-      :deep(.el-collapse-item__wrap) {
-        border-bottom: none;
-        background-color: transparent;
-      }
-
-      :deep(.el-collapse-item__content) {
-        padding: 0;
-      }
-
-      :deep(.el-collapse-item__arrow) {
-        color: $primary-green;
-        transition: transform 0.3s;
-      }
-    }
-  }
-
-  .collapse-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-
-    .card-title {
-      font-size: 0.9rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-    }
+  &:hover {
+    background: rgba($primary-green, 0.04);
   }
 }
 
-// === 总结报告样式 ===
-.final-report-wrapper {
-  margin-top: 16px;
-  animation: fadeInUp 0.5s ease-out both;
+.step-dot {
+  position: absolute;
+  left: -24px;
+  top: 14px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+  z-index: 1;
+
+  &.is-pulse {
+    animation: dotPulse 1.5s ease-in-out infinite;
+  }
 }
 
-.final-report-card {
+.step-icon-text {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.step-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  flex: 1;
+}
+
+.step-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+
+  &.status-done {
+    background: rgba($primary-green, 0.12);
+    color: $primary-green;
+    font-weight: 700;
+  }
+
+  &.status-loading {
+    color: #9ca3af;
+  }
+}
+
+.step-chevron {
+  font-size: 11px;
+  color: #9ca3af;
+  transition: transform 0.2s;
+}
+
+.step-body {
+  margin: 0 12px 4px 12px;
+  padding: 10px 14px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+}
+
+.step-markdown {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #4b5563;
+
+  :deep(p) { margin: 0.4em 0; }
+  :deep(ul), :deep(ol) { padding-left: 1.2em; }
+  :deep(strong) { color: #374151; font-weight: 600; }
+}
+
+.step-call-hint {
+  font-size: 13px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+// 步骤展开动画
+.step-expand-enter-active,
+.step-expand-leave-active {
+  transition: all 0.25s ease;
+  max-height: 500px;
+  opacity: 1;
+}
+.step-expand-enter-from,
+.step-expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+}
+
+// ==========================================
+// 最终回答卡片
+// ==========================================
+.answer-card {
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 1px solid rgba($primary-green, 0.15);
   box-shadow: 0 4px 20px rgba($primary-green, 0.06);
   overflow: hidden;
@@ -966,82 +843,71 @@ $border-light: rgba(5, 150, 105, 0.1);
     width: 4px;
     height: 100%;
     background: linear-gradient(to bottom, $primary-green, #10b981);
-  }
-
-  .report-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 20px;
-    background: linear-gradient(to right, rgba($primary-green, 0.06), transparent);
-    border-bottom: 1px solid rgba($primary-green, 0.08);
-
-    .report-icon {
-      width: 32px;
-      height: 32px;
-      background: rgba($primary-green, 0.1);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: $primary-green;
-
-      svg {
-        width: 18px;
-        height: 18px;
-      }
-    }
-
-    .report-title {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #111827;
-      letter-spacing: 0.03em;
-    }
-  }
-
-  .report-content-container {
-    padding: 8px 12px;
+    border-radius: 4px 0 0 4px;
   }
 }
 
-// === Markdown 样式修正 ===
-.step-content-container {
-  padding: 16px 20px;
-  background: #fff;
+.answer-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: linear-gradient(to right, rgba($primary-green, 0.06), transparent);
+  border-bottom: 1px solid rgba($primary-green, 0.08);
+}
+
+.answer-card-icon {
+  width: 20px;
+  height: 20px;
+  color: $primary-green;
+  flex-shrink: 0;
+}
+
+.answer-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: 0.02em;
+}
+
+.answer-card-body {
+  padding: 12px 20px 16px;
 
   .markdown-body {
-    color: #4b5563; // 稳重的中灰色
-    font-size: 0.9rem;
+    font-size: 14px;
     line-height: 1.8;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    letter-spacing: 0.01em;
+    color: #374151;
 
-    :deep(p) {
-      margin: 0.6em 0;
+    :deep(p) { margin: 0.6em 0; }
+    :deep(strong) { color: #111827; font-weight: 600; }
+    :deep(ul), :deep(ol) { padding-left: 1.4em; }
+    :deep(code) {
+      background: rgba($primary-green, 0.06);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
     }
-
-    :deep(strong) {
-      color: #374151; // 加粗文字稍微深一点，保持对比度
-      font-weight: 600;
-    }
-    
-    :deep(ul), :deep(ol) {
-      padding-left: 1.2em;
+    :deep(blockquote) {
+      border-left: 3px solid $primary-green;
+      padding-left: 12px;
+      color: #6b7280;
+      margin: 0.8em 0;
     }
   }
 }
 
-// === 参考资料小卡片与悬浮窗样式 ===
+// ==========================================
+// 参考资料
+// ==========================================
 .reference-section {
-  margin: 0 12px 12px;
+  margin-top: 12px;
   padding: 10px 12px;
   background: #f9fafb;
   border-radius: 8px;
   border: 1px dashed rgba($primary-green, 0.3);
 
   .ref-title {
-    font-size: 0.8rem;
+    font-size: 12px;
     color: #6b7280;
     margin-bottom: 8px;
     font-weight: 600;
@@ -1061,7 +927,7 @@ $border-light: rgba(5, 150, 105, 0.1);
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 20px;
-    font-size: 0.8rem;
+    font-size: 12px;
     color: #374151;
     text-decoration: none;
     transition: all 0.2s ease;
@@ -1072,78 +938,76 @@ $border-light: rgba(5, 150, 105, 0.1);
       border-color: $primary-green;
       background: rgba($primary-green, 0.05);
       color: $primary-green;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     }
 
-    .ref-icon {
-      width: 14px;
-      height: 14px;
-      flex-shrink: 0;
-    }
-
-    .ref-text {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+    .ref-icon { width: 14px; height: 14px; flex-shrink: 0; }
+    .ref-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   }
 }
 
-/* Tooltip 内部的自定义气泡结构样式（因为插槽在模板内，Scoped样式是可以生效的） */
 .ref-tooltip-content {
   max-width: 280px;
   padding: 4px;
 
-  .ref-tt-title {
-    font-size: 13px;
-    font-weight: bold;
-    color: #111827;
-    margin-bottom: 6px;
-    line-height: 1.4;
-  }
-
+  .ref-tt-title { font-size: 13px; font-weight: bold; color: #111827; margin-bottom: 6px; }
   .ref-tt-desc {
     font-size: 12px;
     color: #4b5563;
     line-height: 1.5;
-    /* 多行截断 */
     display: -webkit-box;
     -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
   }
 }
 
-.agent-interaction-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
+// ==========================================
+// Agent 进行中
+// ==========================================
+.agent-progress-wrapper {
+  width: 90%;
+  max-width: 700px;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    max-width: none;
+  }
 }
 
-.agent-step-thought {
-  display: flex;
+// ==========================================
+// 实时思考指示器
+// ==========================================
+.agent-thinking-indicator {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.03);
-  border-radius: 8px;
-  font-size: 13px;
-  color: #6b7280;
-  width: fit-content;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, rgba($primary-green, 0.05), rgba($primary-green, 0.02));
+  border: 1px solid rgba($primary-green, 0.1);
+  border-radius: 12px;
   max-width: 90%;
   animation: fadeIn 0.3s ease;
-
-  .step-icon {
-    font-size: 14px;
-  }
-  
-  .step-text {
-    line-height: 1.4;
-  }
 }
 
+.thinking-spinner {
+  color: $primary-green;
+  font-size: 16px;
+}
+
+.thinking-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.thinking-text {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+// ==========================================
+// Ask 交互
+// ==========================================
 .agent-ask-wrapper {
   display: flex;
   flex-direction: column;
@@ -1153,10 +1017,10 @@ $border-light: rgba(5, 150, 105, 0.1);
   .ask-content {
     background: #fff;
     border: 1px solid #e5e7eb;
-    border-radius: 8px;
+    border-radius: 10px;
     border-bottom-left-radius: 4px;
     padding: 12px 16px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 
     .ask-input-area {
       margin-top: 12px;
@@ -1172,15 +1036,17 @@ $border-light: rgba(5, 150, 105, 0.1);
   }
 }
 
+// ==========================================
+// Confirm 交互
+// ==========================================
 .agent-confirm-bubble {
   max-width: 80%;
-  
+
   .confirm-bubble {
     background: #fff;
     border: 1px solid #fcd34d;
-    border-radius: 8px;
+    border-radius: 10px;
     border-bottom-left-radius: 4px;
-    padding: 0;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(252, 211, 77, 0.1);
 
@@ -1209,44 +1075,89 @@ $border-light: rgba(5, 150, 105, 0.1);
   }
 }
 
+// ==========================================
+// Error
+// ==========================================
 .error-content {
   color: #dc2626 !important;
   border-color: #fecaca !important;
   background-color: #fef2f2 !important;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+// ==========================================
+// 消息操作栏
+// ==========================================
+.msg-actions {
+  margin-top: 8px;
 
-// Utilities
-.loading-spinner {
-  width: 12px;
-  height: 12px;
-  border: 2px solid #e5e7eb;
-  border-top-color: $primary-green;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
+  .action-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: #f8faf9;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
+    padding: 3px 6px;
+    flex-wrap: wrap;
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+    @media (max-width: 768px) { gap: 1px; padding: 2px 4px; }
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #9ca3af;
+    transition: all 0.2s ease;
+    padding: 0;
+    outline: none;
+
+    @media (max-width: 768px) { width: 28px; height: 28px; }
+
+    svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+    &:hover { background: rgba($primary-green, 0.08); color: $primary-green; }
+    &.active { color: $primary-green; background: rgba($primary-green, 0.12); }
+    &.active-danger { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+
+    &.action-btn-text {
+      width: auto;
+      border-radius: 15px;
+      padding: 0 10px;
+      gap: 4px;
+      font-size: 12px;
+
+      @media (max-width: 768px) { padding: 0 8px; font-size: 11px; }
+      span { white-space: nowrap; }
+    }
+  }
+
+  .action-divider {
+    width: 1px;
+    height: 16px;
+    background: rgba(0, 0, 0, 0.08);
+    margin: 0 3px;
+    flex-shrink: 0;
   }
 }
 
+.agent-actions { margin-top: 8px; }
+
 .agent-time {
-  font-size: 0.75rem;
+  font-size: 12px;
   color: #9ca3af;
-  margin-top: 0.5rem;
+  margin-top: 6px;
 }
 
-.agent-actions {
-  margin-top: 8px;
-}
-
-// Input wrapper
+// ==========================================
+// Input 区域
+// ==========================================
 .input-wrapper {
   padding: 12px 20px;
   background: #f8faf9;
@@ -1263,15 +1174,26 @@ $border-light: rgba(5, 150, 105, 0.1);
   margin: 0 auto;
 }
 
+// ==========================================
+// 动画
+// ==========================================
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInSlide {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes dotPulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08); }
+  50% { box-shadow: 0 0 0 4px rgba($primary-green, 0.25); }
 }
 </style>
