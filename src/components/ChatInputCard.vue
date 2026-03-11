@@ -93,19 +93,19 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, computed, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { useSidebarStore } from '@/stores/sidebar'
 import { useChatStore } from '@/stores/chat'
 import { useSkillsStore } from '@/stores/skills'
 import { upload as ossUpload } from '@/axios/oss'
 import { compressImage } from '@/utils/image'
 import { Upload, Promotion, ArrowDown } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 
 const emit = defineEmits(['send'])
 
 const route = useRoute()
-const router = useRouter()
 const sidebarStore = useSidebarStore()
 const chatStore = useChatStore()
 const skillsStore = useSkillsStore()

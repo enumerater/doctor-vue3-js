@@ -33,11 +33,11 @@
           />
         </el-select>
         <el-radio-group v-model="viewMode" size="small">
-          <el-radio-button label="list">
+          <el-radio-button value="list">
             <el-icon><Menu /></el-icon>
             分类
           </el-radio-button>
-          <el-radio-button label="graph">
+          <el-radio-button value="graph">
             <el-icon><Share /></el-icon>
             图谱
           </el-radio-button>

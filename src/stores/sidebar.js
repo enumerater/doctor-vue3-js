@@ -1,7 +1,6 @@
 // stores/sidebar.js
 import { defineStore } from 'pinia'
 import { useChatStore } from '@/stores/chat'
-import { useAgentStore } from '@/stores/agent'
 import { useSkillsStore } from '@/stores/skills'
 import router from '@/router/index.js'
 import { getAllSession, deleteSession } from '@/axios/session'
@@ -64,12 +63,7 @@ export const useSidebarStore = defineStore('sidebar', {
       }
     },
     async selectHistoryItem(sessionId, isAgent = false) {
-      const chatStore = useChatStore()
       const userId = localStorage.getItem('id')
-
-      const partialSessionId = sessionId.startsWith(userId)
-        ? sessionId.substring(userId.length)
-        : sessionId
 
       // 1. 只更新模式状态
       this.isAgricultureAgent = !!isAgent

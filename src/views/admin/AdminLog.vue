@@ -12,9 +12,9 @@
           <div class="card-header">
             <span>处理趋势统计</span>
             <el-radio-group v-model="trendDays" size="small" @change="fetchTrend">
-              <el-radio-button :label="7">7天</el-radio-button>
-              <el-radio-button :label="14">14天</el-radio-button>
-              <el-radio-button :label="30">30天</el-radio-button>
+              <el-radio-button :value="7">7天</el-radio-button>
+              <el-radio-button :value="14">14天</el-radio-button>
+              <el-radio-button :value="30">30天</el-radio-button>
             </el-radio-group>
           </div>
         </template>
@@ -90,7 +90,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
 import { Refresh } from '@element-plus/icons-vue'
 import { useAdminStore } from '@/stores/admin'
