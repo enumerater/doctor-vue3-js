@@ -10,7 +10,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { marked } from 'marked'
 import AgentTransferPopup from '@/components/AgentTransferPopup.vue'
 import ChatInputCard from '@/components/ChatInputCard.vue'
-import { Loading } from '@element-plus/icons-vue'
+import { Loading, ChatDotRound } from '@element-plus/icons-vue'
 
 marked.setOptions({ breaks: true, gfm: true })
 
