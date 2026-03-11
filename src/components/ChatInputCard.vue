@@ -3,6 +3,7 @@
     <div class="card-header">
       <div class="header-left">
         <el-switch
+          v-if="showAgentToggle"
           v-model="sidebarStore.isAgricultureAgent"
           active-text="Agent"
           inactive-text=""
@@ -119,24 +120,30 @@ const canSend = computed(() => {
   return !!(chatStore.inputValue?.trim()) || uploadedImages.value.length > 0
 })
 
-const handleAgentToggle = async (val) => {
-  const isOnDetail = route.name === 'chatDetail'
+const showAgentToggle = computed(() => {
+  // 1. 如果是初始对话页面 (chatHome)，显示开关允许模式选择
+  if (route.name === 'chatHome') return true
+  
+  // 2. 如果是详情页 (chatDetail)
+  if (route.name === 'chatDetail') {
+    const chatStore = useChatStore()
+    // 只有在消息列表为空（即刚创建、尚未正式提问的新会话）时，才允许初始选择模式
+    if (chatStore.chatMessages.length === 0) return true
+    
+    // 一旦有了对话记录，模式即被固定，隐藏切换开关，禁止中途更改模式
+    return false
+  }
+  
+  return false
+})
 
+const handleAgentToggle = async (val) => {
   if (val) {
     const hasImageSkill = skillsStore.isSkillEnabled('disease-recognition')
     sidebarStore.agentImageUploadEnabled = hasImageSkill
-    if (isOnDetail) {
-      await sidebarStore.prepareConversation()
-      router.push({ name: 'chatHome' })
-    } else {
-      chatStore.clearMessages()
-    }
+    chatStore.clearMessages()
   } else {
     sidebarStore.agentImageUploadEnabled = false
-    if (isOnDetail) {
-      await sidebarStore.prepareConversation()
-      router.push({ name: 'chatHome' })
-    }
   }
 }
 

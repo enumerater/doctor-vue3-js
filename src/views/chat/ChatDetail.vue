@@ -193,6 +193,11 @@ const handleDislike = (msg) => {
 const handleSend = (content, images) => {
   if (sidebarStore.isAgricultureAgent) {
     agentStore.userInput(content, images, route.params.sessionId)
+    // 清空输入框和图片
+    chatStore.clearInputValue()
+    if (chatInputCardRef.value) {
+      chatInputCardRef.value.clearImages?.()
+    }
     return
   }
   const userId = localStorage.getItem('id')
@@ -221,12 +226,18 @@ const loadHistory = async () => {
     }
     const sessionInfo = sidebarStore.historyList.find(h => h.sessionId === sid)
     if (sessionInfo) {
+      // 严格同步 Agent 状态
       sidebarStore.isAgricultureAgent = !!sessionInfo.agent
       if (sidebarStore.isAgricultureAgent) {
          // 同步图片上传按钮状态
          const skillsStore = useSkillsStore()
          sidebarStore.agentImageUploadEnabled = skillsStore.isSkillEnabled('disease-recognition')
+      } else {
+         sidebarStore.agentImageUploadEnabled = false
       }
+    } else {
+      // 如果没找到 sessionInfo（可能是新创建还没刷新的会话），保持当前 store 中的状态
+      // 或者如果是通过 URL 直接访问未知会话，默认设为 false 或根据当前 isAgricultureAgent 状态决定
     }
 
     if (sidebarStore.isAgricultureAgent) {
@@ -235,11 +246,8 @@ const loadHistory = async () => {
       nextTick(scrollToBottom)
       return
     }
-    if (chatStore.chatMessages.length > 0) {
-      chatStore.setCurrentSessionId(sid)
-      nextTick(scrollToBottom)
-      return
-    }
+    
+    // 普通聊天
     chatStore.setCurrentSessionId(sid)
     await chatStore.fetchMessages(sid)
     nextTick(scrollToBottom)

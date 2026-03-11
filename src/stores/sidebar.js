@@ -102,13 +102,18 @@ export const useSidebarStore = defineStore('sidebar', {
       const userId = localStorage.getItem('id')
 
       try {
+        // 重置 Agent 模式为普通对话模式（仅在手动创建新对话时）
+        this.isAgricultureAgent = false
+        this.agentImageUploadEnabled = false
+
         await updateSesssionId({ userId })
 
         const userRes = await getUser({ id: userId })
         const partialSessionId = userRes.data.sessionId
         localStorage.setItem('sessionId', partialSessionId)
         // 设置当前会话ID为部分的sessionId，因为还没有完整的sessionId（需要userId前缀）
-        chatStore.setCurrentSessionId(partialSessionId)
+        const fullSessionId = `${userId}${partialSessionId}`
+        chatStore.setCurrentSessionId(fullSessionId)
         chatStore.clearMessages()
       } catch (err) {
         console.error('准备新对话失败：', err)

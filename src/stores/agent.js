@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { useUserStore } from '@/stores/user'
 import { getMessage } from '@/axios/chat'
+import { createSession } from '@/axios/session'
+import { useSidebarStore } from '@/stores/sidebar'
 import { MSG_TYPE, isUserType } from '@/constants/agentProtocol'
 
 export const useAgentStore = defineStore('agent', {
@@ -243,8 +245,27 @@ export const useAgentStore = defineStore('agent', {
     // ========================
     // 发送消息
     // ========================
-    userInput(content, images = [], sessionId = null) {
+    async userInput(content, images = [], sessionId = null) {
       if (sessionId) this.sessionId = sessionId
+      const sid = this.sessionId
+      
+      // 检查是否需要创建会话记录（如果是当前对话的第一条用户消息）
+      if (this.messages.length === 0 && sid) {
+        const userId = localStorage.getItem('id')
+        try {
+          await createSession({
+            userId,
+            sessionTitle: (content || '').substring(0, 20) || '农业Agent对话',
+            sessionId: sid,
+            agent: true, // Agent模式下必传True
+          })
+          const sidebarStore = useSidebarStore()
+          sidebarStore.refreshHistory()
+        } catch (err) {
+          console.warn('Agent模式下创建会话失败:', err)
+        }
+      }
+
       this.resetTurnState()
       const msg = {
         type: MSG_TYPE.USER_INPUT,
