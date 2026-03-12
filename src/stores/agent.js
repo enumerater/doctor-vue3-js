@@ -164,9 +164,13 @@ export const useAgentStore = defineStore('agent', {
           const toolStep = [...this.currentTurnSteps]
             .reverse()
             .find(s => s.type === 'tool' && s.tool === (tool || 'unknown') && s.status === 'calling')
+
+          // 如果 content 是占位符且 payload 有内容，优先使用 payload
+          const actualContent = (content === '工具执行完毕' && payload) ? payload : (content || '')
+
           if (toolStep) {
             toolStep.status = 'completed'
-            toolStep.resultContent = content || ''
+            toolStep.resultContent = actualContent
             if (payload) toolStep.resultPayload = payload
           } else {
             // 没找到匹配的 tool_call，作为独立步骤
@@ -175,7 +179,7 @@ export const useAgentStore = defineStore('agent', {
               tool: tool || 'unknown',
               status: 'completed',
               callContent: '',
-              resultContent: content || '',
+              resultContent: actualContent,
               payload: payload || null,
               timestamp: ts,
             })
@@ -434,7 +438,8 @@ export const useAgentStore = defineStore('agent', {
           if (s.type === 'tool_call' && i + 1 < oldSteps.length) {
             const next = oldSteps[i + 1]
             if (next.type === 'tool_result' && (next.tool === toolName || !next.tool)) {
-              resultContent = next.content || ''
+              // 优先从 payload 获取真实结果（如果 content 只是占位符）
+              resultContent = (next.content === '工具执行完毕' && next.payload) ? next.payload : (next.content || '')
               resultPayload = next.payload || null
               i++ // 跳过下一个，因为已经合并了
             }
@@ -451,12 +456,13 @@ export const useAgentStore = defineStore('agent', {
           })
         } else if (s.type === 'tool_result') {
           // 独立的 tool_result (可能没配对上，或者是前面的 tool_call 漏了)
+          const resultContent = (s.content === '工具执行完毕' && s.payload) ? s.payload : (s.content || '')
           steps.push({
             type: 'tool',
             tool: s.tool || 'unknown',
             status: 'completed',
             callContent: '',
-            resultContent: s.content || '',
+            resultContent: resultContent,
             payload: s.payload || null,
             timestamp: s.timestamp || Date.now(),
           })

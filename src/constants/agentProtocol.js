@@ -38,6 +38,10 @@ export const TOOL_CONFIG = {
   field_management:  { name: '田间管理',   icon: '', color: '#84CC16' },
   medication:        { name: '施药方案',   icon: '', color: '#EF4444' },
   accumulated_temp:  { name: '积温预测',   icon: '', color: '#F97316' },
+  
+  // 别名支持 (兼容后端返回的中文名)
+  '用户记忆检索':     { name: '用户记忆检索', icon: '', color: '#EC4899' },
+  '联网搜索':         { name: '联网搜索', icon: '', color: '#06B6D4' },
 }
 
 const DEFAULT_TOOL = { name: '工具调用', icon: '', color: '#6B7280' }

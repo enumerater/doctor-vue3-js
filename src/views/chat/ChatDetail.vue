@@ -93,18 +93,36 @@ const parseMarkdown = (content) => {
 
 const parseComplexContent = (rawContent) => {
   if (!rawContent) return { type: 'markdown', data: '' }
+  
+  // 1. 如果已经是对象
+  if (typeof rawContent === 'object') {
+    const data = rawContent.payload || rawContent
+    if (data && typeof data === 'object' && (data['参考资料'] || data['回答'])) {
+      return { type: 'json', data }
+    }
+    // 如果是普通对象，转为字符串交给 markdown
+    return { type: 'markdown', data: JSON.stringify(data, null, 2) }
+  }
+
+  // 2. 如果是字符串 (JSON 字符串)
   let contentToParse = String(rawContent).trim()
   if (contentToParse.startsWith('```')) {
     contentToParse = contentToParse.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
   }
+  
   try {
     if (contentToParse.startsWith('{') && contentToParse.endsWith('}')) {
       const parsed = JSON.parse(contentToParse)
-      if (parsed && typeof parsed === 'object' && (parsed['参考资料'] || parsed['回答'])) {
-        return { type: 'json', data: parsed }
+      if (parsed && typeof parsed === 'object') {
+        const data = parsed.payload || parsed
+        if (data && typeof data === 'object' && (data['参考资料'] || data['回答'])) {
+          return { type: 'json', data }
+        }
       }
     }
   } catch { /* ignore */ }
+
+  // 3. 常见的 "回答" 字符串匹配 (兼容模糊格式)
   if (contentToParse.includes('"回答"')) {
     const match = contentToParse.match(/"回答"\s*:\s*"(.*)/)
     if (match) {
@@ -114,6 +132,7 @@ const parseComplexContent = (rawContent) => {
       return { type: 'json', data: { '回答': partial } }
     }
   }
+
   return { type: 'markdown', data: rawContent }
 }
 
