@@ -368,8 +368,15 @@ export const useAgentStore = defineStore('agent', {
               const agentData = typeof agentDataRaw === 'string'
                 ? JSON.parse(agentDataRaw)
                 : agentDataRaw
-              finalContent = agentData.finalContent || finalContent
-              steps = this.normalizeHistorySteps(agentData.steps || [])
+              
+              if (Array.isArray(agentData)) {
+                // 如果 agentData 直接就是步骤数组
+                steps = this.normalizeHistorySteps(agentData)
+              } else if (agentData && typeof agentData === 'object') {
+                // 如果 agentData 是包含 finalContent 和 steps 的对象
+                finalContent = agentData.finalContent || finalContent
+                steps = this.normalizeHistorySteps(agentData.steps || [])
+              }
             } catch (e) {
               console.warn('Agent history parse error:', e)
             }
@@ -393,21 +400,63 @@ export const useAgentStore = defineStore('agent', {
      */
     normalizeHistorySteps(oldSteps) {
       const steps = []
-      for (const s of oldSteps) {
+      // 这里的 oldSteps 可能是扁平化的序列，包含 tool_call 和 tool_result 两个相邻项
+      // 也可能是已经嵌套好的对象
+      for (let i = 0; i < oldSteps.length; i++) {
+        const s = oldSteps[i]
+        
+        // 1. 跳过状态类和结果类（它们通常被 map 到了外部 content）
         if (s.type === 'status' || s.type === 'final_result') continue
+
+        // 2. 思考类
         if (s.type === 'thought' || s.type === 'think' || s.type === 'thought_result') {
           steps.push({
             type: 'thought_result',
             content: s.content || '',
             timestamp: s.timestamp || Date.now(),
           })
-        } else if (s.type === 'tool_call' || s.type === 'tool') {
+          continue
+        }
+
+        // 3. 工具类 (核心修改：配对 tool_call 和 tool_result)
+        if (s.type === 'tool_call' || s.type === 'tool') {
+          const toolName = s.tool || s.payload?.tool || 'unknown'
+          const callContent = s.type === 'tool_call' ? (s.content || '') : (s.callContent || '')
+          let resultContent = s.resultContent || (s.type === 'tool' ? (s.content || '') : '')
+          let resultPayload = s.payload || null
+
+          // 如果 payload 包含嵌套的 agent_data，提取它
+          if (resultPayload?.agent_data?.finalContent && !resultContent) {
+            resultContent = resultPayload.agent_data.finalContent
+          }
+
+          // 如果当前是 tool_call，尝试看下一个是不是对应的 tool_result
+          if (s.type === 'tool_call' && i + 1 < oldSteps.length) {
+            const next = oldSteps[i + 1]
+            if (next.type === 'tool_result' && (next.tool === toolName || !next.tool)) {
+              resultContent = next.content || ''
+              resultPayload = next.payload || null
+              i++ // 跳过下一个，因为已经合并了
+            }
+          }
+
           steps.push({
             type: 'tool',
-            tool: s.tool || s.payload?.tool || 'unknown',
+            tool: toolName,
             status: 'completed',
-            callContent: s.type === 'tool_call' ? (s.content || '') : (s.callContent || ''),
-            resultContent: s.resultContent || s.content || '',
+            callContent,
+            resultContent,
+            payload: resultPayload,
+            timestamp: s.timestamp || Date.now(),
+          })
+        } else if (s.type === 'tool_result') {
+          // 独立的 tool_result (可能没配对上，或者是前面的 tool_call 漏了)
+          steps.push({
+            type: 'tool',
+            tool: s.tool || 'unknown',
+            status: 'completed',
+            callContent: '',
+            resultContent: s.content || '',
             payload: s.payload || null,
             timestamp: s.timestamp || Date.now(),
           })

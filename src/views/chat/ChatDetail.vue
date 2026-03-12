@@ -86,7 +86,7 @@ const parseMarkdown = (content) => {
   try {
     const html = marked.parse(String(content))
     return typeof html === 'string' ? html : String(html)
-  } catch (err) {
+  } catch {
     return content
   }
 }
@@ -104,7 +104,7 @@ const parseComplexContent = (rawContent) => {
         return { type: 'json', data: parsed }
       }
     }
-  } catch (e) { /* ignore */ }
+  } catch { /* ignore */ }
   if (contentToParse.includes('"回答"')) {
     const match = contentToParse.match(/"回答"\s*:\s*"(.*)/)
     if (match) {
@@ -129,6 +129,24 @@ const getImagesFromMessage = (msg) => {
   if (!urls) return []
   if (Array.isArray(urls)) return urls
   try { return JSON.parse(urls) } catch { return [] }
+}
+
+const formatCallContent = (content) => {
+  if (!content) return ''
+  try {
+    const parsed = typeof content === 'string' ? JSON.parse(content) : content
+    if (parsed.query) return `搜索：${parsed.query}`
+    if (parsed.keyword) return `查询：${parsed.keyword}`
+    // 如果是简单的键值对，尝试格式化
+    if (typeof parsed === 'object') {
+       return Object.entries(parsed)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(', ')
+    }
+    return String(parsed)
+  } catch {
+    return content
+  }
 }
 
 // ========================
@@ -257,19 +275,27 @@ const loadHistory = async () => {
 // ========================
 // 滚动与生命周期
 // ========================
-const scrollToBottom = () => {
-  if (messageList.value) {
+const scrollToBottom = (force = false) => {
+  if (!messageList.value) return
+  
+  const container = messageList.value
+  const threshold = 150 // 距离底部150px内视为在底部
+  const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold
+
+  if (force || isNearBottom) {
     setTimeout(() => {
-      const last = messageList.value?.lastElementChild
-      last?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+      const inner = container.querySelector('.message-list-inner')
+      if (inner && inner.lastElementChild) {
+        inner.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' })
+      }
     }, 0)
   }
 }
 
-watch(() => messages.value.length, () => nextTick(scrollToBottom))
-watch(() => { const l = messages.value[messages.value.length - 1]; return l?.messageContent || '' }, () => nextTick(scrollToBottom))
-watch(() => agentStore.currentTurnSteps.length, () => nextTick(scrollToBottom))
-watch(() => agentStore.currentThought, () => nextTick(scrollToBottom))
+watch(() => messages.value.length, () => nextTick(() => scrollToBottom(true)))
+watch(() => { const l = messages.value[messages.value.length - 1]; return l?.messageContent || '' }, () => nextTick(() => scrollToBottom()))
+watch(() => agentStore.currentTurnSteps.length, () => nextTick(() => scrollToBottom()))
+watch(() => agentStore.currentThought, () => nextTick(() => scrollToBottom()))
 
 // Agent confirm dialog
 watch(() => agentStore.pendingConfirm, (val) => {
@@ -286,16 +312,10 @@ watch(() => agentStore.pendingConfirm, (val) => {
   }
 })
 
-let observer
 onMounted(() => {
   loadHistory()
-  if (messageList.value) {
-    observer = new MutationObserver(scrollToBottom)
-    observer.observe(messageList.value, { childList: true, subtree: true, characterData: true })
-  }
 })
 onUnmounted(() => {
-  observer?.disconnect()
   agentStore.disconnect()
 })
 
@@ -367,9 +387,36 @@ watch(() => sidebarStore.isAgricultureAgent, (val) => {
                       <div v-if="step.type === 'thought_result'" class="markdown-body step-markdown"
                         v-html="parseMarkdown(step.content)"></div>
                       <template v-else-if="step.type === 'tool'">
-                        <div v-if="step.resultContent" class="markdown-body step-markdown"
-                          v-html="parseMarkdown(step.resultContent)"></div>
-                        <div v-else-if="step.callContent" class="step-call-hint">{{ step.callContent }}</div>
+                        <div v-if="step.resultContent">
+                          <template v-for="(parsed, pIdx) in [parseComplexContent(step.resultContent)]" :key="pIdx">
+                            <div v-if="parsed.type === 'json'" class="step-json-result">
+                              <div class="markdown-body step-markdown" v-if="parsed.data['回答']" 
+                                v-html="parseMarkdown(parsed.data['回答'])"></div>
+                              <div v-if="parsed.data['参考资料']?.length" class="reference-section step-references">
+                                <div class="ref-title">参考资料</div>
+                                <div class="ref-cards-wrapper">
+                                  <el-tooltip v-for="(refItem, rIdx) in parsed.data['参考资料']" :key="rIdx" effect="light" placement="top" :show-after="200">
+                                    <template #content>
+                                      <div class="ref-tooltip-content">
+                                        <div class="ref-tt-title">{{ refItem.title }}</div>
+                                        <div class="ref-tt-desc">{{ refItem.content }}</div>
+                                      </div>
+                                    </template>
+                                    <a :href="refItem.url" target="_blank" class="ref-card" @click.stop>
+                                      <svg class="ref-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                        <path x1="14" y1="11" d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                      </svg>
+                                      <span class="ref-text">{{ refItem.title }}</span>
+                                    </a>
+                                  </el-tooltip>
+                                </div>
+                              </div>
+                            </div>
+                            <div v-else class="markdown-body step-markdown" v-html="parseMarkdown(parsed.data)"></div>
+                          </template>
+                        </div>
+                        <div v-else-if="step.callContent" class="step-call-hint">{{ formatCallContent(step.callContent) }}</div>
                       </template>
                     </div>
                   </transition>
@@ -529,9 +576,36 @@ watch(() => sidebarStore.isAgricultureAgent, (val) => {
                     <div v-if="step.type === 'thought_result'" class="markdown-body step-markdown"
                       v-html="parseMarkdown(step.content)"></div>
                     <template v-else-if="step.type === 'tool'">
-                      <div v-if="step.resultContent" class="markdown-body step-markdown"
-                        v-html="parseMarkdown(step.resultContent)"></div>
-                      <div v-else-if="step.callContent" class="step-call-hint">{{ step.callContent }}</div>
+                      <div v-if="step.resultContent">
+                        <template v-for="(parsed, pIdx) in [parseComplexContent(step.resultContent)]" :key="pIdx">
+                          <div v-if="parsed.type === 'json'" class="step-json-result">
+                            <div class="markdown-body step-markdown" v-if="parsed.data['回答']" 
+                              v-html="parseMarkdown(parsed.data['回答'])"></div>
+                            <div v-if="parsed.data['参考资料']?.length" class="reference-section step-references">
+                              <div class="ref-title">参考资料</div>
+                              <div class="ref-cards-wrapper">
+                                <el-tooltip v-for="(refItem, rIdx) in parsed.data['参考资料']" :key="rIdx" effect="light" placement="top" :show-after="200">
+                                  <template #content>
+                                    <div class="ref-tooltip-content">
+                                      <div class="ref-tt-title">{{ refItem.title }}</div>
+                                      <div class="ref-tt-desc">{{ refItem.content }}</div>
+                                    </div>
+                                  </template>
+                                  <a :href="refItem.url" target="_blank" class="ref-card" @click.stop>
+                                    <svg class="ref-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                      <path x1="14" y1="11" d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                    </svg>
+                                    <span class="ref-text">{{ refItem.title }}</span>
+                                  </a>
+                                </el-tooltip>
+                              </div>
+                            </div>
+                          </div>
+                          <div v-else class="markdown-body step-markdown" v-html="parseMarkdown(parsed.data)"></div>
+                        </template>
+                      </div>
+                      <div v-else-if="step.callContent" class="step-call-hint">{{ formatCallContent(step.callContent) }}</div>
                     </template>
                   </div>
                 </transition>
@@ -921,6 +995,19 @@ $border-light: rgba(5, 150, 105, 0.1);
 
     .ref-icon { width: 12px; height: 12px; color: #9ca3af; }
     .ref-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  }
+}
+
+.step-references {
+  margin-top: 10px;
+  padding-top: 10px;
+
+  .ref-title { margin-bottom: 6px; }
+  .ref-card {
+    padding: 3px 8px;
+    font-size: 11px;
+    max-width: 160px;
+    .ref-icon { width: 10px; height: 10px; }
   }
 }
 
