@@ -720,12 +720,14 @@ const detectDisease = async () => {
 
     ElMessage.success('识别完成！结果已更新')
 
-    // Auto-open Agent popup for diseased crops
+    // Auto-open Agent popup for diseased crops - Removed as per user feedback to avoid large popups
+    /*
     if (parsedResult.value && parsedResult.value.type === '不健康作物') {
       setTimeout(() => {
         showAgentPopup.value = true
       }, 1500)
     }
+    */
 
     // Scroll to results
     setTimeout(() => {

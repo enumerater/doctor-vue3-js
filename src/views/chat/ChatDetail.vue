@@ -316,21 +316,6 @@ watch(() => { const l = messages.value[messages.value.length - 1]; return l?.mes
 watch(() => agentStore.currentTurnSteps.length, () => nextTick(() => scrollToBottom()))
 watch(() => agentStore.currentThought, () => nextTick(() => scrollToBottom()))
 
-// Agent confirm dialog
-watch(() => agentStore.pendingConfirm, (val) => {
-  if (val) {
-    ElMessageBox.confirm(val.content, '操作确认', {
-      confirmButtonText: '确认执行',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }).then(() => {
-      agentStore.submitConfirm(true)
-    }).catch(() => {
-      agentStore.submitConfirm(false)
-    })
-  }
-})
-
 onMounted(() => {
   loadHistory()
 })
