@@ -190,11 +190,12 @@ export const useAgentStore = defineStore('agent', {
         // --- 交互类 ---
         case MSG_TYPE.CONFIRM:
           this.isThinking = false
-          this.pendingConfirm = { content: content || '', payload }
+          this.pendingConfirm = { content: content || '', payload, actionId: msg.actionId }
           this.messages.push({
             type: 'confirm',
             content: content || '',
             payload,
+            actionId: msg.actionId,
             role: 'robot',
             timestamp: ts,
           })
@@ -202,10 +203,11 @@ export const useAgentStore = defineStore('agent', {
 
         case MSG_TYPE.ASK:
           this.isThinking = false
-          this.pendingAsk = { content: content || '', userInput: '' }
+          this.pendingAsk = { content: content || '', userInput: '', actionId: msg.actionId }
           this.messages.push({
             type: 'ask',
             content: content || '',
+            actionId: msg.actionId,
             role: 'robot',
             timestamp: ts,
           })
@@ -298,6 +300,7 @@ export const useAgentStore = defineStore('agent', {
     },
 
     submitConfirm(confirmed) {
+      const actionId = this.pendingConfirm?.actionId
       this.messages.push({
         type: 'user_input',
         content: confirmed ? '确认执行' : '取消执行',
@@ -306,6 +309,7 @@ export const useAgentStore = defineStore('agent', {
       })
       this.sendRaw({
         type: MSG_TYPE.USER_CONFIRM,
+        actionId,
         payload: { confirmed },
         timestamp: Date.now(),
       })
@@ -313,6 +317,7 @@ export const useAgentStore = defineStore('agent', {
     },
 
     submitAnswer(content) {
+      const actionId = this.pendingAsk?.actionId
       this.messages.push({
         type: 'user_input',
         content,
@@ -321,11 +326,13 @@ export const useAgentStore = defineStore('agent', {
       })
       this.sendRaw({
         type: MSG_TYPE.USER_ANSWER,
+        actionId,
         content,
         timestamp: Date.now(),
       })
       this.pendingAsk = null
     },
+
 
     sendRaw(data) {
       const payload = { ...data }

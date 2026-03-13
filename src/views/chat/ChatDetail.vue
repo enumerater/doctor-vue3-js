@@ -507,6 +507,10 @@ watch(() => sidebarStore.isAgricultureAgent, (val) => {
               <div class="bubble-content confirm-bubble">
                 <div class="confirm-header">操作确认</div>
                 <div class="confirm-body">{{ msg.content }}</div>
+                <div class="confirm-actions" v-if="index === messages.length - 1 && agentStore.pendingConfirm">
+                  <el-button size="small" @click="agentStore.submitConfirm(false)">取消</el-button>
+                  <el-button size="small" type="primary" @click="agentStore.submitConfirm(true)">确认执行</el-button>
+                </div>
               </div>
               <div class="message-time">{{ formatTime(msg.messageTime) }}</div>
             </div>
@@ -1139,6 +1143,15 @@ $border-light: rgba(5, 150, 105, 0.1);
       font-size: 14px;
       color: #4b5563;
       line-height: 1.5;
+    }
+
+    .confirm-actions {
+      padding: 8px 16px;
+      border-top: 1px dashed #f3f4f6;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      background: #fafafa;
     }
   }
 
