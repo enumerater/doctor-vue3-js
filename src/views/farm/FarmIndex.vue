@@ -35,6 +35,21 @@
       </div>
     </div>
 
+    <!-- 数字孪生入口 -->
+    <div class="twin-entry" @click="goTwin" v-if="store.farms.length > 0">
+      <div class="twin-entry-bg"></div>
+      <div class="twin-entry-content">
+        <div class="twin-icon-wrap">
+          <el-icon :size="28"><MapLocation /></el-icon>
+        </div>
+        <div class="twin-entry-text">
+          <h3>数字孪生看板</h3>
+          <p>3D 可视化查看农场全貌、地块健康状态与环境监测</p>
+        </div>
+        <el-icon class="twin-arrow"><ArrowRight /></el-icon>
+      </div>
+    </div>
+
     <!-- Farm List -->
     <div class="farm-list-section">
       <div class="farm-list" v-if="store.farms.length > 0">
@@ -72,7 +87,7 @@
 <script setup>
 import { onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus, HomeFilled, Compass, Grid } from '@element-plus/icons-vue'
+import { Plus, HomeFilled, Compass, Grid, MapLocation, ArrowRight } from '@element-plus/icons-vue'
 import FarmCard from '@/components/farm/FarmCard.vue'
 import { useFarmStore } from '@/stores/farm'
 
@@ -97,6 +112,10 @@ const goCreate = () => {
 
 const goDetail = (farm) => {
   router.push({ name: 'farmDetail', params: { farmId: farm.id } })
+}
+
+const goTwin = () => {
+  router.push({ name: 'farmTwin' })
 }
 </script>
 
@@ -167,7 +186,7 @@ const goDetail = (farm) => {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 
   @include mobile {
     grid-template-columns: repeat(1, 1fr);
@@ -297,5 +316,75 @@ const goDetail = (farm) => {
 @keyframes rotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+// ====== 数字孪生入口卡片 ======
+.twin-entry {
+  position: relative;
+  margin-bottom: 32px;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  cursor: pointer;
+  transition: $transition-smooth;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: $shadow-lg;
+
+    .twin-entry-bg { opacity: 1; }
+    .twin-arrow { transform: translateX(4px); }
+  }
+}
+
+.twin-entry-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #4a9b5e, #2d7a3e, #1b5e2e);
+  opacity: 0.92;
+  transition: opacity 0.3s;
+}
+
+.twin-entry-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  color: white;
+}
+
+.twin-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.twin-entry-text {
+  flex: 1;
+
+  h3 {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0;
+    font-size: 13px;
+    opacity: 0.85;
+  }
+}
+
+.twin-arrow {
+  font-size: 20px;
+  opacity: 0.7;
+  transition: transform 0.3s;
 }
 </style>

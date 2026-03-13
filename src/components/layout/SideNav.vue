@@ -8,6 +8,7 @@ import {
 
   Reading,
   OfficeBuilding,
+  MapLocation,
   Bell,
   Setting,
 } from '@element-plus/icons-vue'
@@ -30,6 +31,7 @@ const allMenuItems = [
 
   { index: '/knowledge', icon: Reading, label: '知识库' },
   { index: '/farm', icon: OfficeBuilding, label: '我的农场' },
+  { index: '/farm/twin', icon: MapLocation, label: '数字孪生' },
   { index: '/notifications', icon: Bell, label: '通知中心', badge: true },
   { index: '/admin', icon: Setting, label: '管理后台', adminOnly: true },
 ]

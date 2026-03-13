@@ -15,7 +15,9 @@
       "Bash(cmd //c \"dir E:\\\\work\\\\java_code\\\\ /b\")",
       "Bash(grep -r \"steps\\\\|step\\\\|agent\" /E/work/front/doctor-vue3-js/src/views/chat/*.vue | head -40)",
       "Bash(find /E/work/front/doctor-vue3-js/src -type f \\\\\\( -name \"*.vue\" -o -name \"*.js\" \\\\\\) | xargs grep -l \"pendingConfirm\\\\|pendingAsk\\\\|isThinking\" 2>/dev/null)",
-      "Bash(cd E:/work/front/doctor-vue3-js && npm run build 2>&1 | tail -30)"
+      "Bash(cd E:/work/front/doctor-vue3-js && npm run build 2>&1 | tail -30)",
+      "Bash(npm config:*)",
+      "Bash(npm ls:*)"
     ]
   }
 }

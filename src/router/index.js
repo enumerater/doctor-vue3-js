@@ -104,6 +104,12 @@ const router = createRouter({
           meta: { title: '我的农场' },
         },
         {
+          path: 'farm/twin',
+          name: 'farmTwin',
+          component: () => import('@/views/farm/DigitalTwinView.vue'),
+          meta: { title: '数字孪生看板' },
+        },
+        {
           path: 'farm/create',
           name: 'farmCreate',
           component: () => import('@/views/farm/FarmCreate.vue'),
