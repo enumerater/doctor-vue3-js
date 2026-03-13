@@ -46,6 +46,15 @@
         >
           <el-icon><Upload /></el-icon>
         </el-button>
+        <el-button
+          text
+          size="small"
+          @click="toggleRecording"
+          class="action-btn voice-btn"
+          :class="{ 'is-recording': isRecording }"
+        >
+          <el-icon :class="{ 'animate-pulse': isRecording }"><Microphone /></el-icon>
+        </el-button>
       </div>
     </div>
 
@@ -93,14 +102,14 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSidebarStore } from '@/stores/sidebar'
 import { useChatStore } from '@/stores/chat'
 import { useSkillsStore } from '@/stores/skills'
 import { upload as ossUpload } from '@/axios/oss'
 import { compressImage } from '@/utils/image'
-import { Upload, Promotion, ArrowDown } from '@element-plus/icons-vue'
+import { Upload, Promotion, ArrowDown, Microphone } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const emit = defineEmits(['send'])
@@ -115,6 +124,83 @@ const models = ['qwen-flash', 'qwen3.5-flash', 'qwen3.5-plus', 'DeepSeek-V3.2', 
 const textareaRef = ref(null)
 const imageInput = ref(null)
 const uploadedImages = ref([])
+
+// Voice Recording State
+const isRecording = ref(false)
+let recognition = null
+
+const initSpeechRecognition = () => {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+  if (!SpeechRecognition) {
+    ElMessage.warning('您的浏览器不支持语音识别')
+    return null
+  }
+
+  const recog = new SpeechRecognition()
+  recog.lang = 'zh-CN'
+  recog.continuous = true
+  recog.interimResults = true
+
+  recog.onstart = () => {
+    isRecording.value = true
+  }
+
+  recog.onresult = (event) => {
+    let finalTranscript = ''
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        finalTranscript += event.results[i][0].transcript
+      }
+    }
+    if (finalTranscript) {
+      chatStore.inputValue = (chatStore.inputValue || '') + finalTranscript
+      autoResize()
+    }
+  }
+
+  recog.onerror = (event) => {
+    console.error('Speech recognition error:', event.error)
+    isRecording.value = false
+    if (event.error === 'not-allowed') {
+      ElMessage.error('请允许麦克风访问权限')
+    } else {
+      ElMessage.error('语音识别出错: ' + event.error)
+    }
+  }
+
+  recog.onend = () => {
+    isRecording.value = false
+  }
+
+  return recog
+}
+
+const toggleRecording = () => {
+  if (isRecording.value) {
+    recognition?.stop()
+    return
+  }
+
+  if (!recognition) {
+    recognition = initSpeechRecognition()
+  }
+
+  if (recognition) {
+    try {
+      recognition.start()
+    } catch (e) {
+      console.error('Failed to start recognition:', e)
+      recognition = initSpeechRecognition() // Re-init on error
+      recognition?.start()
+    }
+  }
+}
+
+onUnmounted(() => {
+  if (recognition) {
+    recognition.stop()
+  }
+})
 
 const canSend = computed(() => {
   return !!(chatStore.inputValue?.trim()) || uploadedImages.value.length > 0
@@ -269,6 +355,14 @@ defineExpose({ setImages, uploadedImages })
 
     &:hover {
       color: $primary;
+    }
+
+    &.voice-btn {
+      &.is-recording {
+        color: $danger;
+        background: rgba($danger, 0.1);
+        border-radius: 50%;
+      }
     }
   }
 }
