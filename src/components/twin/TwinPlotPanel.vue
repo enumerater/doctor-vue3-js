@@ -12,7 +12,9 @@
           </div>
         </div>
         <button class="close-btn" @click="$emit('close')">
-          <el-icon><Close /></el-icon>
+          <el-icon>
+            <Close />
+          </el-icon>
         </button>
       </div>
 
@@ -35,6 +37,10 @@
             <span class="info-label">生长阶段</span>
             <span class="info-value stage">{{ plot.growthStage }}</span>
           </div>
+          <div class="info-row" v-if="sowingDays > 0">
+            <span class="info-label">已播种</span>
+            <span class="info-value">{{ sowingDays }} 天</span>
+          </div>
         </div>
 
         <!-- 环境仪表盘 -->
@@ -42,13 +48,43 @@
         <TwinEnvGauges :sensors="plot.iot?.sensors || {}" />
 
         <!-- 生长阶段图 -->
-        <div class="section-title">生长阶段</div>
-        <TwinGrowthChart :crop-type="plot.cropType" :current-stage="plot.growthStage" />
+        <!-- <div class="section-title">生长阶段</div>
+        <TwinGrowthChart :crop-type="plot.cropType" :current-stage="plot.growthStage" /> -->
 
-        <!-- 底部操作 -->
-        <div class="panel-actions">
-          <el-button size="small" @click="goPlotDetail">地块详情</el-button>
-          <el-button size="small" @click="goAccTemp">积温分析</el-button>
+        <!-- 生长时间线 -->
+        <template v-if="stageHistory.length > 0">
+          <div class="section-title">生长时间线</div>
+          <div class="stage-timeline">
+            <div v-for="(item, idx) in stageHistory" :key="idx" class="timeline-item"
+              :class="{ current: idx === stageHistory.length - 1 }">
+              <div class="timeline-dot"></div>
+              <div class="timeline-content">
+                <span class="timeline-stage">{{ item.stage }}</span>
+                <span class="timeline-date">{{ item.date }}</span>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- 快捷入口 -->
+        <div class="section-title">快捷操作</div>
+        <div class="quick-entries">
+          <div class="entry-item" @click="goDiagnosis">
+            <div class="entry-icon diag"></div>
+            <span class="entry-text">拍照诊断</span>
+          </div>
+          <div class="entry-item" @click="goRecords">
+            <div class="entry-icon record"></div>
+            <span class="entry-text">农事记录</span>
+          </div>
+          <div class="entry-item" @click="goPlotDetail">
+            <div class="entry-icon detail"></div>
+            <span class="entry-text">地块详情</span>
+          </div>
+          <div class="entry-item" @click="goAccTemp">
+            <div class="entry-icon temp"></div>
+            <span class="entry-text">积温分析</span>
+          </div>
         </div>
       </div>
     </div>
@@ -78,21 +114,42 @@ const emoji = computed(() => {
   return CROP_EMOJI[props.plot.cropType] || '🌱'
 })
 
+const farmId = computed(() => props.plot?.farmId || '')
+
+const stageHistory = computed(() => props.plot?.stageHistory || [])
+
+const sowingDays = computed(() => {
+  if (!props.plot?.sowingDate) return 0
+  const diff = Date.now() - new Date(props.plot.sowingDate).getTime()
+  return Math.max(0, Math.floor(diff / 86400000))
+})
+
 function goPlotDetail() {
-  if (!props.plot) return
-  // 默认 farmId 为 farm001
+  if (!props.plot || !farmId.value) return
   router.push({
     name: 'plotDetail',
-    params: { farmId: 'farm001', plotId: props.plot.plotId },
+    params: { farmId: farmId.value, plotId: props.plot.plotId },
   })
 }
 
 function goAccTemp() {
-  if (!props.plot) return
+  if (!props.plot || !farmId.value) return
   router.push({
     name: 'accumulatedTemp',
-    params: { farmId: 'farm001', plotId: props.plot.plotId },
+    params: { farmId: farmId.value, plotId: props.plot.plotId },
   })
+}
+
+function goRecords() {
+  if (!props.plot || !farmId.value) return
+  router.push({
+    name: 'plotRecords',
+    params: { farmId: farmId.value, plotId: props.plot.plotId },
+  })
+}
+
+function goDiagnosis() {
+  router.push({ name: 'vision' })
 }
 </script>
 
@@ -237,12 +294,98 @@ function goAccTemp() {
   border-bottom: 1px solid $border;
 }
 
-.panel-actions {
+// ====== 生长时间线 ======
+.stage-timeline {
+  padding-left: 12px;
+  margin-bottom: 20px;
+}
+
+.timeline-item {
+  position: relative;
+  padding-left: 20px;
+  padding-bottom: 12px;
+  border-left: 2px solid $border;
+
+  &:last-child {
+    border-left-color: transparent;
+    padding-bottom: 0;
+  }
+
+  &.current .timeline-dot {
+    background: $primary;
+    box-shadow: 0 0 0 3px rgba($primary, 0.2);
+  }
+
+  &.current .timeline-stage {
+    color: $primary;
+    font-weight: 700;
+  }
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -6px;
+  top: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: $border;
+  border: 2px solid white;
+}
+
+.timeline-content {
   display: flex;
-  gap: 12px;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid $border;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.timeline-stage {
+  font-size: 12px;
+  font-weight: 600;
+  color: $text-secondary;
+}
+
+.timeline-date {
+  font-size: 11px;
+  color: $text-tertiary;
+}
+
+// ====== 快捷入口 ======
+.quick-entries {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.entry-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: $bg-main;
+  border-radius: 10px;
+  border: 1px solid $border;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: white;
+    border-color: rgba($primary, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+}
+
+.entry-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.entry-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: $text-primary;
 }
 
 // ====== 过渡动画 ======
@@ -250,6 +393,7 @@ function goAccTemp() {
 .slide-right-leave-active {
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .slide-right-enter-from,
 .slide-right-leave-to {
   transform: translateX(100%);
@@ -259,6 +403,7 @@ function goAccTemp() {
 .slide-up-leave-active {
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .slide-up-enter-from,
 .slide-up-leave-to {
   transform: translateY(100%);

@@ -115,7 +115,13 @@ const goDetail = (farm) => {
 }
 
 const goTwin = () => {
-  router.push({ name: 'farmTwin' })
+  // 直接跳转，页面内支持农场选择
+  const firstFarmId = store.farms[0]?.id
+  if (firstFarmId) {
+    router.push({ name: 'farmTwin', params: { farmId: firstFarmId } })
+  } else {
+    router.push({ name: 'farmTwin' })
+  }
 }
 </script>
 

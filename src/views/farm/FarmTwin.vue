@@ -10,7 +10,7 @@
     />
 
     <!-- 浮动 UI 层 -->
-    <TwinOverviewBar :kpis="store.farmKPIs" />
+    <TwinOverviewBar :kpis="store.farmKPIs" :farm-name="store.farmName" />
     <TwinLegend />
 
     <!-- 返回按钮 -->
@@ -18,6 +18,21 @@
       <el-icon><ArrowLeft /></el-icon>
       <span>返回</span>
     </button>
+
+    <!-- 农场选择器 -->
+    <TwinFarmSelector
+      :farms="farmList"
+      :model-value="store.currentFarmId"
+      :current-name="store.farmName"
+      :current-location="store.farmLocation"
+      @update:model-value="switchFarm"
+    />
+
+    <!-- 天气卡片 -->
+    <TwinWeatherCard
+      :weather="store.weatherData"
+      :location="store.farmLocation"
+    />
 
     <!-- 详情面板 -->
     <TwinPlotPanel
@@ -34,20 +49,28 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useFarmTwinStore } from '@/stores/farm_twin'
+import { useFarmStore } from '@/stores/farm'
 import { useTwinSimulation } from '@/composables/useTwinSimulation'
 import TwinScene from '@/components/twin/TwinScene.vue'
 import TwinOverviewBar from '@/components/twin/TwinOverviewBar.vue'
 import TwinLegend from '@/components/twin/TwinLegend.vue'
 import TwinPlotPanel from '@/components/twin/TwinPlotPanel.vue'
+import TwinFarmSelector from '@/components/twin/TwinFarmSelector.vue'
+import TwinWeatherCard from '@/components/twin/TwinWeatherCard.vue'
 import { toRef } from 'vue'
 
 const store = useFarmTwinStore()
+const farmStore = useFarmStore()
+const route = useRoute()
 const router = useRouter()
 const sceneRef = ref(null)
+
+// 农场列表（用于选择器）
+const farmList = computed(() => farmStore.farms || [])
 
 // IoT 模拟器
 const { start: startSim, stop: stopSim } = useTwinSimulation(
@@ -66,9 +89,26 @@ function goBack() {
   router.push({ name: 'farm' })
 }
 
-onMounted(async () => {
-  await store.fetchTwinData('farm001')
+async function switchFarm(farmId) {
+  stopSim()
+  await store.setFarm(farmId)
   startSim()
+  // 更新 URL（不触发重新加载）
+  router.replace({ name: 'farmTwin', params: { farmId } })
+}
+
+onMounted(async () => {
+  // 确保农场列表已加载
+  if (farmStore.farms.length === 0) {
+    await farmStore.fetchFarms()
+  }
+
+  // 从路由参数或自动选择第一个农场
+  const farmId = route.params.farmId || farmStore.farms[0]?.id
+  if (farmId) {
+    await store.fetchTwinData(farmId)
+    startSim()
+  }
 })
 
 onUnmounted(() => {

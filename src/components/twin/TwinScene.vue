@@ -1,5 +1,16 @@
 <template>
-  <div ref="containerRef" class="twin-scene" @click="onCanvasClick" @mousemove="onCanvasMove"></div>
+  <div ref="containerRef" class="twin-scene" @click="onCanvasClick" @mousemove="onCanvasMove">
+    <!-- Hover Tooltip -->
+    <div
+      v-if="tooltipVisible"
+      class="plot-tooltip"
+      :style="{ left: tooltipPos.x + 'px', top: tooltipPos.y + 'px' }"
+    >
+      <div class="tooltip-name">{{ tooltipData.name }}</div>
+      <div class="tooltip-row" v-if="tooltipData.crop">{{ tooltipData.crop }} · {{ tooltipData.area }}亩</div>
+      <div class="tooltip-row">健康分: <span :style="{ color: tooltipData.color }">{{ tooltipData.health }}</span></div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -31,6 +42,11 @@ const mouse = new THREE.Vector2()
 let animId = null
 let plotMeshes = [] // { plotId, mesh, edges, label }
 let hoveredMesh = null
+
+// Tooltip state
+const tooltipVisible = ref(false)
+const tooltipPos = ref({ x: 0, y: 0 })
+const tooltipData = ref({ name: '', crop: '', area: 0, health: 0, color: '' })
 
 // ====== 初始化场景 ======
 function initScene() {
@@ -201,11 +217,12 @@ function buildPlots() {
     edges.position.copy(mesh.position)
     scene.value.add(edges)
 
-    // CSS2D 标签
+    // CSS2D 标签 - 增加生长阶段显示
     const labelDiv = document.createElement('div')
     labelDiv.className = 'twin-plot-label'
     const emoji = CROP_EMOJI[plot.cropType] || '🌱'
-    labelDiv.innerHTML = `<span class="emoji">${emoji}</span><span class="name">${plot.plotName}</span>`
+    const stageTag = plot.growthStage ? `<span class="stage">${plot.growthStage}</span>` : ''
+    labelDiv.innerHTML = `<span class="emoji">${emoji}</span><span class="name">${plot.plotName}</span>${stageTag}`
     const label = new CSS2DObject(labelDiv)
     label.position.set(plot.position.x, h + 2, plot.position.z)
     scene.value.add(label)
@@ -305,12 +322,28 @@ function onCanvasMove(e) {
     hoveredMesh.material.emissive?.setHex(0x000000)
     containerRef.value.style.cursor = 'grab'
     hoveredMesh = null
+    tooltipVisible.value = false
   }
 
   if (hits.length > 0) {
     hoveredMesh = hits[0].object
     hoveredMesh.material.emissive?.setHex(0x333333)
     containerRef.value.style.cursor = 'pointer'
+
+    // 更新 tooltip
+    const plotId = hoveredMesh.userData.plotId
+    const plot = props.layoutData?.plots?.find(p => p.plotId === plotId)
+    if (plot) {
+      tooltipData.value = {
+        name: plot.plotName,
+        crop: plot.cropType,
+        area: plot.area,
+        health: plot.healthScore,
+        color: healthToColor(plot.healthScore),
+      }
+      tooltipPos.value = { x: e.offsetX + 16, y: e.offsetY - 10 }
+      tooltipVisible.value = true
+    }
   }
 }
 
@@ -434,5 +467,41 @@ defineExpose({ focusPlot })
   border-radius: 6px;
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.twin-plot-label .stage {
+  font-size: 10px;
+  font-weight: 600;
+  color: #2e7d32;
+  background: rgba(232, 245, 233, 0.9);
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.plot-tooltip {
+  position: absolute;
+  z-index: 30;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  min-width: 120px;
+}
+
+.plot-tooltip .tooltip-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.plot-tooltip .tooltip-row {
+  font-size: 11px;
+  color: #666;
+  line-height: 1.5;
 }
 </style>

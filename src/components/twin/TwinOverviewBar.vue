@@ -1,8 +1,11 @@
 <template>
   <div class="twin-overview-bar">
-    <div class="kpi-item" v-for="item in kpis" :key="item.label">
-      <span class="kpi-value" :style="{ color: item.color }">{{ item.value }}</span>
-      <span class="kpi-label">{{ item.label }}</span>
+    <div class="farm-title" v-if="farmName">{{ farmName }}</div>
+    <div class="kpi-list">
+      <div class="kpi-item" v-for="item in kpiList" :key="item.label">
+        <span class="kpi-value" :style="{ color: item.color }">{{ item.value }}</span>
+        <span class="kpi-label">{{ item.label }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -13,9 +16,10 @@ import { healthToColor } from '@/axios/farm_twin'
 
 const props = defineProps({
   kpis: { type: Object, default: () => ({}) },
+  farmName: { type: String, default: '' },
 })
 
-const kpis = computed(() => [
+const kpiList = computed(() => [
   { label: '总面积(亩)', value: props.kpis.totalArea || 0, color: undefined },
   { label: '地块数', value: props.kpis.plotCount || 0, color: undefined },
   { label: '平均健康分', value: props.kpis.avgHealth || 0, color: healthToColor(props.kpis.avgHealth || 0) },
@@ -31,7 +35,8 @@ const kpis = computed(() => [
   transform: translateX(-50%);
   z-index: 10;
   display: flex;
-  gap: 24px;
+  align-items: center;
+  gap: 20px;
   padding: 12px 28px;
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
@@ -40,11 +45,34 @@ const kpis = computed(() => [
   box-shadow: $shadow-md;
 
   @include mobile {
-    gap: 12px;
+    gap: 10px;
     padding: 10px 16px;
     max-width: calc(100vw - 32px);
     overflow-x: auto;
     &::-webkit-scrollbar { display: none; }
+  }
+}
+
+.farm-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: $text-primary;
+  white-space: nowrap;
+  padding-right: 16px;
+  border-right: 1px solid $border;
+
+  @include mobile {
+    font-size: 12px;
+    padding-right: 10px;
+  }
+}
+
+.kpi-list {
+  display: flex;
+  gap: 24px;
+
+  @include mobile {
+    gap: 12px;
   }
 }
 
