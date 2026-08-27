@@ -9,6 +9,9 @@ import { createPinia } from 'pinia'
 import persist from 'pinia-plugin-persistedstate'
 import { useUserStore } from '@/stores/user'
 
+import * as echarts from 'echarts'
+window.echarts = echarts
+
 const pinia = createPinia()
 
 const app = createApp(App)
@@ -26,4 +29,3 @@ app.mount('#app')
 // 初始化用户 Store（在挂载后进行）
 const userStore = useUserStore()
 userStore.initUser()
-

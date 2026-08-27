@@ -1,0 +1,14 @@
+# ecode 配置文件
+# 由 /init 命令自动生成，可手动编辑
+
+llm:
+  active: "deepseek"
+  configs:
+    deepseek:
+      provider: openai
+      model: deepseek-chat
+      api_key_env: ECODE_API_KEY
+      base_url: https://api.deepseek.com/v1
+      temperature: 0
+      streaming: true
+      stream_usage: true

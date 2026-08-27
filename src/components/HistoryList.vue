@@ -20,7 +20,7 @@
         <div class="item-main">
           <h3 class="item-title">{{ item.sessionTitle }}</h3>
           <div class="item-footer">
-            <span class="item-time">{{ item.lastChatTime }}</span>
+            <span class="item-time">{{ item.lastChatTime.replace('T', ' ') }}</span>
             <el-button size="small" text :icon="Delete" class="delete-btn"
               @click.stop="sidebarStore.deleteHistoryItem(item.id)" />
           </div>

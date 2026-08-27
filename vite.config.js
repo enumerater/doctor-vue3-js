@@ -9,7 +9,7 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/font/',
+  base: '/nong/',
   server: {
     // allowedHosts: ['ec1162721tq84.vicp.fun'],
     host: '0.0.0.0',
